@@ -7,12 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class Ticket extends Model
 {
     protected $fillable = [
-        'call_id', 'client_id', 'agent_id', 'subject',
-        'description', 'status', 'priority', 'resolved_at',
+        'call_id', 'client_id', 'agent_id', 'subject', 'description',
+        'status', 'priority', 'resolved_at',
+        'mode_of_communication', 'call_validity', 'purpose_of_call',
+        'immediate_action_required', 'caller_age', 'caller_gender',
+        'caller_marital_status', 'key_pops', 'province', 'district',
+        'location', 'is_repeat_caller', 'project', 'services_requested',
+        'second_service_requested', 'number_of_services', 'referred_to',
+        'uptake_confirmed',
     ];
 
     protected $casts = [
-        'resolved_at' => 'datetime',
+        'resolved_at'              => 'datetime',
+        'immediate_action_required' => 'boolean',
+        'is_repeat_caller'         => 'boolean',
+        'uptake_confirmed'         => 'boolean',
+        'caller_age'               => 'integer',
+        'number_of_services'       => 'integer',
     ];
 
     public function call()

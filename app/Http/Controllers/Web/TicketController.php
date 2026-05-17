@@ -53,6 +53,27 @@ class TicketController extends Controller
         ]);
     }
 
+    private array $crmRules = [
+        'mode_of_communication'    => 'nullable|string|max:100',
+        'call_validity'            => 'nullable|in:valid,invalid',
+        'purpose_of_call'          => 'nullable|string|max:255',
+        'immediate_action_required' => 'nullable|boolean',
+        'caller_age'               => 'nullable|integer|min:1|max:120',
+        'caller_gender'            => 'nullable|in:male,female,other,prefer_not_to_say',
+        'caller_marital_status'    => 'nullable|string|max:100',
+        'key_pops'                 => 'nullable|string|max:255',
+        'province'                 => 'nullable|string|max:100',
+        'district'                 => 'nullable|string|max:100',
+        'location'                 => 'nullable|string|max:255',
+        'is_repeat_caller'         => 'nullable|boolean',
+        'project'                  => 'nullable|string|max:255',
+        'services_requested'       => 'nullable|string',
+        'second_service_requested' => 'nullable|string|max:255',
+        'number_of_services'       => 'nullable|integer|min:0|max:255',
+        'referred_to'              => 'nullable|string|max:255',
+        'uptake_confirmed'         => 'nullable|boolean',
+    ];
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -61,6 +82,7 @@ class TicketController extends Controller
             'client_id'   => 'nullable|exists:clients,id',
             'call_id'     => 'nullable|exists:calls,id',
             'priority'    => 'in:low,medium,high,urgent',
+            ...$this->crmRules,
         ]);
 
         $ticket = Ticket::create([
@@ -80,6 +102,7 @@ class TicketController extends Controller
             'status'      => 'in:open,in_progress,resolved,closed',
             'priority'    => 'in:low,medium,high,urgent',
             'agent_id'    => 'nullable|exists:users,id',
+            ...$this->crmRules,
         ]);
 
         if (isset($data['status']) && $data['status'] === 'resolved' && !$ticket->resolved_at) {
