@@ -51,6 +51,12 @@ function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
 }
 
+const provinces = [
+    'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
+    'Mashonaland East', 'Mashonaland West', 'Masvingo',
+    'Matabeleland North', 'Matabeleland South', 'Midlands',
+];
+
 const priorityColor = {
     low:    'bg-gray-100 text-gray-600',
     medium: 'bg-blue-100 text-blue-800',
@@ -279,7 +285,10 @@ const statusColor = {
                         <div class="grid grid-cols-3 gap-3">
                             <div>
                                 <label class="label">Province</label>
-                                <input v-model="addForm.province" class="input" />
+                                <select v-model="addForm.province" class="input">
+                                    <option value="">— select —</option>
+                                    <option v-for="p in provinces" :key="p" :value="p">{{ p }}</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="label">District</label>

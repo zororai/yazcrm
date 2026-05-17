@@ -43,6 +43,12 @@ function fmt(s) {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
+const provinces = [
+    'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
+    'Mashonaland East', 'Mashonaland West', 'Masvingo',
+    'Matabeleland North', 'Matabeleland South', 'Midlands',
+];
+
 const priorityColor = {
     low:    'ring-gray-300 text-gray-600',
     medium: 'ring-blue-400 text-blue-700',
@@ -147,7 +153,10 @@ const priorityColor = {
                     </div>
                     <div>
                         <label class="label">Province</label>
-                        <input v-model="form.province" class="input" />
+                        <select v-model="form.province" class="input">
+                            <option value="">— select —</option>
+                            <option v-for="p in provinces" :key="p" :value="p">{{ p }}</option>
+                        </select>
                     </div>
                     <div>
                         <label class="label">District</label>
