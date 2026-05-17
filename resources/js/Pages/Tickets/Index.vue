@@ -1,18 +1,38 @@
 <script setup>
-import { ref, watch } from 'vue';
-import { Link, router, useForm } from '@inertiajs/vue3';
+import { ref, watch, computed } from 'vue';
+import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object });
+const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const search   = ref(props.filters.search ?? '');
 const status   = ref(props.filters.status ?? '');
 const priority = ref(props.filters.priority ?? '');
 const showAdd  = ref(false);
 
 const addForm = useForm({
-    subject: '', description: '', client_id: '', priority: 'medium',
+    subject: '', description: '', priority: 'medium',
+    // CRM fields
+    mode_of_communication:    'phone',
+    call_validity:            'valid',
+    purpose_of_call:          '',
+    immediate_action_required: false,
+    caller_age:               '',
+    caller_gender:            '',
+    caller_marital_status:    '',
+    key_pops:                 '',
+    province:                 '',
+    district:                 '',
+    location:                 '',
+    is_repeat_caller:         false,
+    project:                  '',
+    services_requested:       '',
+    second_service_requested: '',
+    number_of_services:       '',
+    referred_to:              '',
+    uptake_confirmed:         false,
 });
 
 function apply() {
@@ -49,6 +69,9 @@ const statusColor = {
     <AppLayout>
         <template #title>Tickets</template>
         <template #header-actions>
+            <Link v-if="isAdmin" href="/tickets/import" class="btn-secondary btn-sm">
+                <ArrowUpTrayIcon class="h-4 w-4" /> Import
+            </Link>
             <button @click="showAdd = true" class="btn-primary btn-sm">
                 <PlusIcon class="h-4 w-4" /> New Ticket
             </button>
@@ -89,7 +112,7 @@ const statusColor = {
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
                         <th class="table-th">Subject</th>
-                        <th class="table-th">Client</th>
+                        <th class="table-th">Purpose</th>
                         <th class="table-th">Priority</th>
                         <th class="table-th">Status</th>
                         <th class="table-th">Agent</th>
@@ -105,7 +128,7 @@ const statusColor = {
                         <td class="table-td font-medium max-w-xs truncate">
                             <Link :href="`/tickets/${t.id}`" class="text-brand-600 hover:underline">{{ t.subject }}</Link>
                         </td>
-                        <td class="table-td text-xs">{{ t.client?.name ?? '—' }}</td>
+                        <td class="table-td text-xs max-w-xs truncate">{{ t.purpose_of_call ?? '—' }}</td>
                         <td class="table-td">
                             <span :class="['badge', priorityColor[t.priority]]">{{ t.priority }}</span>
                         </td>
@@ -135,41 +158,188 @@ const statusColor = {
 
         <!-- New ticket modal -->
         <div v-if="showAdd" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-                <h3 class="font-semibold text-gray-900 mb-4">New Ticket</h3>
-                <form @submit.prevent="store" class="space-y-3">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+                <!-- Modal header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                    <h3 class="font-semibold text-gray-900">New Ticket</h3>
+                    <button @click="showAdd = false" class="text-gray-400 hover:text-gray-600">
+                        <XMarkIcon class="h-5 w-5" />
+                    </button>
+                </div>
+
+                <!-- Scrollable body -->
+                <form @submit.prevent="store" class="overflow-y-auto flex-1 px-6 py-4 space-y-5">
+
+                    <!-- ── Basic Info ── -->
                     <div>
-                        <label class="label">Subject *</label>
-                        <input v-model="addForm.subject" class="input" :class="{ 'border-red-500': addForm.errors.subject }" required />
-                        <p v-if="addForm.errors.subject" class="mt-1 text-xs text-red-600">{{ addForm.errors.subject }}</p>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="label">Client</label>
-                            <select v-model="addForm.client_id" class="input">
-                                <option value="">— none —</option>
-                                <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="label">Priority</label>
-                            <select v-model="addForm.priority" class="input">
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="urgent">Urgent</option>
-                            </select>
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Basic Info</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="label">Subject *</label>
+                                <input v-model="addForm.subject" class="input" :class="{ 'border-red-500': addForm.errors.subject }" required />
+                                <p v-if="addForm.errors.subject" class="mt-1 text-xs text-red-600">{{ addForm.errors.subject }}</p>
+                            </div>
+                            <div>
+                                <label class="label">Priority</label>
+                                <select v-model="addForm.priority" class="input w-40">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- ── Call Details ── -->
                     <div>
-                        <label class="label">Description</label>
-                        <textarea v-model="addForm.description" class="input h-24 resize-none" />
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Call Details</h4>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="label">Mode of Communication</label>
+                                <select v-model="addForm.mode_of_communication" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="phone">Phone</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="walk_in">Walk-In</option>
+                                    <option value="email">Email</option>
+                                    <option value="sms">SMS</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label">Call Validity</label>
+                                <select v-model="addForm.call_validity" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="valid">Valid</option>
+                                    <option value="invalid">Invalid</option>
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <label class="label">Purpose of Call</label>
+                                <input v-model="addForm.purpose_of_call" class="input" placeholder="e.g. Counselling, Information, Referral…" />
+                            </div>
+                            <div>
+                                <label class="label">Project</label>
+                                <input v-model="addForm.project" class="input" />
+                            </div>
+                            <div class="flex items-center gap-4 pt-5">
+                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                                    <input type="checkbox" v-model="addForm.immediate_action_required" class="rounded border-gray-300 text-brand-600" />
+                                    Immediate Action Required
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex gap-2 justify-end pt-1">
-                        <button type="button" @click="showAdd = false" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary" :disabled="addForm.processing">Create</button>
+
+                    <!-- ── Caller Info ── -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Caller Information</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="label">Age</label>
+                                <input v-model="addForm.caller_age" type="number" min="1" max="120" class="input" />
+                            </div>
+                            <div>
+                                <label class="label">Gender</label>
+                                <select v-model="addForm.caller_gender" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                    <option value="prefer_not_to_say">Prefer not to say</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label">Marital Status</label>
+                                <select v-model="addForm.caller_marital_status" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="single">Single</option>
+                                    <option value="married">Married</option>
+                                    <option value="divorced">Divorced</option>
+                                    <option value="widowed">Widowed</option>
+                                    <option value="cohabiting">Cohabiting</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label">Key Pops</label>
+                                <input v-model="addForm.key_pops" class="input" placeholder="e.g. AGYW, MSM, FSW…" />
+                            </div>
+                            <div class="flex items-center gap-2 pt-5">
+                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                                    <input type="checkbox" v-model="addForm.is_repeat_caller" class="rounded border-gray-300 text-brand-600" />
+                                    Repeat Caller
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Location ── -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Location</h4>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="label">Province</label>
+                                <input v-model="addForm.province" class="input" />
+                            </div>
+                            <div>
+                                <label class="label">District</label>
+                                <input v-model="addForm.district" class="input" />
+                            </div>
+                            <div>
+                                <label class="label">Location</label>
+                                <input v-model="addForm.location" class="input" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Services ── -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Services</h4>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="label">Services Requested</label>
+                                    <input v-model="addForm.services_requested" class="input" />
+                                </div>
+                                <div>
+                                    <label class="label">Second Service Requested</label>
+                                    <input v-model="addForm.second_service_requested" class="input" />
+                                </div>
+                                <div>
+                                    <label class="label">No. of Services</label>
+                                    <input v-model="addForm.number_of_services" type="number" min="0" class="input" />
+                                </div>
+                                <div>
+                                    <label class="label">Referred To</label>
+                                    <input v-model="addForm.referred_to" class="input" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                                    <input type="checkbox" v-model="addForm.uptake_confirmed" class="rounded border-gray-300 text-brand-600" />
+                                    Confirming Uptake of Services
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Notes ── -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Notes</h4>
+                        <div>
+                            <label class="label">Counsellor's Notes</label>
+                            <textarea v-model="addForm.description" class="input h-24 resize-none" placeholder="Notes from the session…" />
+                        </div>
                     </div>
                 </form>
+
+                <!-- Modal footer -->
+                <div class="flex gap-2 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
+                    <button type="button" @click="showAdd = false" class="btn-secondary">Cancel</button>
+                    <button type="button" @click="store" class="btn-primary" :disabled="addForm.processing">
+                        {{ addForm.processing ? 'Creating…' : 'Create Ticket' }}
+                    </button>
+                </div>
             </div>
         </div>
     </AppLayout>

@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
 import {
-    HomeIcon, PhoneIcon, UsersIcon, TicketIcon, ChartBarIcon,
+    HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon,
 } from '@heroicons/vue/24/outline';
@@ -33,7 +33,6 @@ onUnmounted(() => {
 const navigation = computed(() => [
     { name: 'Dashboard',  href: '/dashboard', icon: HomeIcon },
     { name: 'Calls',      href: '/calls',      icon: PhoneIcon },
-    { name: 'Clients',    href: '/clients',    icon: UsersIcon },
     { name: 'Callbacks',  href: '/callbacks',  icon: QueueListIcon },
     { name: 'Tickets',    href: '/tickets',    icon: TicketIcon },
     ...(isAdmin.value ? [
