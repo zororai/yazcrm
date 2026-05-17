@@ -19,6 +19,7 @@ const props = defineProps({
     callTrend: Array,
     topExtensions: Array,
     period: String,
+    targetSummary: Object,  // null for admins
 });
 
 const period = ref(props.period);
@@ -116,6 +117,46 @@ const extOptions = {
                 <div>
                     <p class="text-2xl font-bold text-gray-900">{{ s.value }}</p>
                     <p class="text-xs text-gray-500">{{ s.label }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent daily target card -->
+        <div v-if="targetSummary && targetSummary.daily_target" class="mb-6">
+            <div class="card border border-brand-200 bg-brand-50">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-brand-800">Today's Call Target</h3>
+                    <span class="text-xs text-brand-600 font-medium">
+                        {{ targetSummary.today_calls }} / {{ targetSummary.today_required }} calls
+                    </span>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="h-3 bg-brand-100 rounded-full overflow-hidden mb-3">
+                    <div
+                        class="h-full rounded-full transition-all"
+                        :class="targetSummary.today_calls >= targetSummary.today_required ? 'bg-green-500' : 'bg-brand-600'"
+                        :style="{ width: Math.min(100, Math.round((targetSummary.today_calls / targetSummary.today_required) * 100)) + '%' }"
+                    />
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 text-center text-sm">
+                    <div>
+                        <p class="text-2xl font-bold text-gray-900">{{ targetSummary.daily_target }}</p>
+                        <p class="text-xs text-gray-500">Daily target</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" :class="targetSummary.carry_forward > 0 ? 'text-orange-600' : 'text-gray-900'">
+                            +{{ targetSummary.carry_forward }}
+                        </p>
+                        <p class="text-xs text-gray-500">Carried forward</p>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold" :class="targetSummary.remaining === 0 ? 'text-green-600' : 'text-gray-900'">
+                            {{ targetSummary.remaining === 0 ? '✓ Done' : targetSummary.remaining }}
+                        </p>
+                        <p class="text-xs text-gray-500">{{ targetSummary.remaining === 0 ? 'Target met!' : 'Still needed' }}</p>
+                    </div>
                 </div>
             </div>
         </div>

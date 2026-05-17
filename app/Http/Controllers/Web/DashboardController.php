@@ -60,11 +60,16 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $targetSummary = $request->user()->role !== 'admin'
+            ? CallTargetController::summaryForAgent($request->user()->id)
+            : null;
+
         return Inertia::render('Dashboard/Index', [
             'stats'         => $stats,
             'callTrend'     => $callTrend,
             'topExtensions' => $topExtensions,
             'period'        => $period,
+            'targetSummary' => $targetSummary,
         ]);
     }
 
