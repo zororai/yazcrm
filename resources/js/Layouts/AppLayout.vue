@@ -4,7 +4,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
-    Bars3Icon, XMarkIcon, BellIcon,
+    Bars3Icon, XMarkIcon, BellIcon, FlagIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 
@@ -36,9 +36,10 @@ const navigation = computed(() => [
     { name: 'Callbacks',  href: '/callbacks',  icon: QueueListIcon },
     { name: 'Tickets',    href: '/tickets',    icon: TicketIcon },
     ...(isAdmin.value ? [
-        { name: 'Extensions', href: '/extensions', icon: SignalIcon },
-        { name: 'Analytics',  href: '/analytics',  icon: ChartBarIcon },
-        { name: 'Users',      href: '/users',       icon: UserGroupIcon },
+        { name: 'Extensions', href: '/extensions',   icon: SignalIcon },
+        { name: 'Analytics',  href: '/analytics',    icon: ChartBarIcon },
+        { name: 'Targets',    href: '/call-targets', icon: FlagIcon },
+        { name: 'Users',      href: '/users',        icon: UserGroupIcon },
     ] : []),
 ]);
 
