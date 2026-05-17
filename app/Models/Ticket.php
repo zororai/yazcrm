@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ticket extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'call_id', 'client_id', 'agent_id', 'subject', 'description',
         'status', 'priority', 'resolved_at',

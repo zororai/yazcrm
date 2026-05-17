@@ -45,11 +45,9 @@ class TicketController extends Controller
     public function show(Ticket $ticket): Response
     {
         $ticket->load(['client', 'agent', 'call']);
-        $agents = User::where('is_active', true)->select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Tickets/Show', [
             'ticket' => $ticket,
-            'agents' => $agents,
         ]);
     }
 

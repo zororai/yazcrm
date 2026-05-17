@@ -40,6 +40,8 @@ Route::middleware('auth')->group(function () {
     // Tickets
     Route::get('tickets', [Web\TicketController::class, 'index'])->name('tickets.index');
     Route::post('tickets', [Web\TicketController::class, 'store'])->name('tickets.store');
+    Route::get('tickets/import', [Web\TicketImportController::class, 'create'])->name('tickets.import')->middleware('admin');
+    Route::post('tickets/import', [Web\TicketImportController::class, 'store'])->name('tickets.import.store')->middleware('admin');
     Route::get('tickets/{ticket}', [Web\TicketController::class, 'show'])->name('tickets.show');
     Route::put('tickets/{ticket}', [Web\TicketController::class, 'update'])->name('tickets.update');
     Route::delete('tickets/{ticket}', [Web\TicketController::class, 'destroy'])->name('tickets.destroy');
