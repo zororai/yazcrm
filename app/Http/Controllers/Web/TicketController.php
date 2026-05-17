@@ -17,6 +17,11 @@ class TicketController extends Controller
     {
         $query = Ticket::with(['client', 'agent'])->latest();
 
+        // Agents only see their own tickets
+        if ($request->user()->role !== 'admin') {
+            $query->where('agent_id', $request->user()->id);
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -42,8 +47,12 @@ class TicketController extends Controller
         ]);
     }
 
-    public function show(Ticket $ticket): Response
+    public function show(Request $request, Ticket $ticket): Response
     {
+        if ($request->user()->role !== 'admin' && $ticket->agent_id !== $request->user()->id) {
+            abort(403);
+        }
+
         $ticket->load(['client', 'agent', 'call']);
 
         return Inertia::render('Tickets/Show', [

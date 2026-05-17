@@ -791,3 +791,4 @@
 #0 {main}
 "} 
 [2026-05-17 06:21:35] local.ERROR: Yeastar auth failed: cURL error 28: Connection timed out after 10001 milliseconds (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://192.168.1.100:8088/openapi/v1.0/get_token  
+[2026-05-17 06:35:07] local.ERROR: Yeastar auth failed: cURL error 28: Connection timed out after 10003 milliseconds (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://192.168.1.100:8088/openapi/v1.0/get_token  
