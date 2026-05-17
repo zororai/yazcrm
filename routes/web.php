@@ -30,9 +30,6 @@ Route::middleware('auth')->group(function () {
     Route::put('clients/{client}', [Web\ClientController::class, 'update'])->name('clients.update');
     Route::delete('clients/{client}', [Web\ClientController::class, 'destroy'])->name('clients.destroy');
 
-    // Extensions
-    Route::get('extensions', [Web\ExtensionController::class, 'index'])->name('extensions.index');
-
     // Callbacks
     Route::get('callbacks', [Web\CallbackController::class, 'index'])->name('callbacks.index');
     Route::post('callbacks', [Web\CallbackController::class, 'store'])->name('callbacks.store');
@@ -47,11 +44,11 @@ Route::middleware('auth')->group(function () {
     Route::put('tickets/{ticket}', [Web\TicketController::class, 'update'])->name('tickets.update');
     Route::delete('tickets/{ticket}', [Web\TicketController::class, 'destroy'])->name('tickets.destroy');
 
-    // Analytics
-    Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
-
     // ─── Admin only ───────────────────────────────────────────────────────────
     Route::middleware('admin')->group(function () {
+        Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
+
+        Route::get('extensions', [Web\ExtensionController::class, 'index'])->name('extensions.index');
         Route::get('users', [Web\UserController::class, 'index'])->name('users.index');
         Route::post('users', [Web\UserController::class, 'store'])->name('users.store');
         Route::put('users/{user}', [Web\UserController::class, 'update'])->name('users.update');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\CallEndedEvent;
 use App\Events\IncomingCallEvent;
 use App\Models\Call;
 use App\Models\CallbackQueue;
@@ -98,6 +99,11 @@ class WebhookController extends Controller
                 'ended_at'  => now(),
                 'raw_data'  => $payload,
             ]);
+        }
+
+        // Prompt agents to log a ticket for any answered call that lasted ≥ 30 s
+        if ($status === 'answered' && $duration >= 30) {
+            event(new CallEndedEvent($call->load('client')));
         }
 
         if ($status === 'missed') {

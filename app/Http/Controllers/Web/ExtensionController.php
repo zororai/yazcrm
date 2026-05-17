@@ -17,7 +17,7 @@ class ExtensionController extends Controller
 
     public function index(): Response
     {
-        $extensions = Extension::with('user')->orderBy('number')->get();
+        $extensions = Extension::with('user')->orderBy('extension_number')->get();
         $unassignedUsers = User::whereDoesntHave('extension')->where('is_active', true)->orderBy('name')->get();
 
         return Inertia::render('Extensions/Index', [
@@ -38,7 +38,7 @@ class ExtensionController extends Controller
         $data = $request->validate([
             'name'        => 'sometimes|string|max:255',
             'status'      => 'in:active,inactive',
-            'caller_id'   => 'nullable|string|max:50',
+            'caller_id_name' => 'nullable|string|max:50',
         ]);
 
         $extension->update($data);
