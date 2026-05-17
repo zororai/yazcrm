@@ -3,6 +3,9 @@
 use App\Http\Controllers\Web;
 use Illuminate\Support\Facades\Route;
 
+// ─── Public (no auth) ────────────────────────────────────────────────────────
+Route::get('screen', [Web\PublicDashboardController::class, 'index'])->name('public.dashboard');
+
 // ─── Guest ───────────────────────────────────────────────────────────────────
 Route::middleware('guest')->group(function () {
     Route::get('login', [Web\AuthController::class, 'showLogin'])->name('login');
