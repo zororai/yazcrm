@@ -43,6 +43,11 @@ class User extends Authenticatable
         return $this->hasMany(CallbackQueue::class, 'agent_id');
     }
 
+    public function callTarget()
+    {
+        return $this->hasOne(CallTarget::class, 'agent_id');
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

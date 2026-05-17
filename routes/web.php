@@ -50,6 +50,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
 
+        // Call targets
+        Route::get('call-targets', [Web\CallTargetController::class, 'index'])->name('call-targets.index');
+        Route::post('call-targets', [Web\CallTargetController::class, 'store'])->name('call-targets.store');
+        Route::delete('call-targets/{user}', [Web\CallTargetController::class, 'destroy'])->name('call-targets.destroy');
+
         Route::get('extensions', [Web\ExtensionController::class, 'index'])->name('extensions.index');
         Route::get('users', [Web\UserController::class, 'index'])->name('users.index');
         Route::post('users', [Web\UserController::class, 'store'])->name('users.store');
