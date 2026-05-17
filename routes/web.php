@@ -53,6 +53,12 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
 
+        // Distress domains
+        Route::get('distress-domains', [Web\DistressDomainController::class, 'index'])->name('distress-domains.index');
+        Route::post('distress-domains', [Web\DistressDomainController::class, 'store'])->name('distress-domains.store');
+        Route::put('distress-domains/{distressDomain}', [Web\DistressDomainController::class, 'update'])->name('distress-domains.update');
+        Route::delete('distress-domains/{distressDomain}', [Web\DistressDomainController::class, 'destroy'])->name('distress-domains.destroy');
+
         // Call targets
         Route::get('call-targets', [Web\CallTargetController::class, 'index'])->name('call-targets.index');
         Route::post('call-targets', [Web\CallTargetController::class, 'store'])->name('call-targets.store');

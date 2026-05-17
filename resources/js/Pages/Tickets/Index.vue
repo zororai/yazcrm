@@ -1,6 +1,8 @@
 <script setup>
 import { ref, watch, computed } from 'vue';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
+
+const distressDomains = computed(() => usePage().props.distressDomains ?? []);
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
@@ -224,18 +226,7 @@ const statusColor = {
                                 <label class="label">Purpose of Call</label>
                                 <select v-model="addForm.purpose_of_call" class="input">
                                     <option value="">— select —</option>
-                                    <option value="Mental Health / Psychosocial Support">Mental Health / Psychosocial Support</option>
-                                    <option value="Sexual &amp; Reproductive Health (SRHR)">Sexual &amp; Reproductive Health (SRHR)</option>
-                                    <option value="Gender-Based Violence (GBV)">Gender-Based Violence (GBV)</option>
-                                    <option value="HIV/AIDS Counselling">HIV/AIDS Counselling</option>
-                                    <option value="Substance Abuse">Substance Abuse</option>
-                                    <option value="Child Abuse / Protection">Child Abuse / Protection</option>
-                                    <option value="Suicide / Self-Harm">Suicide / Self-Harm</option>
-                                    <option value="Pregnancy / Family Planning">Pregnancy / Family Planning</option>
-                                    <option value="Relationships / Family Issues">Relationships / Family Issues</option>
-                                    <option value="Legal / Justice Support">Legal / Justice Support</option>
-                                    <option value="Socioeconomic Issues">Socioeconomic Issues</option>
-                                    <option value="Education / School Issues">Education / School Issues</option>
+                                    <option v-for="d in distressDomains" :key="d" :value="d">{{ d }}</option>
                                 </select>
                             </div>
                             <div>

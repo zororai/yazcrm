@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\DistressDomain;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -24,6 +25,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
+            'distressDomains' => fn () => DistressDomain::active()->pluck('name'),
         ]);
     }
 }
