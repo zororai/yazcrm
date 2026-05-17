@@ -131,7 +131,21 @@ const priorityColor = {
                     </div>
                     <div>
                         <label class="label">Purpose of Call</label>
-                        <input v-model="form.purpose_of_call" class="input" placeholder="Counselling, Info…" />
+                        <select v-model="form.purpose_of_call" class="input">
+                            <option value="">— select —</option>
+                            <option value="Mental Health / Psychosocial Support">Mental Health / Psychosocial Support</option>
+                            <option value="Sexual &amp; Reproductive Health (SRHR)">Sexual &amp; Reproductive Health (SRHR)</option>
+                            <option value="Gender-Based Violence (GBV)">Gender-Based Violence (GBV)</option>
+                            <option value="HIV/AIDS Counselling">HIV/AIDS Counselling</option>
+                            <option value="Substance Abuse">Substance Abuse</option>
+                            <option value="Child Abuse / Protection">Child Abuse / Protection</option>
+                            <option value="Suicide / Self-Harm">Suicide / Self-Harm</option>
+                            <option value="Pregnancy / Family Planning">Pregnancy / Family Planning</option>
+                            <option value="Relationships / Family Issues">Relationships / Family Issues</option>
+                            <option value="Legal / Justice Support">Legal / Justice Support</option>
+                            <option value="Socioeconomic Issues">Socioeconomic Issues</option>
+                            <option value="Education / School Issues">Education / School Issues</option>
+                        </select>
                     </div>
                 </div>
 
