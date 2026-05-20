@@ -77,5 +77,9 @@ Route::middleware('auth')->group(function () {
         Route::post('extensions/{extension}/assign-user', [Web\ExtensionController::class, 'assignUser'])->name('extensions.assign-user');
 
         Route::post('calls/sync', [Web\CallController::class, 'sync'])->name('calls.sync');
+
+        Route::get('yeastar-settings', [Web\YeastarSettingsController::class, 'index'])->name('yeastar-settings.index');
+        Route::post('yeastar-settings', [Web\YeastarSettingsController::class, 'update'])->name('yeastar-settings.update');
+        Route::post('yeastar-settings/test', [Web\YeastarSettingsController::class, 'testConnection'])->name('yeastar-settings.test');
     });
 });

@@ -27,17 +27,18 @@ class YeastarService
     public static function testCredentials(string $baseUrl, string $appId, string $appSecret): array
     {
         try {
-            $response = Http::timeout(8)->post(rtrim($baseUrl, '/') . '/get_token', [
-                'app_id'     => $appId,
-                'app_secret' => $appSecret,
-            ]);
+            $response = Http::withoutVerifying()->asJson()->timeout(8)
+                ->post(rtrim($baseUrl, '/') . '/get_token', [
+                    'username' => $appId,
+                    'password' => $appSecret,
+                ]);
 
-            if ($response->successful() && isset($response['access_token'])) {
+            $body = $response->json();
+            if ($response->successful() && isset($body['access_token'])) {
                 return ['ok' => true, 'message' => 'Connection successful — token received.'];
             }
 
-            $body = $response->json();
-            $err  = $body['errmsg'] ?? $body['message'] ?? ('HTTP ' . $response->status());
+            $err = $body['errmsg'] ?? ('HTTP ' . $response->status());
             return ['ok' => false, 'message' => "Authentication failed: {$err}"];
         } catch (\Exception $e) {
             return ['ok' => false, 'message' => 'Could not reach PBX: ' . $e->getMessage()];
@@ -53,15 +54,16 @@ class YeastarService
         }
 
         try {
-            $response = Http::post("{$this->baseUrl}/get_token", [
-                'app_id'     => $this->appId,
-                'app_secret' => $this->appSecret,
+            $response = Http::withoutVerifying()->asJson()->post("{$this->baseUrl}/get_token", [
+                'username' => $this->appId,
+                'password' => $this->appSecret,
             ]);
 
-            if ($response->successful() && isset($response['access_token'])) {
-                $expiresIn = $response['expires_in'] ?? 1800;
-                Cache::put($this->tokenCacheKey, $response['access_token'], $expiresIn - 60);
-                return $response['access_token'];
+            $body = $response->json();
+            if ($response->successful() && isset($body['access_token'])) {
+                $expiresIn = $body['access_token_expire_time'] ?? 1800;
+                Cache::put($this->tokenCacheKey, $body['access_token'], $expiresIn - 60);
+                return $body['access_token'];
             }
         } catch (\Exception $e) {
             Log::error('Yeastar auth failed: ' . $e->getMessage());
@@ -78,13 +80,15 @@ class YeastarService
         }
 
         try {
-            $response = Http::withHeaders(['Authorization' => "Bearer {$token}"])
+            $response = Http::withoutVerifying()->asJson()
+                ->withHeaders(['Authorization' => "Bearer {$token}"])
                 ->{$method}("{$this->baseUrl}/{$endpoint}", $data);
 
             if ($response->status() === 401) {
                 Cache::forget($this->tokenCacheKey);
                 $token = $this->getAccessToken();
-                $response = Http::withHeaders(['Authorization' => "Bearer {$token}"])
+                $response = Http::withoutVerifying()->asJson()
+                    ->withHeaders(['Authorization' => "Bearer {$token}"])
                     ->{$method}("{$this->baseUrl}/{$endpoint}", $data);
             }
 

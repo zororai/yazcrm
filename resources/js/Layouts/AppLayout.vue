@@ -4,7 +4,7 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
-    Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon,
+    Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 
@@ -39,8 +39,9 @@ const navigation = computed(() => [
         { name: 'Extensions', href: '/extensions',   icon: SignalIcon },
         { name: 'Analytics',  href: '/analytics',    icon: ChartBarIcon },
         { name: 'Targets',    href: '/call-targets',    icon: FlagIcon },
-        { name: 'Domains',    href: '/distress-domains', icon: TagIcon },
-        { name: 'Users',      href: '/users',            icon: UserGroupIcon },
+        { name: 'Domains',    href: '/distress-domains',  icon: TagIcon },
+        { name: 'Users',      href: '/users',             icon: UserGroupIcon },
+        { name: 'Yeastar',    href: '/yeastar-settings',  icon: Cog6ToothIcon },
     ] : []),
 ]);
 
