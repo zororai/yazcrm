@@ -1170,3 +1170,11 @@
 #21 C:/Users/Mazarura/crm-pbx/backend/test_cdr.php(25): Illuminate/Http/Client/PendingRequest->get('https://192.168...', Array)
 #22 {main}
 "} 
+[2026-05-20 13:33:44] local.ERROR: Undefined array key "access_token" {"exception":"[object] (ErrorException(code: 0): Undefined array key \"access_token\" at C:/Users/Mazarura/crm-pbx/backend/test_cdr.php:13)
+[stacktrace]
+#0 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/HandleExceptions.php(258): Illuminate/Foundation/Bootstrap/HandleExceptions->handleError(2, 'Undefined array...', 'C://Users//Mazaru...', 13)
+#1 C:/Users/Mazarura/crm-pbx/backend/test_cdr.php(13): Illuminate/Foundation/Bootstrap/HandleExceptions->Illuminate/Foundation/Bootstrap/{closure}(2, 'Undefined array...', 'C://Users//Mazaru...', 13)
+#2 {main}
+"} 
+[2026-05-20 13:41:13] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-20 13:41:58] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
