@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Call;
 use App\Models\Extension;
 use App\Models\Recording;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,9 +19,29 @@ class YeastarService
 
     public function __construct()
     {
-        $this->baseUrl  = rtrim(config('yeastar.base_url'), '/');
-        $this->appId    = config('yeastar.app_id');
-        $this->appSecret = config('yeastar.app_secret');
+        $this->baseUrl   = rtrim(Setting::get('yeastar_base_url', config('yeastar.base_url')), '/');
+        $this->appId     = Setting::get('yeastar_app_id', config('yeastar.app_id'));
+        $this->appSecret = Setting::get('yeastar_app_secret', config('yeastar.app_secret'));
+    }
+
+    public static function testCredentials(string $baseUrl, string $appId, string $appSecret): array
+    {
+        try {
+            $response = Http::timeout(8)->post(rtrim($baseUrl, '/') . '/get_token', [
+                'app_id'     => $appId,
+                'app_secret' => $appSecret,
+            ]);
+
+            if ($response->successful() && isset($response['access_token'])) {
+                return ['ok' => true, 'message' => 'Connection successful — token received.'];
+            }
+
+            $body = $response->json();
+            $err  = $body['errmsg'] ?? $body['message'] ?? ('HTTP ' . $response->status());
+            return ['ok' => false, 'message' => "Authentication failed: {$err}"];
+        } catch (\Exception $e) {
+            return ['ok' => false, 'message' => 'Could not reach PBX: ' . $e->getMessage()];
+        }
     }
 
     // ------------------------------------------------------------------ auth
