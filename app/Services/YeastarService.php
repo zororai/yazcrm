@@ -24,10 +24,17 @@ class YeastarService
         $this->appSecret = Setting::get('yeastar_app_secret', config('yeastar.app_secret'));
     }
 
+    private static function client(): \Illuminate\Http\Client\PendingRequest
+    {
+        return Http::withoutVerifying()
+            ->asJson()
+            ->withUserAgent('CRM-PBX/1.0 OpenAPI');
+    }
+
     public static function testCredentials(string $baseUrl, string $appId, string $appSecret): array
     {
         try {
-            $response = Http::withoutVerifying()->asJson()->timeout(8)
+            $response = static::client()->timeout(8)
                 ->post(rtrim($baseUrl, '/') . '/get_token', [
                     'username' => $appId,
                     'password' => $appSecret,
@@ -54,7 +61,7 @@ class YeastarService
         }
 
         try {
-            $response = Http::withoutVerifying()->asJson()->post("{$this->baseUrl}/get_token", [
+            $response = static::client()->post("{$this->baseUrl}/get_token", [
                 'username' => $this->appId,
                 'password' => $this->appSecret,
             ]);
@@ -80,19 +87,27 @@ class YeastarService
         }
 
         try {
-            $response = Http::withoutVerifying()->asJson()
-                ->withHeaders(['Authorization' => "Bearer {$token}"])
+            $response = static::client()
+                ->withHeaders(['Authorization' => $token])
                 ->{$method}("{$this->baseUrl}/{$endpoint}", $data);
 
-            if ($response->status() === 401) {
+            // Yeastar returns 200 with errcode 10004 for expired token
+            $body = $response->json();
+            if ($response->status() === 401 || ($body['errcode'] ?? 0) === 10004) {
                 Cache::forget($this->tokenCacheKey);
                 $token = $this->getAccessToken();
-                $response = Http::withoutVerifying()->asJson()
-                    ->withHeaders(['Authorization' => "Bearer {$token}"])
+                $response = static::client()
+                    ->withHeaders(['Authorization' => $token])
                     ->{$method}("{$this->baseUrl}/{$endpoint}", $data);
+                $body = $response->json();
             }
 
-            return $response->successful() ? $response->json() : null;
+            if (($body['errcode'] ?? -1) !== 0) {
+                Log::warning("Yeastar API [{$endpoint}]: " . ($body['errmsg'] ?? 'unknown error'));
+                return null;
+            }
+
+            return $body;
         } catch (\Exception $e) {
             Log::error("Yeastar API error [{$endpoint}]: " . $e->getMessage());
             return null;
@@ -104,36 +119,40 @@ class YeastarService
     public function fetchExtensions(): array
     {
         $data = $this->request('get', 'extension/list');
-        return $data['data']['extension_list'] ?? [];
+        return $data['data'] ?? [];
     }
 
-    public function syncExtensions(): void
+    public function syncExtensions(): int
     {
         $extensions = $this->fetchExtensions();
+        $synced = 0;
 
         foreach ($extensions as $ext) {
             Extension::updateOrCreate(
                 ['extension_number' => $ext['number']],
                 [
-                    'name'            => $ext['name'] ?? $ext['number'],
-                    'status'          => $this->mapExtensionStatus($ext['status'] ?? ''),
-                    'caller_id_name'  => $ext['caller_id_name'] ?? null,
-                    'email'           => $ext['email'] ?? null,
-                    'voicemail_enabled' => ($ext['enable_voicemail'] ?? false) ? true : false,
+                    'name'           => $ext['caller_id_name'] ?? $ext['number'],
+                    'status'         => $this->mapExtensionStatus($ext),
+                    'caller_id_name' => $ext['caller_id_name'] ?? null,
+                    'email'          => $ext['email'] ?? null,
+                    'voicemail_enabled' => false,
                 ]
             );
+            $synced++;
         }
+
+        return $synced;
     }
 
-    private function mapExtensionStatus(string $status): string
+    private function mapExtensionStatus(array $ext): string
     {
-        return match (strtolower($status)) {
-            'registered'   => 'registered',
-            'unregistered' => 'unregistered',
-            'ringing'      => 'ringing',
-            'on call'      => 'on_call',
-            default        => 'idle',
-        };
+        $presence = strtolower($ext['presence_status'] ?? 'available');
+        if ($presence === 'on a call' || $presence === 'busy') return 'on_call';
+        if ($presence === 'ringing') return 'ringing';
+
+        // Check if any SIP device is registered (status=1)
+        $sipStatus = $ext['online_status']['sip_phone']['status'] ?? 0;
+        return $sipStatus === 1 ? 'registered' : 'idle';
     }
 
     // ------------------------------------------------------------------ CDR
