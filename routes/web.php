@@ -81,5 +81,6 @@ Route::middleware('auth')->group(function () {
         Route::get('yeastar-settings', [Web\YeastarSettingsController::class, 'index'])->name('yeastar-settings.index');
         Route::post('yeastar-settings', [Web\YeastarSettingsController::class, 'update'])->name('yeastar-settings.update');
         Route::post('yeastar-settings/test', [Web\YeastarSettingsController::class, 'testConnection'])->name('yeastar-settings.test');
+        Route::post('yeastar-settings/register-webhook', [Web\YeastarSettingsController::class, 'registerWebhook'])->name('yeastar-settings.register-webhook');
     });
 });

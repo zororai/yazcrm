@@ -157,56 +157,62 @@ class YeastarService
 
     // ------------------------------------------------------------------ CDR
 
-    public function fetchCdr(array $filters = []): array
+    public function fetchCdr(string $startTime, string $endTime, int $page = 1, int $pageSize = 100): array
     {
-        $params = array_merge([
-            'page'      => 1,
-            'page_size' => 100,
-        ], $filters);
+        $data = $this->request('get', 'cdr/search', [
+            'start_time' => $startTime,
+            'end_time'   => $endTime,
+            'page'       => $page,
+            'page_size'  => $pageSize,
+        ]);
 
-        $data = $this->request('get', 'cdr', $params);
-        return $data['data']['cdr_list'] ?? [];
+        return $data['data'] ?? [];
     }
 
     public function syncCalls(?string $startTime = null, ?string $endTime = null): int
     {
-        $filters = [];
-        if ($startTime) $filters['start_time'] = $startTime;
-        if ($endTime)   $filters['end_time']   = $endTime;
-
-        $cdrList = $this->fetchCdr($filters);
+        $start   = $startTime ?? now()->subDays(30)->format('Y-m-d H:i:s');
+        $end     = $endTime   ?? now()->format('Y-m-d H:i:s');
         $synced  = 0;
+        $page    = 1;
 
-        foreach ($cdrList as $cdr) {
-            $call = Call::updateOrCreate(
-                ['call_id' => $cdr['call_id'] ?? $cdr['id']],
-                [
-                    'caller'           => $cdr['caller'] ?? $cdr['src'] ?? '',
-                    'callee'           => $cdr['callee'] ?? $cdr['dst'] ?? '',
-                    'direction'        => $this->mapDirection($cdr),
-                    'status'           => $this->mapStatus($cdr['disposition'] ?? ''),
-                    'duration'         => (int)($cdr['duration'] ?? 0),
-                    'started_at'       => $cdr['start_time'] ?? null,
-                    'ended_at'         => $cdr['end_time'] ?? null,
-                    'extension_number' => $cdr['extension'] ?? null,
-                    'recording_file'   => $cdr['recording_file'] ?? null,
-                    'raw_data'         => $cdr,
-                ]
-            );
+        do {
+            $cdrList = $this->fetchCdr($start, $end, $page, 100);
+            if (empty($cdrList)) break;
 
-            if (!empty($cdr['recording_file'])) {
-                Recording::firstOrCreate(
-                    ['call_id'  => $call->id],
+            foreach ($cdrList as $cdr) {
+                $call = Call::updateOrCreate(
+                    ['call_id' => (string)($cdr['call_id'] ?? $cdr['id'] ?? uniqid())],
                     [
-                        'file_name' => basename($cdr['recording_file']),
-                        'file_path' => $cdr['recording_file'],
-                        'duration'  => (int)($cdr['duration'] ?? 0),
+                        'caller'           => $cdr['caller'] ?? $cdr['src'] ?? '',
+                        'callee'           => $cdr['callee'] ?? $cdr['dst'] ?? '',
+                        'direction'        => $this->mapDirection($cdr),
+                        'status'           => $this->mapStatus($cdr['status'] ?? $cdr['disposition'] ?? ''),
+                        'duration'         => (int)($cdr['duration'] ?? $cdr['talk_duration'] ?? 0),
+                        'started_at'       => $cdr['start_time'] ?? null,
+                        'ended_at'         => $cdr['end_time']   ?? null,
+                        'extension_number' => $cdr['extension']  ?? null,
+                        'recording_file'   => $cdr['recording_file'] ?? null,
+                        'raw_data'         => $cdr,
                     ]
                 );
+
+                if (!empty($cdr['recording_file'])) {
+                    Recording::firstOrCreate(
+                        ['call_id' => $call->id],
+                        [
+                            'file_name' => basename($cdr['recording_file']),
+                            'file_path' => $cdr['recording_file'],
+                            'duration'  => (int)($cdr['duration'] ?? 0),
+                        ]
+                    );
+                }
+
+                $synced++;
             }
 
-            $synced++;
-        }
+            $page++;
+        } while (count($cdrList) === 100);
 
         return $synced;
     }
@@ -214,20 +220,20 @@ class YeastarService
     private function mapDirection(array $cdr): string
     {
         $type = strtolower($cdr['call_type'] ?? $cdr['direction'] ?? '');
-        if (str_contains($type, 'inbound') || $type === 'in')  return 'inbound';
+        if (str_contains($type, 'inbound')  || $type === 'in')  return 'inbound';
         if (str_contains($type, 'outbound') || $type === 'out') return 'outbound';
         return 'internal';
     }
 
-    private function mapStatus(string $disposition): string
+    private function mapStatus(string $status): string
     {
-        return match (strtolower($disposition)) {
-            'answered'   => 'answered',
-            'no answer'  => 'missed',
-            'busy'       => 'busy',
-            'failed'     => 'failed',
-            'voicemail'  => 'voicemail',
-            default      => 'missed',
+        return match (strtolower($status)) {
+            'answered', 'answer'  => 'answered',
+            'no answer', 'noanswer', 'missed' => 'missed',
+            'busy'    => 'busy',
+            'failed'  => 'failed',
+            'voicemail' => 'voicemail',
+            default   => 'missed',
         };
     }
 
@@ -249,14 +255,28 @@ class YeastarService
 
     // --------------------------------------------------------- webhook register
 
-    public function registerWebhook(string $url, array $events = []): bool
+    public function registerWebhook(string $url): array
     {
-        $payload = [
-            'url'    => $url,
-            'events' => empty($events) ? ['call_start', 'call_end', 'extension_status'] : $events,
+        // Try known Yeastar P-Series event subscription endpoints
+        $candidates = [
+            ['endpoint' => 'subscribe',        'payload' => ['url' => $url, 'event_list'  => ['call.status', 'extension.status']]],
+            ['endpoint' => 'event/subscribe',  'payload' => ['url' => $url, 'event_list'  => ['call.status', 'extension.status']]],
+            ['endpoint' => 'webhook/add',      'payload' => ['url' => $url, 'events'      => ['call_start', 'call_end', 'extension_status']]],
+            ['endpoint' => 'webhook/subscribe','payload' => ['url' => $url, 'events'      => ['call_start', 'call_end', 'extension_status']]],
         ];
 
-        $result = $this->request('post', 'webhook/add', $payload);
-        return isset($result['ret']) && $result['ret'] === 0;
+        foreach ($candidates as ['endpoint' => $ep, 'payload' => $payload]) {
+            try {
+                $result = $this->request('post', $ep, $payload);
+                if ($result !== null) {
+                    Log::info("Yeastar webhook registered via [{$ep}]");
+                    return ['ok' => true, 'message' => "Webhook registered successfully via {$ep}."];
+                }
+            } catch (\Exception $e) {
+                Log::warning("Yeastar webhook [{$ep}] failed: " . $e->getMessage());
+            }
+        }
+
+        return ['ok' => false, 'message' => 'Could not register webhook — no supported endpoint found on this PBX firmware.'];
     }
 }

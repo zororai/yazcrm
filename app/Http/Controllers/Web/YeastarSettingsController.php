@@ -15,12 +15,16 @@ class YeastarSettingsController extends Controller
 {
     public function index(): Response
     {
+        $defaultWebhookUrl = rtrim(config('app.url'), '/') . '/api/webhooks/yeastar';
+
         return Inertia::render('Admin/YeastarSettings', [
             'settings' => [
-                'base_url'   => Setting::get('yeastar_base_url', config('yeastar.base_url')),
-                'app_id'     => Setting::get('yeastar_app_id', config('yeastar.app_id')),
-                'app_secret' => Setting::get('yeastar_app_secret', config('yeastar.app_secret')),
+                'base_url'    => Setting::get('yeastar_base_url', config('yeastar.base_url')),
+                'app_id'      => Setting::get('yeastar_app_id', config('yeastar.app_id')),
+                'app_secret'  => Setting::get('yeastar_app_secret', config('yeastar.app_secret')),
+                'webhook_url' => Setting::get('yeastar_webhook_url', $defaultWebhookUrl),
             ],
+            'webhook_registered' => (bool) Setting::get('yeastar_webhook_registered', false),
         ]);
     }
 
@@ -40,6 +44,22 @@ class YeastarSettingsController extends Controller
         Cache::forget('yeastar_access_token');
 
         return back()->with('success', 'Yeastar settings saved.');
+    }
+
+    public function registerWebhook(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate(['webhook_url' => 'required|url']);
+
+        Setting::set('yeastar_webhook_url', $data['webhook_url']);
+
+        $svc    = app(YeastarService::class);
+        $result = $svc->registerWebhook($data['webhook_url']);
+
+        if ($result['ok']) {
+            Setting::set('yeastar_webhook_registered', '1');
+        }
+
+        return response()->json($result, $result['ok'] ? 200 : 422);
     }
 
     public function testConnection(Request $request): \Illuminate\Http\JsonResponse
