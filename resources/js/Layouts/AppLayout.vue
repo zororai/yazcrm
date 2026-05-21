@@ -1,12 +1,14 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
+import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
 
 const page  = usePage();
 const user  = computed(() => page.props.auth.user);
@@ -16,18 +18,55 @@ const isAdmin = computed(() => user.value?.role === 'admin');
 const sidebarOpen = ref(false);
 const pendingCall = ref(null);
 
-onMounted(() => {
-    if (!window.Echo || !user.value) return;
-    // Subscribe only to this agent's private channel
-    window.Echo.private(`agent.${user.value.id}`)
-        .listen('.call-ended', (data) => {
-            pendingCall.value = data;
+// ── Incoming call popup ──────────────────────────────────────────────────────
+const activeCalls   = ref([]);
+const dismissedIds  = ref(new Set());
+let   pollTimer     = null;
+
+const visibleCalls = computed(() =>
+    activeCalls.value.filter(c => {
+        const key = c.id ?? c.caller;
+        return !dismissedIds.value.has(key);
+    })
+);
+
+function dismissCall(index) {
+    const call = visibleCalls.value[index];
+    if (call) dismissedIds.value.add(call.id ?? call.caller);
+}
+
+async function pollActiveCalls() {
+    try {
+        const { data } = await axios.get('/api/calls/active');
+        const incoming = (data.calls ?? []);
+        // Auto-clear dismissed set when a call disappears
+        const currentKeys = new Set(incoming.map(c => c.id ?? c.caller));
+        dismissedIds.value.forEach(k => {
+            if (!currentKeys.has(k)) dismissedIds.value.delete(k);
         });
+        activeCalls.value = incoming;
+    } catch {
+        // silently ignore network errors during polling
+    }
+}
+
+onMounted(() => {
+    // Echo-based ticket modal (existing)
+    if (window.Echo && user.value) {
+        window.Echo.private(`agent.${user.value.id}`)
+            .listen('.call-ended', (data) => {
+                pendingCall.value = data;
+            });
+    }
+
+    // Poll for active inbound calls every 8 seconds
+    pollActiveCalls();
+    pollTimer = setInterval(pollActiveCalls, 8000);
 });
 
 onUnmounted(() => {
-    if (!user.value) return;
-    window.Echo?.leave(`agent.${user.value.id}`);
+    if (user.value) window.Echo?.leave(`agent.${user.value.id}`);
+    clearInterval(pollTimer);
 });
 
 const navigation = computed(() => [
@@ -163,5 +202,11 @@ function logout() {
         v-if="pendingCall"
         :call="pendingCall"
         @close="pendingCall = null"
+    />
+
+    <!-- Incoming call popup (polled every 8 s) -->
+    <IncomingCallPopup
+        :calls="visibleCalls"
+        @dismiss="dismissCall"
     />
 </template>

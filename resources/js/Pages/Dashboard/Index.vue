@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Line, Bar } from 'vue-chartjs';
@@ -29,6 +29,15 @@ function changePeriod(p) {
     period.value = p;
     router.get('/dashboard', { period: p }, { preserveState: true, replace: true });
 }
+
+// Auto-refresh stats every 30 seconds without a full page reload
+let refreshTimer = null;
+onMounted(() => {
+    refreshTimer = setInterval(() => {
+        router.reload({ only: ['stats', 'callTrend', 'topExtensions', 'targetSummary'] });
+    }, 30000);
+});
+onUnmounted(() => clearInterval(refreshTimer));
 
 const statCards = computed(() => [
     { label: 'Total Calls',     value: props.stats.total_calls,      icon: PhoneIcon,              color: 'bg-blue-50 text-blue-700',   border: 'border-blue-200' },

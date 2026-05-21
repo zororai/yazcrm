@@ -103,4 +103,25 @@ class CallController extends Controller
         $call->update(['client_id' => $request->client_id]);
         return response()->json($call->fresh()->load('client'));
     }
+
+    public function active(): JsonResponse
+    {
+        $calls = [];
+
+        try {
+            $calls = $this->yeastar->getActiveCalls();
+        } catch (\Exception) {}
+
+        // Fallback: inbound calls started in last 90 seconds not yet ended
+        if (empty($calls)) {
+            $calls = Call::with('client')
+                ->where('direction', 'inbound')
+                ->where('status', 'answered')
+                ->where('started_at', '>=', now()->subSeconds(90))
+                ->get(['id', 'caller', 'callee', 'extension_number', 'started_at', 'client_id'])
+                ->toArray();
+        }
+
+        return response()->json(['calls' => $calls]);
+    }
 }

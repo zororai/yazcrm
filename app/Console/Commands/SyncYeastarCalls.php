@@ -7,14 +7,19 @@ use Illuminate\Console\Command;
 
 class SyncYeastarCalls extends Command
 {
-    protected $signature   = 'yeastar:sync-calls {--hours=1 : How many hours back to sync}';
+    protected $signature   = 'yeastar:sync-calls {--hours= : Hours back to sync} {--minutes= : Minutes back to sync (overrides hours)}';
     protected $description = 'Sync recent calls from Yeastar PBX database';
 
     public function handle(YeastarService $yeastar): int
     {
-        $hours = (int) $this->option('hours');
-        $start = now()->subHours($hours)->format('Y-m-d H:i:s');
-        $end   = now()->format('Y-m-d H:i:s');
+        if ($this->option('minutes')) {
+            $start = now()->subMinutes((int) $this->option('minutes'))->format('Y-m-d H:i:s');
+        } else {
+            $hours = (int) ($this->option('hours') ?? 1);
+            $start = now()->subHours($hours)->format('Y-m-d H:i:s');
+        }
+
+        $end = now()->format('Y-m-d H:i:s');
 
         $this->info("Syncing calls from {$start} to {$end}...");
 
