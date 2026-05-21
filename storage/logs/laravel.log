@@ -1223,3 +1223,5 @@
 [2026-05-21 07:47:03] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
 [2026-05-21 08:19:10] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
 [2026-05-21 08:19:12] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 08:19:54] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 08:19:57] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
