@@ -798,15 +798,53 @@ function showSection(name, btn) {
   }
 }
 
-// ── Bootstrap: initialise all sections with 'day' ────────────────────────────
+// ── Smart default: first period that has data ─────────────────────────────
+function smartDefault(section) {
+  const src = section === 'calls' ? callStats : periodData;
+  for (const p of ['day', 'week', 'month', 'year']) {
+    if (src[p] && src[p].total > 0) return p;
+  }
+  return 'month';
+}
+
+function activatePeriodBtn(section, period) {
+  document.querySelectorAll(`#sec-${section} .period-btn`).forEach(b => b.classList.remove('active-period'));
+  const btn = document.querySelector(`#sec-${section} .period-btn[onclick*="'${period}'"]`);
+  if (btn) btn.classList.add('active-period');
+}
+
+function labelPeriodBtns() {
+  const LABELS = { day:'Today', week:'This Week', month:'This Month', year:'This Year' };
+  ['overview','geographic','demographics','services','trends'].forEach(sec => {
+    document.querySelectorAll(`#sec-${sec} .period-btn`).forEach(btn => {
+      const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
+      if (!m) return;
+      const p = m[1], count = periodData[p]?.total ?? 0;
+      btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${count})</span>` : '');
+    });
+  });
+  document.querySelectorAll('#sec-calls .period-btn').forEach(btn => {
+    const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
+    if (!m) return;
+    const p = m[1], count = callStats[p]?.total ?? 0;
+    btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${count})</span>` : '');
+  });
+}
+
+// ── Bootstrap: auto-select the first period with data ────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
-  updateOverview('day');
-  updateGeographic('day');
-  updateDemographics('day');
-  updateServices('day');
-  updateCalls('day');
-  updateTrends('day');
+  labelPeriodBtns();
+
+  ['overview','geographic','demographics','services','trends'].forEach(sec => activatePeriodBtn(sec, smartDefault(sec)));
+  activatePeriodBtn('calls', smartDefault('calls'));
+
+  updateOverview(smartDefault('overview'));
+  updateGeographic(smartDefault('geographic'));
+  updateDemographics(smartDefault('demographics'));
+  updateServices(smartDefault('services'));
+  updateCalls(smartDefault('calls'));
+  updateTrends(smartDefault('trends'));
 });
 </script>
 </body>
