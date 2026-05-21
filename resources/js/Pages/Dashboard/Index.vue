@@ -15,11 +15,12 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler);
 
 const props = defineProps({
-    stats: Object,
-    callTrend: Array,
+    stats:         Object,
+    callTrend:     Array,
     topExtensions: Array,
-    period: String,
-    targetSummary: Object,  // null for admins
+    period:        String,
+    targetSummary: Object,
+    extension:     String,  // null for admins
 });
 
 const period = ref(props.period);
@@ -103,6 +104,15 @@ const extOptions = {
                 </button>
             </div>
         </template>
+
+        <!-- Agent extension badge -->
+        <div v-if="extension" class="mb-4 flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+            <span class="font-semibold">Extension {{ extension }}</span>
+            <span class="text-blue-600">— showing your calls only</span>
+        </div>
+        <div v-else-if="extension === null && $page.props.auth.user?.role !== 'admin'" class="mb-4 flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+            No extension assigned to your account — contact your admin.
+        </div>
 
         <!-- Stats grid -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">

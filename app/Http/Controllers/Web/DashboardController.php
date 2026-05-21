@@ -19,9 +19,22 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
+        $user   = $request->user();
         $period = $request->get('period', 'today');
         [$start, $end] = $this->periodRange($period);
+
         $base = Call::whereBetween('started_at', [$start, $end]);
+
+        // Agents only see their own extension's calls
+        $extNumber = null;
+        if ($user->role !== 'admin') {
+            $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
+            if ($extNumber) {
+                $base->where('extension_number', $extNumber);
+            } else {
+                $base->whereRaw('0 = 1');
+            }
+        }
 
         $stats = [
             'total_calls'      => (clone $base)->count(),
@@ -40,25 +53,30 @@ class DashboardController extends Controller
             $stats['active_calls'] = $this->yeastar->getActiveCalls();
         } catch (\Exception) {}
 
-        $callTrend = Call::select(
+        $trendQuery = Call::select(
                 DB::raw('DATE(started_at) as date'),
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(direction = "inbound") as inbound'),
                 DB::raw('SUM(direction = "outbound") as outbound'),
                 DB::raw('SUM(status = "missed") as missed')
             )
-            ->where('started_at', '>=', now()->subDays(7))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+            ->where('started_at', '>=', now()->subDays(7));
 
-        $topExtensions = Call::select('extension_number', DB::raw('COUNT(*) as total'))
+        if ($extNumber) {
+            $trendQuery->where('extension_number', $extNumber);
+        }
+
+        $callTrend = $trendQuery->groupBy('date')->orderBy('date')->get();
+
+        $extQuery = Call::select('extension_number', DB::raw('COUNT(*) as total'))
             ->whereNotNull('extension_number')
-            ->where('started_at', '>=', now()->subDays(30))
-            ->groupBy('extension_number')
-            ->orderByDesc('total')
-            ->limit(10)
-            ->get();
+            ->where('started_at', '>=', now()->subDays(30));
+
+        if ($extNumber) {
+            $extQuery->where('extension_number', $extNumber);
+        }
+
+        $topExtensions = $extQuery->groupBy('extension_number')->orderByDesc('total')->limit(10)->get();
 
         $targetSummary = $request->user()->role !== 'admin'
             ? CallTargetController::summaryForAgent($request->user()->id)
@@ -70,6 +88,7 @@ class DashboardController extends Controller
             'topExtensions' => $topExtensions,
             'period'        => $period,
             'targetSummary' => $targetSummary,
+            'extension'     => $extNumber,
         ]);
     }
 
