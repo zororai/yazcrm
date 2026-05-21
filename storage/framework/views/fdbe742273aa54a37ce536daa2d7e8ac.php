@@ -12,8 +12,8 @@
 
 body{
   font-family:'Inter',sans-serif;
-  background:#0d1117;
-  color:#e2e8f0;
+  background:#f0f4f8;
+  color:#1e293b;
   min-height:100vh;
   overflow-x:hidden;
 }
@@ -22,8 +22,8 @@ body::before{
   content:'';
   position:fixed;top:0;left:0;right:0;bottom:0;
   background:
-    radial-gradient(ellipse 60% 50% at 15% 15%, rgba(30,58,138,0.35) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(17,94,89,0.2) 0%, transparent 70%);
+    radial-gradient(ellipse 60% 50% at 10% 10%, rgba(219,234,254,0.8) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 90% 90%, rgba(209,250,229,0.5) 0%, transparent 60%);
   pointer-events:none;z-index:0;
 }
 
@@ -32,11 +32,12 @@ body::before{
 /* ── Sidebar ──────────────────────────────────────────────── */
 .sidebar{
   width:72px;flex-shrink:0;
-  background:rgba(255,255,255,0.03);
-  border-right:1px solid rgba(255,255,255,0.07);
+  background:#fff;
+  border-right:1px solid #e2e8f0;
   display:flex;flex-direction:column;align-items:center;
   padding:20px 0;gap:6px;
   position:sticky;top:0;height:100vh;
+  box-shadow:2px 0 12px rgba(0,0,0,0.04);
 }
 .sb-logo{
   width:40px;height:40px;
@@ -49,54 +50,57 @@ body::before{
   background:transparent;border-radius:12px;
   display:flex;align-items:center;justify-content:center;
   cursor:pointer;font-size:17px;
-  color:rgba(255,255,255,0.3);transition:all .2s;
+  color:#94a3b8;transition:all .2s;
 }
-.sb-btn:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.7)}
-.sb-btn.active{background:rgba(59,130,246,0.15);color:#60a5fa}
-.sb-divider{width:30px;height:1px;background:rgba(255,255,255,0.07);margin:6px 0}
+.sb-btn:hover{background:#f1f5f9;color:#475569}
+.sb-btn.active{background:#eff6ff;color:#3b82f6}
+.sb-divider{width:30px;height:1px;background:#e2e8f0;margin:6px 0}
 
 /* ── Main ────────────────────────────────────────────────── */
 .main{flex:1;padding:28px 28px 20px;display:flex;flex-direction:column;gap:18px;min-width:0;overflow-y:auto}
 
 /* ── Glass card ──────────────────────────────────────────── */
 .glass{
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.08);
+  background:#fff;
+  border:1px solid #e2e8f0;
   border-radius:20px;padding:22px;
+  box-shadow:0 2px 12px rgba(0,0,0,0.05);
 }
 
 /* ── Header ──────────────────────────────────────────────── */
 .page-hdr{display:flex;align-items:flex-start;justify-content:space-between}
-.page-title{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.5px}
-.page-sub{font-size:12px;color:rgba(255,255,255,0.35);margin-top:3px}
+.page-title{font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-.5px}
+.page-sub{font-size:12px;color:#94a3b8;margin-top:3px}
 .hdr-right{display:flex;align-items:center;gap:10px}
 .live-pill{
   display:flex;align-items:center;gap:6px;
-  background:rgba(74,222,128,0.08);
-  border:1px solid rgba(74,222,128,0.2);
+  background:#f0fdf4;
+  border:1px solid #bbf7d0;
   border-radius:20px;padding:5px 13px;
-  font-size:11px;color:#4ade80;font-weight:600;
+  font-size:11px;color:#16a34a;font-weight:600;
 }
-.live-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:blink 2s infinite}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .total-pill{
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(255,255,255,0.1);
+  background:#fff;
+  border:1px solid #e2e8f0;
   border-radius:16px;padding:8px 16px;text-align:right;
+  box-shadow:0 1px 6px rgba(0,0,0,0.06);
 }
-.total-pill .tv{font-size:22px;font-weight:800;color:#fff}
-.total-pill .tl{font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px}
+.total-pill .tv{font-size:22px;font-weight:800;color:#0f172a}
+.total-pill .tl{font-size:10px;color:#94a3b8;margin-top:1px}
 
 /* ── Top grid ────────────────────────────────────────────── */
 .top-grid{display:grid;grid-template-columns:1fr 175px 270px;gap:16px}
 
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.card-title{font-size:13px;font-weight:600;color:rgba(255,255,255,0.75)}
+.card-title{font-size:13px;font-weight:600;color:#374151}
 .card-tag{
-  font-size:11px;color:rgba(255,255,255,0.35);
-  background:rgba(255,255,255,0.05);
+  font-size:11px;color:#94a3b8;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
   border-radius:8px;padding:3px 10px;
-  display:flex;align-items:center;gap:5px;cursor:pointer;border:none;
+  display:flex;align-items:center;gap:5px;cursor:pointer;
   font-family:'Inter',sans-serif;
 }
 
@@ -106,18 +110,19 @@ body::before{
 /* ── Stat mini stack ─────────────────────────────────────── */
 .stat-stack{display:flex;flex-direction:column;gap:10px}
 .stat-mini{
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.08);
+  background:#fff;
+  border:1px solid #e2e8f0;
   border-radius:16px;padding:13px 15px;
   display:flex;align-items:center;gap:11px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.04);
 }
 .sm-icon{
   width:34px;height:34px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;
   font-size:15px;flex-shrink:0;
 }
-.sm-val{font-size:15px;font-weight:700;color:#fff;line-height:1.1}
-.sm-lbl{font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px}
+.sm-val{font-size:15px;font-weight:700;color:#0f172a;line-height:1.1}
+.sm-lbl{font-size:10px;color:#94a3b8;margin-top:2px}
 
 /* ── Overview card ───────────────────────────────────────── */
 .donut-wrap{position:relative;width:120px;height:120px;margin:0 auto 14px}
@@ -125,15 +130,15 @@ body::before{
   position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);text-align:center;
 }
-.donut-pct{font-size:20px;font-weight:800;color:#fff;line-height:1}
-.donut-sub{font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px}
+.donut-pct{font-size:20px;font-weight:800;color:#0f172a;line-height:1}
+.donut-sub{font-size:10px;color:#94a3b8;margin-top:2px}
 .ov-rows{display:flex;flex-direction:column;gap:9px}
 .ov-row{display:flex;align-items:center;gap:8px}
 .ov-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.ov-lbl{flex:1;font-size:11px;color:rgba(255,255,255,0.45)}
-.ov-val{font-size:12px;font-weight:700;color:#fff}
+.ov-lbl{flex:1;font-size:11px;color:#64748b}
+.ov-val{font-size:12px;font-weight:700;color:#0f172a}
 .ov-chg{font-size:10px;margin-left:4px;font-weight:500}
-.ov-chg.up{color:#4ade80}
+.ov-chg.up{color:#16a34a}
 .ov-chg.neutral{color:#94a3b8}
 
 /* ── Bottom grid ─────────────────────────────────────────── */
@@ -142,112 +147,94 @@ body::before{
 /* challenges */
 .ch-item{
   display:flex;align-items:center;gap:12px;
-  padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.05);
+  padding:11px 0;border-bottom:1px solid #f1f5f9;
 }
 .ch-item:last-child{border-bottom:none;padding-bottom:0}
 .ch-ring{
   width:24px;height:24px;border-radius:50%;
-  border:2px solid rgba(255,255,255,0.15);
+  border:2px solid #e2e8f0;
   display:flex;align-items:center;justify-content:center;
-  font-size:10px;flex-shrink:0;color:rgba(255,255,255,0.3);
+  font-size:10px;flex-shrink:0;color:#cbd5e1;
 }
-.ch-ring.done{background:#4ade80;border-color:#4ade80;color:#052e16;font-size:12px}
+.ch-ring.done{background:#22c55e;border-color:#22c55e;color:#fff;font-size:12px}
 .ch-body{flex:1;min-width:0}
-.ch-name{font-size:12px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ch-prog{font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px}
+.ch-name{font-size:12px;font-weight:500;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-prog{font-size:10px;color:#94a3b8;margin-top:2px}
 .ch-badge{
   font-size:10px;font-weight:600;padding:3px 10px;
   border-radius:20px;white-space:nowrap;flex-shrink:0;
 }
-.badge-go{background:rgba(74,222,128,0.12);color:#4ade80;border:1px solid rgba(74,222,128,0.25)}
-.badge-done{background:rgba(96,165,250,0.12);color:#60a5fa;border:1px solid rgba(96,165,250,0.25)}
-.badge-alert{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.25)}
+.badge-go{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.badge-done{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.badge-alert{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
 
 /* calendar */
-.cal-month-label{
-  font-size:13px;font-weight:700;color:#fff;
-  text-align:center;margin-bottom:12px;letter-spacing:.2px;
-}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.cal-nav span{font-size:13px;font-weight:700;color:#fff}
-.cal-arrow{
-  background:none;border:none;color:rgba(255,255,255,0.3);
-  cursor:pointer;font-size:16px;padding:2px 6px;border-radius:6px;
-}
+.cal-nav span{font-size:13px;font-weight:700;color:#0f172a}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
-.cal-dn{font-size:9px;color:rgba(255,255,255,0.25);font-weight:500;padding:0 0 6px}
+.cal-dn{font-size:9px;color:#94a3b8;font-weight:600;padding:0 0 6px;text-transform:uppercase}
 .cal-d{
-  font-size:11px;color:rgba(255,255,255,0.4);
+  font-size:11px;color:#64748b;
   padding:5px 2px;border-radius:8px;font-weight:400;
 }
 .cal-d.today{background:#3b82f6;color:#fff;font-weight:700}
 .cal-d.empty{color:transparent;pointer-events:none}
 
 /* output */
-.out-val{font-size:42px;font-weight:900;color:#fff;line-height:1;margin-bottom:4px}
-.out-lbl{font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:14px}
+.out-val{font-size:42px;font-weight:900;color:#0f172a;line-height:1;margin-bottom:4px}
+.out-lbl{font-size:11px;color:#94a3b8;margin-bottom:14px}
 .out-badge{
   display:inline-block;
-  background:rgba(74,222,128,0.1);
-  border:1px solid rgba(74,222,128,0.2);
-  color:#4ade80;border-radius:20px;
+  background:#f0fdf4;border:1px solid #bbf7d0;
+  color:#16a34a;border-radius:20px;
   padding:4px 14px;font-size:11px;font-weight:600;
 }
-.out-img{font-size:48px;opacity:.12;position:absolute;bottom:14px;right:16px}
+.out-img{font-size:48px;opacity:.08;position:absolute;bottom:14px;right:16px}
 
-/* ── Tabs ────────────────────────────────────────────────── */
-.tab-nav{
-  display:flex;gap:4px;
-  background:rgba(255,255,255,0.03);
-  border:1px solid rgba(255,255,255,0.06);
-  border-radius:14px;padding:4px;
-  overflow-x:auto;width:fit-content;
-}
-.tab-btn{
-  padding:7px 15px;border:none;background:transparent;
-  border-radius:10px;cursor:pointer;
-  font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
-  color:rgba(255,255,255,0.35);transition:all .2s;white-space:nowrap;
-}
-.tab-btn:hover{color:rgba(255,255,255,.6)}
-.tab-btn.active{background:rgba(255,255,255,0.09);color:#fff}
-.tab-panel{display:none}.tab-panel.active{display:block}
-
-/* section cards */
+/* ── Section cards ────────────────────────────────────────── */
 .section-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .section-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
-.s-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px}
-.s-card h3{font-size:13px;font-weight:600;color:rgba(255,255,255,.7);margin-bottom:14px}
+.s-card{
+  background:#fff;border:1px solid #e2e8f0;
+  border-radius:16px;padding:20px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.04);
+}
+.s-card h3{font-size:13px;font-weight:600;color:#374151;margin-bottom:14px}
 .chart-h{height:220px;position:relative}
 .chart-h2{height:120px;position:relative}
 
 /* progress bars */
 .pb{margin-bottom:11px}
 .pb-hdr{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
-.pb-lbl{color:rgba(255,255,255,.6);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72%}
-.pb-val{color:rgba(255,255,255,.35);font-size:10px}
-.pb-track{background:rgba(255,255,255,.06);border-radius:3px;height:5px}
+.pb-lbl{color:#475569;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72%}
+.pb-val{color:#94a3b8;font-size:10px}
+.pb-track{background:#f1f5f9;border-radius:3px;height:5px}
 .pb-fill{height:100%;border-radius:3px;transition:width .6s}
 
 /* table */
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{padding:9px 12px;text-align:left;font-weight:600;font-size:10px;
-   color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.06);
+   color:#94a3b8;border-bottom:1px solid #f1f5f9;
    text-transform:uppercase;letter-spacing:.5px}
-td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.7)}
-tr:hover td{background:rgba(255,255,255,.02)}
+td{padding:8px 12px;border-bottom:1px solid #f8fafc;color:#475569}
+tr:hover td{background:#f8fafc}
 .tbl-wrap{overflow-x:auto}
 
 /* kpi row */
 .kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.kpi{flex:1;min-width:130px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 18px}
+.kpi{
+  flex:1;min-width:130px;
+  background:#fff;border:1px solid #e2e8f0;
+  border-radius:16px;padding:18px;
+  box-shadow:0 1px 6px rgba(0,0,0,0.04);
+}
 .kpi-icon{font-size:18px;margin-bottom:8px}
-.kpi-val{font-size:26px;font-weight:800;color:#fff;line-height:1}
-.kpi-lbl{font-size:11px;color:rgba(255,255,255,.35);margin-top:4px;font-weight:500}
-.kpi-sub{font-size:10px;color:rgba(255,255,255,.25);margin-top:2px}
+.kpi-val{font-size:26px;font-weight:800;color:#0f172a;line-height:1}
+.kpi-lbl{font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500}
+.kpi-sub{font-size:10px;color:#cbd5e1;margin-top:2px}
 
 /* footer */
-.footer{text-align:center;padding:12px;font-size:10px;color:rgba(255,255,255,.15);border-top:1px solid rgba(255,255,255,.05)}
+.footer{text-align:center;padding:12px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0}
 
 @media(max-width:900px){
   .sidebar{display:none}
@@ -419,7 +406,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <span class="ch-badge <?php echo e($badges[$i]); ?>"><?php echo e($labels[$i]); ?></span>
             </div>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-            <p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:20px 0">No purpose data yet</p>
+            <p style="font-size:12px;color:#cbd5e1;text-align:center;padding:20px 0">No purpose data yet</p>
           <?php endif; ?>
 
           <?php if($byStatus->isNotEmpty()): ?>
@@ -464,9 +451,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
           <!-- Uptake stat below calendar -->
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
-            <div style="font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Uptake Confirmed</div>
-            <div style="font-size:22px;font-weight:800;color:#fff"><?php echo e(number_format($uptakeTotal)); ?></div>
-            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Uptake Confirmed</div>
+            <div style="font-size:22px;font-weight:800;color:#0f172a"><?php echo e(number_format($uptakeTotal)); ?></div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px">
               <?php echo e($validTotal ? round($uptakeTotal/$validTotal*100,1) : 0); ?>% of valid calls
             </div>
           </div>
@@ -480,9 +467,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <span class="out-badge"><?php echo e($immediateAct > 0 ? 'Needs Attention' : 'All Clear'); ?></span>
 
           <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
-            <div style="font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Valid Rate</div>
-            <div style="font-size:22px;font-weight:800;color:#4ade80"><?php echo e($validPct); ?>%</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">of all interactions</div>
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Valid Rate</div>
+            <div style="font-size:22px;font-weight:800;color:#16a34a"><?php echo e($validPct); ?>%</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px">of all interactions</div>
           </div>
 
           <div class="out-img">🚨</div>
@@ -514,15 +501,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <?php $__currentLoopData = $byProvince; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <?php $rank++; $pct=round($row->cnt/$total*100,1); $bar=$maxProv?round($row->cnt/$maxProv*100):0; ?>
                 <tr>
-                  <td style="color:rgba(255,255,255,.3)"><?php echo e($rank); ?></td>
-                  <td><strong style="color:#fff"><?php echo e($row->province); ?></strong></td>
+                  <td style="color:#cbd5e1"><?php echo e($rank); ?></td>
+                  <td><strong style="color:#0f172a"><?php echo e($row->province); ?></strong></td>
                   <td><?php echo e(number_format($row->cnt)); ?></td>
                   <td><?php echo e($pct); ?>%</td>
                   <td style="min-width:100px"><div class="pb-track"><div class="pb-fill" style="width:<?php echo e($bar); ?>%;background:#3b82f6"></div></div></td>
                 </tr>
               <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               <?php if($byProvince->isEmpty()): ?>
-                <tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.2);padding:20px">No province data yet</td></tr>
+                <tr><td colspan="5" style="text-align:center;color:#cbd5e1;padding:20px">No province data yet</td></tr>
               <?php endif; ?>
             </tbody>
           </table>
@@ -547,7 +534,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="pb-track"><div class="pb-fill" style="width:<?php echo e($bar); ?>%;background:#8b5cf6"></div></div>
           </div>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        <?php if($byKeyPops->isEmpty()): ?><p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:16px 0">No key pops data yet</p><?php endif; ?>
+        <?php if($byKeyPops->isEmpty()): ?><p style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No key pops data yet</p><?php endif; ?>
       </div>
     </div>
 
@@ -567,7 +554,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="pb-track"><div class="pb-fill" style="width:<?php echo e($bar); ?>%;background:#0d9488"></div></div>
           </div>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        <?php if($byService->isEmpty()): ?><p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:16px 0">No services data yet</p><?php endif; ?>
+        <?php if($byService->isEmpty()): ?><p style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No services data yet</p><?php endif; ?>
       </div>
     </div>
 
@@ -589,7 +576,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="pb-track"><div class="pb-fill" style="width:<?php echo e($bar); ?>%;background:#3b82f6"></div></div>
           </div>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        <?php if($byPurpose->isEmpty()): ?><p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:16px 0">No purpose data yet</p><?php endif; ?>
+        <?php if($byPurpose->isEmpty()): ?><p style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No purpose data yet</p><?php endif; ?>
       </div>
     </div>
 
@@ -612,7 +599,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                   $bar=$maxMonth?round($cnt/$maxMonth*100):0;
                 ?>
                 <tr>
-                  <td><strong style="color:#fff"><?php echo e($label); ?></strong></td>
+                  <td><strong style="color:#0f172a"><?php echo e($label); ?></strong></td>
                   <td><?php echo e(number_format($cnt)); ?></td>
                   <td><?php echo e($pct); ?>%</td>
                   <td style="min-width:100px"><div class="pb-track"><div class="pb-fill" style="width:<?php echo e($bar); ?>%;background:#3b82f6"></div></div></td>
@@ -650,8 +637,8 @@ const repeatPct  = <?php echo e($repeatPct); ?>;
 const immPct     = <?php echo e($immPct); ?>;
 
 // ── Chart defaults ────────────────────────────────────────────────────
-Chart.defaults.color = 'rgba(255,255,255,0.35)';
-Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#f1f5f9';
 
 const PAL = ['#3b82f6','#fbbf24','#4ade80','#f87171','#8b5cf6','#0d9488','#f59e0b','#06b6d4','#ec4899','#a3e635'];
 
@@ -674,7 +661,7 @@ function makeChart(id, type, labels, data, opts = {}) {
         tension: 0.4,
         pointBackgroundColor: '#3b82f6',
         pointRadius: opts.line ? 3 : 0,
-        hoverBackgroundColor: opts.barColor ? opts.barColor : (type === 'bar' ? 'rgba(255,255,255,0.15)' : undefined),
+        hoverBackgroundColor: opts.barColor ? opts.barColor : (type === 'bar' ? '#cbd5e1' : undefined),
       }],
     },
     options: {
@@ -683,8 +670,10 @@ function makeChart(id, type, labels, data, opts = {}) {
       plugins: {
         legend: { display: opts.legend ?? (type === 'pie' || type === 'doughnut') },
         tooltip: {
-          backgroundColor: 'rgba(15,17,23,0.9)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: 'rgba(255,255,255,0.98)',
+          borderColor: '#e2e8f0',
+          titleColor: '#0f172a',
+          bodyColor: '#475569',
           borderWidth: 1,
           callbacks: { label: c => ` ${c.label}: ${Number(c.raw).toLocaleString()}` },
         },
@@ -705,7 +694,7 @@ const actLabels = Object.keys(last7).map(ym => {
 });
 const actData = Object.values(last7);
 makeChart('activityChart', 'bar', actLabels, actData, {
-  barColor: 'rgba(255,255,255,0.12)',
+  barColor: '#e2e8f0',
 });
 // Highlight the last (most recent) bar
 (function () {
@@ -713,7 +702,7 @@ makeChart('activityChart', 'bar', actLabels, actData, {
   if (!ctx) return;
   const ch = Chart.getChart(ctx);
   if (!ch) return;
-  const bg = actData.map((_, i) => i === actData.length - 1 ? '#3b82f6' : 'rgba(255,255,255,0.1)');
+  const bg = actData.map((_, i) => i === actData.length - 1 ? '#3b82f6' : '#e2e8f0');
   ch.data.datasets[0].backgroundColor = bg;
   ch.update('none');
 })();
@@ -739,7 +728,7 @@ makeChart('activityChart', 'bar', actLabels, actData, {
       cutout: '72%',
       plugins: {
         legend: { display: false },
-        tooltip: { backgroundColor: 'rgba(15,17,23,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 },
+        tooltip: { backgroundColor: 'rgba(255,255,255,0.98)', borderColor: '#e2e8f0', titleColor: '#0f172a', bodyColor: '#475569', borderWidth: 1 },
       },
     },
   });
