@@ -405,7 +405,7 @@ tr:hover td{background:#f8fafc}
               <span class="ch-badge {{ $badges[$i] }}">{{ $labels[$i] }}</span>
             </div>
           @empty
-            <p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:20px 0">No purpose data yet</p>
+            <p style="font-size:12px;color:#cbd5e1;text-align:center;padding:20px 0">No purpose data yet</p>
           @endforelse
 
           @if($byStatus->isNotEmpty())
@@ -450,9 +450,9 @@ tr:hover td{background:#f8fafc}
 
           <!-- Uptake stat below calendar -->
           <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
-            <div style="font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Uptake Confirmed</div>
-            <div style="font-size:22px;font-weight:800;color:#fff">{{ number_format($uptakeTotal) }}</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Uptake Confirmed</div>
+            <div style="font-size:22px;font-weight:800;color:#0f172a">{{ number_format($uptakeTotal) }}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px">
               {{ $validTotal ? round($uptakeTotal/$validTotal*100,1) : 0 }}% of valid calls
             </div>
           </div>
@@ -466,9 +466,9 @@ tr:hover td{background:#f8fafc}
           <span class="out-badge">{{ $immediateAct > 0 ? 'Needs Attention' : 'All Clear' }}</span>
 
           <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
-            <div style="font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Valid Rate</div>
-            <div style="font-size:22px;font-weight:800;color:#4ade80">{{ $validPct }}%</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">of all interactions</div>
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Valid Rate</div>
+            <div style="font-size:22px;font-weight:800;color:#16a34a">{{ $validPct }}%</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:2px">of all interactions</div>
           </div>
 
           <div class="out-img">🚨</div>
@@ -500,15 +500,15 @@ tr:hover td{background:#f8fafc}
               @foreach ($byProvince as $row)
                 @php $rank++; $pct=round($row->cnt/$total*100,1); $bar=$maxProv?round($row->cnt/$maxProv*100):0; @endphp
                 <tr>
-                  <td style="color:rgba(255,255,255,.3)">{{ $rank }}</td>
-                  <td><strong style="color:#fff">{{ $row->province }}</strong></td>
+                  <td style="color:#cbd5e1">{{ $rank }}</td>
+                  <td><strong style="color:#0f172a">{{ $row->province }}</strong></td>
                   <td>{{ number_format($row->cnt) }}</td>
                   <td>{{ $pct }}%</td>
                   <td style="min-width:100px"><div class="pb-track"><div class="pb-fill" style="width:{{ $bar }}%;background:#3b82f6"></div></div></td>
                 </tr>
               @endforeach
               @if($byProvince->isEmpty())
-                <tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,.2);padding:20px">No province data yet</td></tr>
+                <tr><td colspan="5" style="text-align:center;color:#cbd5e1;padding:20px">No province data yet</td></tr>
               @endif
             </tbody>
           </table>
@@ -533,7 +533,7 @@ tr:hover td{background:#f8fafc}
             <div class="pb-track"><div class="pb-fill" style="width:{{ $bar }}%;background:#8b5cf6"></div></div>
           </div>
         @endforeach
-        @if($byKeyPops->isEmpty())<p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:16px 0">No key pops data yet</p>@endif
+        @if($byKeyPops->isEmpty())<p style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No key pops data yet</p>@endif
       </div>
     </div>
 
@@ -553,7 +553,7 @@ tr:hover td{background:#f8fafc}
             <div class="pb-track"><div class="pb-fill" style="width:{{ $bar }}%;background:#0d9488"></div></div>
           </div>
         @endforeach
-        @if($byService->isEmpty())<p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:16px 0">No services data yet</p>@endif
+        @if($byService->isEmpty())<p style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No services data yet</p>@endif
       </div>
     </div>
 
@@ -575,7 +575,7 @@ tr:hover td{background:#f8fafc}
             <div class="pb-track"><div class="pb-fill" style="width:{{ $bar }}%;background:#3b82f6"></div></div>
           </div>
         @endforeach
-        @if($byPurpose->isEmpty())<p style="font-size:12px;color:rgba(255,255,255,.25);text-align:center;padding:16px 0">No purpose data yet</p>@endif
+        @if($byPurpose->isEmpty())<p style="font-size:12px;color:#94a3b8;text-align:center;padding:16px 0">No purpose data yet</p>@endif
       </div>
     </div>
 
@@ -598,7 +598,7 @@ tr:hover td{background:#f8fafc}
                   $bar=$maxMonth?round($cnt/$maxMonth*100):0;
                 @endphp
                 <tr>
-                  <td><strong style="color:#fff">{{ $label }}</strong></td>
+                  <td><strong style="color:#0f172a">{{ $label }}</strong></td>
                   <td>{{ number_format($cnt) }}</td>
                   <td>{{ $pct }}%</td>
                   <td style="min-width:100px"><div class="pb-track"><div class="pb-fill" style="width:{{ $bar }}%;background:#3b82f6"></div></div></td>
@@ -659,7 +659,7 @@ function makeChart(id, type, labels, data, opts = {}) {
         tension: 0.4,
         pointBackgroundColor: '#3b82f6',
         pointRadius: opts.line ? 3 : 0,
-        hoverBackgroundColor: opts.barColor ? opts.barColor : (type === 'bar' ? 'rgba(255,255,255,0.15)' : undefined),
+        hoverBackgroundColor: opts.barColor ? opts.barColor : (type === 'bar' ? '#cbd5e1' : undefined),
       }],
     },
     options: {
@@ -668,8 +668,10 @@ function makeChart(id, type, labels, data, opts = {}) {
       plugins: {
         legend: { display: opts.legend ?? (type === 'pie' || type === 'doughnut') },
         tooltip: {
-          backgroundColor: 'rgba(15,17,23,0.9)',
-          borderColor: 'rgba(255,255,255,0.1)',
+          backgroundColor: 'rgba(255,255,255,0.98)',
+          borderColor: '#e2e8f0',
+          titleColor: '#0f172a',
+          bodyColor: '#475569',
           borderWidth: 1,
           callbacks: { label: c => ` ${c.label}: ${Number(c.raw).toLocaleString()}` },
         },
@@ -724,7 +726,7 @@ makeChart('activityChart', 'bar', actLabels, actData, {
       cutout: '72%',
       plugins: {
         legend: { display: false },
-        tooltip: { backgroundColor: 'rgba(15,17,23,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 },
+        tooltip: { backgroundColor: 'rgba(255,255,255,0.98)', borderColor: '#e2e8f0', titleColor: '#0f172a', bodyColor: '#475569', borderWidth: 1 },
       },
     },
   });
