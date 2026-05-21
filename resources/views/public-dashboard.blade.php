@@ -233,6 +233,16 @@ tr:hover td{background:#f8fafc}
 .kpi-lbl{font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500}
 .kpi-sub{font-size:10px;color:#cbd5e1;margin-top:2px}
 
+/* period buttons */
+.period-btn{
+  padding:6px 14px;border:none;background:transparent;
+  border-radius:8px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:500;
+  color:#64748b;transition:all .15s;white-space:nowrap;
+}
+.period-btn:hover{color:#1e293b}
+.period-btn.active-period{background:#fff;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,0.1);font-weight:600}
+
 /* footer */
 .footer{text-align:center;padding:12px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0}
 
@@ -559,14 +569,62 @@ tr:hover td{background:#f8fafc}
 
     <!-- ═══════════════ CALL DETAILS ═══════════════ -->
     <div id="sec-calls" class="section" style="display:none">
-      <div class="kpi-row">
-        <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val">{{ number_format($byValidity->get('valid',0)) }}</div><div class="kpi-lbl">Valid Calls</div></div>
-        <div class="kpi"><div class="kpi-icon">❌</div><div class="kpi-val">{{ number_format($byValidity->get('invalid',0)) }}</div><div class="kpi-lbl">Invalid Calls</div></div>
-        <div class="kpi"><div class="kpi-icon">🔄</div><div class="kpi-val">{{ number_format($repeatTotal) }}</div><div class="kpi-lbl">Repeat Callers</div><div class="kpi-sub">{{ $repeatPct }}% repeat rate</div></div>
-        <div class="kpi"><div class="kpi-icon">🚨</div><div class="kpi-val">{{ number_format($immediateAct) }}</div><div class="kpi-lbl">Immediate Action</div></div>
+
+      <!-- Period selector -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <span style="font-size:15px;font-weight:700;color:#0f172a">Call Activity</span>
+        <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:12px;padding:4px">
+          <button onclick="setCallPeriod('day',this)"   class="period-btn active-period">Today</button>
+          <button onclick="setCallPeriod('week',this)"  class="period-btn">This Week</button>
+          <button onclick="setCallPeriod('month',this)" class="period-btn">This Month</button>
+        </div>
       </div>
+
+      <!-- KPI cards — updated by JS -->
+      <div class="kpi-row" style="margin-bottom:16px">
+        <div class="kpi">
+          <div class="kpi-icon">📞</div>
+          <div class="kpi-val" id="c-total">0</div>
+          <div class="kpi-lbl">Total Calls</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon">📥</div>
+          <div class="kpi-val" id="c-inbound">0</div>
+          <div class="kpi-lbl">Inbound</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon">📤</div>
+          <div class="kpi-val" id="c-outbound">0</div>
+          <div class="kpi-lbl">Outbound</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon">📵</div>
+          <div class="kpi-val" id="c-missed">0</div>
+          <div class="kpi-lbl">Missed</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-val" id="c-answered">0</div>
+          <div class="kpi-lbl">Answered</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-icon">⏱️</div>
+          <div class="kpi-val" id="c-avgdur">0s</div>
+          <div class="kpi-lbl">Avg Duration</div>
+        </div>
+      </div>
+
+      <!-- Trend chart -->
+      <div class="s-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <h3 id="trend-label" style="margin:0">Calls by Hour — Today</h3>
+        </div>
+        <div style="height:180px;position:relative"><canvas id="callTrendChart"></canvas></div>
+      </div>
+
+      <!-- Purpose of call (all-time, below the period stats) -->
       <div class="s-card">
-        <h3>Purpose of Call (Top 10)</h3>
+        <h3>Purpose of Call (Top 10 — All Time)</h3>
         @php $maxPurpAll=$byPurpose->first()?->cnt??1; @endphp
         @foreach ($byPurpose as $purp)
           @php $pct=$total?round($purp->cnt/$total*100,1):0; $bar=$maxPurpAll?round($purp->cnt/$maxPurpAll*100):0; @endphp
@@ -759,12 +817,112 @@ const mLabels = Object.keys(months).map(ym => {
 });
 makeChart('trendChart', 'line', mLabels, Object.values(months), { line: true, fill: true, legend: false });
 
+// ── Call period data ───────────────────────────────────────────────────
+const callStats = @json($callStats);
+
+let callTrendChart = null;
+
+function setCallPeriod(period, btn) {
+  // Update active button
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active-period'));
+  btn.classList.add('active-period');
+
+  const s = callStats[period];
+
+  // Update KPI values
+  document.getElementById('c-total').textContent    = s.total.toLocaleString();
+  document.getElementById('c-inbound').textContent  = s.inbound.toLocaleString();
+  document.getElementById('c-outbound').textContent = s.outbound.toLocaleString();
+  document.getElementById('c-missed').textContent   = s.missed.toLocaleString();
+  document.getElementById('c-answered').textContent = s.answered.toLocaleString();
+  document.getElementById('c-avgdur').textContent   = s.avg_dur + 's';
+
+  // Build trend chart labels and data
+  let labels, data, trendTitle;
+
+  if (period === 'day') {
+    trendTitle = 'Calls by Hour — Today';
+    labels = Object.keys(s.trend).map(h => {
+      const hr = parseInt(h);
+      return hr === 0 ? '12am' : hr < 12 ? hr + 'am' : hr === 12 ? '12pm' : (hr - 12) + 'pm';
+    });
+    data = Object.values(s.trend);
+  } else if (period === 'week') {
+    trendTitle = 'Calls by Day — This Week';
+    labels = Object.keys(s.trend).map(d => {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.toLocaleDateString('default', { weekday: 'short', day: 'numeric' });
+    });
+    data = Object.values(s.trend);
+  } else {
+    trendTitle = 'Calls by Day — This Month';
+    labels = Object.keys(s.trend).map(d => {
+      const dt = new Date(d + 'T00:00:00');
+      return dt.getDate();
+    });
+    data = Object.values(s.trend);
+  }
+
+  document.getElementById('trend-label').textContent = trendTitle;
+
+  // Destroy and rebuild chart
+  const ctx = document.getElementById('callTrendChart');
+  if (callTrendChart) callTrendChart.destroy();
+
+  callTrendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total',
+          data,
+          backgroundColor: data.map((_, i) => i === data.length - 1 ? '#3b82f6' : '#dbeafe'),
+          borderRadius: 6,
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.98)',
+          borderColor: '#e2e8f0',
+          titleColor: '#0f172a',
+          bodyColor: '#475569',
+          borderWidth: 1,
+          callbacks: { label: c => ` ${c.parsed.y} call${c.parsed.y !== 1 ? 's' : ''}` },
+        },
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#f1f5f9' } },
+        x: { grid: { display: false }, ticks: { maxRotation: 0, font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+// Initialise with "day" on load
+window.addEventListener('DOMContentLoaded', () => {
+  const dayBtn = document.querySelector('.period-btn.active-period');
+  if (dayBtn) setCallPeriod('day', dayBtn);
+});
+
 // ── Section switcher ───────────────────────────────────────────────────
 function showSection(name, btn) {
   document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + name).style.display = 'block';
   btn.classList.add('active');
+  // Re-init call chart when switching to calls tab
+  if (name === 'calls') {
+    const activeBtn = document.querySelector('.period-btn.active-period');
+    const period = activeBtn?.onclick?.toString().match(/'(\w+)'/)?.[1] ?? 'day';
+    if (activeBtn) setCallPeriod(period, activeBtn);
+  }
 }
 </script>
 </body>

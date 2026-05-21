@@ -133,11 +133,55 @@ class PublicDashboardController extends Controller
         // Last updated
         $lastUpdated = (clone $base)->max('created_at');
 
+        // ── Call stats by period (Day / Week / Month) ─────────────────────────
+        $callPeriods = [
+            'day'   => [now()->startOfDay(),   now()->endOfDay()],
+            'week'  => [now()->startOfWeek(),  now()->endOfDay()],
+            'month' => [now()->startOfMonth(), now()->endOfDay()],
+        ];
+
+        $callStats = [];
+        foreach ($callPeriods as $key => [$start, $end]) {
+            $cb = DB::table('calls')->whereBetween('started_at', [$start, $end]);
+            $callStats[$key] = [
+                'total'    => (clone $cb)->count(),
+                'inbound'  => (clone $cb)->where('direction', 'inbound')->count(),
+                'outbound' => (clone $cb)->where('direction', 'outbound')->count(),
+                'missed'   => (clone $cb)->where('status', 'missed')->count(),
+                'answered' => (clone $cb)->where('status', 'answered')->count(),
+                'avg_dur'  => (int) (clone $cb)->where('status', 'answered')->avg('duration'),
+            ];
+        }
+
+        // Trend: hourly for day, daily for week and month
+        $callStats['day']['trend'] = collect(range(0, 23))->mapWithKeys(function ($h) {
+            return [$h => 0];
+        })->merge(
+            DB::table('calls')
+                ->whereBetween('started_at', [now()->startOfDay(), now()->endOfDay()])
+                ->select(DB::raw('HOUR(started_at) as h'), DB::raw('COUNT(*) as cnt'))
+                ->groupBy('h')->orderBy('h')
+                ->pluck('cnt', 'h')
+        )->all();
+
+        $callStats['week']['trend'] = DB::table('calls')
+            ->whereBetween('started_at', [now()->startOfWeek(), now()->endOfDay()])
+            ->select(DB::raw('DATE(started_at) as d'), DB::raw('COUNT(*) as cnt'))
+            ->groupBy('d')->orderBy('d')
+            ->pluck('cnt', 'd')->all();
+
+        $callStats['month']['trend'] = DB::table('calls')
+            ->whereBetween('started_at', [now()->startOfMonth(), now()->endOfDay()])
+            ->select(DB::raw('DATE(started_at) as d'), DB::raw('COUNT(*) as cnt'))
+            ->groupBy('d')->orderBy('d')
+            ->pluck('cnt', 'd')->all();
+
         return view('public-dashboard', compact(
             'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
             'byStatus', 'byProvince', 'byGender', 'byMode', 'byPurpose',
             'byService', 'byReferral', 'byKeyPops', 'byMarital', 'months',
-            'byValidity', 'ageGroups', 'byPriority', 'lastUpdated'
+            'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
+            'callStats'
         ));
     }
 }
