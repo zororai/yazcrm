@@ -1241,3 +1241,6 @@
 [2026-05-21 11:11:53] local.ERROR: Yeastar API error [active_call/list]: cURL error 7: Failed to connect to 192.168.10.150 port 8088 after 2042 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://192.168.10.150:8088/openapi/v1.0/active_call/list  
 [2026-05-21 11:12:38] local.ERROR: Yeastar API error [active_call/list]: cURL error 7: Failed to connect to 192.168.10.150 port 8088 after 2040 ms: Could not connect to server (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://192.168.10.150:8088/openapi/v1.0/active_call/list  
 [2026-05-21 11:12:56] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 11:17:38] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 12:04:15] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 12:13:29] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
