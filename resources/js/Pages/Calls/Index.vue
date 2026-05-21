@@ -6,8 +6,9 @@ import { MagnifyingGlassIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props = defineProps({
-    calls:   Object,
-    filters: Object,
+    calls:    Object,
+    filters:  Object,
+    is_agent: Boolean,
 });
 
 const search    = ref(props.filters.search ?? '');
@@ -52,6 +53,11 @@ function fmt(s) {
 <template>
     <AppLayout>
         <template #title>Calls</template>
+
+        <!-- Agent scope notice -->
+        <div v-if="is_agent" class="mb-4 flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+            <span class="font-medium">Showing your calls only</span> — based on your assigned extension.
+        </div>
 
         <!-- Filters -->
         <div class="card mb-4 flex flex-wrap gap-3 items-end">

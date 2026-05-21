@@ -17,7 +17,19 @@ class CallController extends Controller
 
     public function index(Request $request): Response
     {
+        $user  = $request->user();
         $query = Call::with(['client', 'agent', 'recording'])->latest('started_at');
+
+        // Agents only see their own calls via their assigned extension
+        if ($user->role !== 'admin') {
+            $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
+            if ($extNumber) {
+                $query->where('extension_number', $extNumber);
+            } else {
+                // Agent has no extension assigned — show nothing
+                $query->whereRaw('0 = 1');
+            }
+        }
 
         if ($request->filled('direction')) {
             $query->where('direction', $request->direction);
@@ -42,8 +54,9 @@ class CallController extends Controller
         $calls = $query->paginate(25)->withQueryString();
 
         return Inertia::render('Calls/Index', [
-            'calls'   => $calls,
-            'filters' => $request->only(['direction', 'status', 'search', 'date_from', 'date_to']),
+            'calls'      => $calls,
+            'filters'    => $request->only(['direction', 'status', 'search', 'date_from', 'date_to']),
+            'is_agent'   => $user->role !== 'admin',
         ]);
     }
 
