@@ -39,7 +39,7 @@ return [
             'driver'   => 'mysql',
             'host'     => env('DB_YEASTAR_HOST'),
             'port'     => env('DB_YEASTAR_PORT', '3306'),
-            'database' => env('DB_YEASTAR_DATABASE', 'asterisk'),
+            'database' => env('DB_YEASTAR_DATABASE', 'cdr'),
             'username' => env('DB_YEASTAR_USERNAME'),
             'password' => env('DB_YEASTAR_PASSWORD'),
             'charset'  => 'utf8mb4',

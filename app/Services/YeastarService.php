@@ -179,22 +179,25 @@ class YeastarService
         DB::connection('yeastar')
             ->table('cdr')
             ->whereBetween('datetime', [$start, $end])
+            ->where('displayonweb', 1)
             ->orderBy('datetime')
             ->chunk(200, function ($rows) use (&$synced) {
                 foreach ($rows as $row) {
-                    $row = (array) $row;
+                    $row       = (array) $row;
+                    $direction = $this->mapDirectionFromDb($row['calltype'] ?? '');
+
                     $call = Call::updateOrCreate(
-                        ['call_id' => (string)($row['uniqueid'] ?? $row['id'] ?? md5(json_encode($row)))],
+                        ['call_id' => (string)($row['uniqueid'] ?? $row['id'])],
                         [
-                            'caller'           => $row['src']         ?? '',
-                            'callee'           => $row['dst']         ?? '',
-                            'direction'        => $this->mapDirectionFromDb($row['calltype'] ?? ''),
+                            'caller'           => $row['src']          ?? '',
+                            'callee'           => $row['dst']          ?? '',
+                            'direction'        => $direction,
                             'status'           => $this->mapStatus($row['disposition'] ?? ''),
-                            'duration'         => (int)($row['duration'] ?? 0),
-                            'started_at'       => $row['datetime']    ?? null,
+                            'duration'         => (int)($row['talkduration'] ?? $row['duration'] ?? 0),
+                            'started_at'       => $row['datetime']     ?? null,
                             'ended_at'         => null,
-                            'extension_number' => $row['src']         ?? null,
-                            'recording_file'   => $row['recordfile']  ?? null,
+                            'extension_number' => $direction === 'inbound' ? ($row['dst'] ?? null) : ($row['src'] ?? null),
+                            'recording_file'   => $row['recordfile'] ?: null,
                             'raw_data'         => $row,
                         ]
                     );
@@ -205,7 +208,7 @@ class YeastarService
                             [
                                 'file_name' => basename($row['recordfile']),
                                 'file_path' => $row['recordfile'],
-                                'duration'  => (int)($row['duration'] ?? 0),
+                                'duration'  => (int)($row['talkduration'] ?? 0),
                             ]
                         );
                     }
@@ -263,10 +266,11 @@ class YeastarService
 
     private function mapDirectionFromDb(string $calltype): string
     {
-        $t = strtolower($calltype);
-        if (str_contains($t, 'inbound')  || $t === 'in')  return 'inbound';
-        if (str_contains($t, 'outbound') || $t === 'out') return 'outbound';
-        return 'internal';
+        return match (strtolower($calltype)) {
+            'inbound'  => 'inbound',
+            'outbound' => 'outbound',
+            default    => 'internal',
+        };
     }
 
     private function mapDirection(array $cdr): string
