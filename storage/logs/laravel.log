@@ -1178,3 +1178,45 @@
 "} 
 [2026-05-20 13:41:13] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
 [2026-05-20 13:41:58] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 06:42:45] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 06:47:18] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 06:47:28] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 06:50:48] local.WARNING: Yeastar API [subscribe]: INTERFACE NOT EXISTED  
+[2026-05-21 06:50:48] local.WARNING: Yeastar API [event/subscribe]: INTERFACE NOT EXISTED  
+[2026-05-21 06:50:49] local.WARNING: Yeastar API [webhook/add]: INTERFACE NOT EXISTED  
+[2026-05-21 06:50:49] local.WARNING: Yeastar API [webhook/subscribe]: INTERFACE NOT EXISTED  
+[2026-05-21 06:52:01] local.ERROR: cURL error 28: Operation timed out after 10009 milliseconds with 0 bytes received (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://192.168.10.150:8088/openapi/v1.0/cdr/search?start=2026-01-01%2000%3A00%3A00&end=2026-05-21%2023%3A59%3A59&page=1&page_size=5 {"exception":"[object] (Illuminate\\Http\\Client\\ConnectionException(code: 0): cURL error 28: Operation timed out after 10009 milliseconds with 0 bytes received (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://192.168.10.150:8088/openapi/v1.0/cdr/search?start=2026-01-01%2000%3A00%3A00&end=2026-05-21%2023%3A59%3A59&page=1&page_size=5 at C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php:1805)
+[stacktrace]
+#0 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1081): Illuminate/Http/Client/PendingRequest->marshalConnectionException(Object(GuzzleHttp/Exception/ConnectException))
+#1 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Support/helpers.php(328): Illuminate/Http/Client/PendingRequest->Illuminate/Http/Client/{closure}(1)
+#2 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1041): retry(0, Object(Closure), 100, Object(Closure))
+#3 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(849): Illuminate/Http/Client/PendingRequest->send('GET', 'https://192.168...', Array)
+#4 C:/Users/Mazarura/crm-pbx/backend/test_sync.php(27): Illuminate/Http/Client/PendingRequest->get('https://192.168...', Array)
+#5 {main}
+
+[previous exception] [object] (GuzzleHttp\\Exception\\ConnectException(code: 0): cURL error 28: Operation timed out after 10009 milliseconds with 0 bytes received (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for https://192.168.10.150:8088/openapi/v1.0/cdr/search?start=2026-01-01%2000%3A00%3A00&end=2026-05-21%2023%3A59%3A59&page=1&page_size=5 at C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Handler/CurlFactory.php:277)
+[stacktrace]
+#0 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Handler/CurlFactory.php(207): GuzzleHttp/Handler/CurlFactory::createRejection(Object(GuzzleHttp/Handler/EasyHandle), Array)
+#1 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Handler/CurlFactory.php(159): GuzzleHttp/Handler/CurlFactory::finishError(Object(GuzzleHttp/Handler/CurlHandler), Object(GuzzleHttp/Handler/EasyHandle), Object(GuzzleHttp/Handler/CurlFactory))
+#2 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Handler/CurlHandler.php(47): GuzzleHttp/Handler/CurlFactory::finish(Object(GuzzleHttp/Handler/CurlHandler), Object(GuzzleHttp/Handler/EasyHandle), Object(GuzzleHttp/Handler/CurlFactory))
+#3 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Handler/Proxy.php(28): GuzzleHttp/Handler/CurlHandler->__invoke(Object(GuzzleHttp/Psr7/Request), Array)
+#4 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Handler/Proxy.php(48): GuzzleHttp/Handler/Proxy::GuzzleHttp/Handler/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#5 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1523): GuzzleHttp/Handler/Proxy::GuzzleHttp/Handler/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#6 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1480): Illuminate/Http/Client/PendingRequest->Illuminate/Http/Client/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#7 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1466): Illuminate/Http/Client/PendingRequest->Illuminate/Http/Client/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#8 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/PrepareBodyMiddleware.php(35): Illuminate/Http/Client/PendingRequest->Illuminate/Http/Client/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#9 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Middleware.php(38): GuzzleHttp/PrepareBodyMiddleware->__invoke(Object(GuzzleHttp/Psr7/Request), Array)
+#10 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/RedirectMiddleware.php(71): GuzzleHttp/Middleware::GuzzleHttp/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#11 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Middleware.php(63): GuzzleHttp/RedirectMiddleware->__invoke(Object(GuzzleHttp/Psr7/Request), Array)
+#12 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/HandlerStack.php(75): GuzzleHttp/Middleware::GuzzleHttp/{closure}(Object(GuzzleHttp/Psr7/Request), Array)
+#13 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Client.php(333): GuzzleHttp/HandlerStack->__invoke(Object(GuzzleHttp/Psr7/Request), Array)
+#14 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Client.php(169): GuzzleHttp/Client->transfer(Object(GuzzleHttp/Psr7/Request), Array)
+#15 C:/Users/Mazarura/crm-pbx/backend/vendor/guzzlehttp/guzzle/src/Client.php(189): GuzzleHttp/Client->requestAsync('GET', Object(GuzzleHttp/Psr7/Uri), Array)
+#16 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1306): GuzzleHttp/Client->request('GET', 'https://192.168...', Array)
+#17 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1043): Illuminate/Http/Client/PendingRequest->sendRequest('GET', 'https://192.168...', Array)
+#18 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Support/helpers.php(328): Illuminate/Http/Client/PendingRequest->Illuminate/Http/Client/{closure}(1)
+#19 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(1041): retry(0, Object(Closure), 100, Object(Closure))
+#20 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Http/Client/PendingRequest.php(849): Illuminate/Http/Client/PendingRequest->send('GET', 'https://192.168...', Array)
+#21 C:/Users/Mazarura/crm-pbx/backend/test_sync.php(27): Illuminate/Http/Client/PendingRequest->get('https://192.168...', Array)
+#22 {main}
+"} 

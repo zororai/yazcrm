@@ -7,6 +7,7 @@ use App\Models\Extension;
 use App\Models\Recording;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -157,27 +158,75 @@ class YeastarService
 
     // ------------------------------------------------------------------ CDR
 
-    public function fetchCdr(string $startTime, string $endTime, int $page = 1, int $pageSize = 100): array
+    private function hasDirectDb(): bool
     {
-        $data = $this->request('get', 'cdr/search', [
-            'start_time' => $startTime,
-            'end_time'   => $endTime,
-            'page'       => $page,
-            'page_size'  => $pageSize,
-        ]);
-
-        return $data['data'] ?? [];
+        return !empty(env('DB_YEASTAR_HOST'));
     }
 
     public function syncCalls(?string $startTime = null, ?string $endTime = null): int
     {
-        $start   = $startTime ?? now()->subDays(30)->format('Y-m-d H:i:s');
-        $end     = $endTime   ?? now()->format('Y-m-d H:i:s');
-        $synced  = 0;
-        $page    = 1;
+        return $this->hasDirectDb()
+            ? $this->syncCallsFromDb($startTime, $endTime)
+            : $this->syncCallsFromApi($startTime, $endTime);
+    }
+
+    private function syncCallsFromDb(?string $startTime, ?string $endTime): int
+    {
+        $start  = $startTime ?? now()->subDays(30)->format('Y-m-d H:i:s');
+        $end    = $endTime   ?? now()->format('Y-m-d H:i:s');
+        $synced = 0;
+
+        DB::connection('yeastar')
+            ->table('cdr')
+            ->whereBetween('datetime', [$start, $end])
+            ->orderBy('datetime')
+            ->chunk(200, function ($rows) use (&$synced) {
+                foreach ($rows as $row) {
+                    $row = (array) $row;
+                    $call = Call::updateOrCreate(
+                        ['call_id' => (string)($row['uniqueid'] ?? $row['id'] ?? md5(json_encode($row)))],
+                        [
+                            'caller'           => $row['src']         ?? '',
+                            'callee'           => $row['dst']         ?? '',
+                            'direction'        => $this->mapDirectionFromDb($row['calltype'] ?? ''),
+                            'status'           => $this->mapStatus($row['disposition'] ?? ''),
+                            'duration'         => (int)($row['duration'] ?? 0),
+                            'started_at'       => $row['datetime']    ?? null,
+                            'ended_at'         => null,
+                            'extension_number' => $row['src']         ?? null,
+                            'recording_file'   => $row['recordfile']  ?? null,
+                            'raw_data'         => $row,
+                        ]
+                    );
+
+                    if (!empty($row['recordfile'])) {
+                        Recording::firstOrCreate(
+                            ['call_id' => $call->id],
+                            [
+                                'file_name' => basename($row['recordfile']),
+                                'file_path' => $row['recordfile'],
+                                'duration'  => (int)($row['duration'] ?? 0),
+                            ]
+                        );
+                    }
+
+                    $synced++;
+                }
+            });
+
+        return $synced;
+    }
+
+    private function syncCallsFromApi(?string $startTime, ?string $endTime): int
+    {
+        $start  = $startTime ?? now()->subDays(30)->format('Y-m-d H:i:s');
+        $end    = $endTime   ?? now()->format('Y-m-d H:i:s');
+        $synced = 0;
+        $page   = 1;
 
         do {
-            $cdrList = $this->fetchCdr($start, $end, $page, 100);
+            $data    = $this->request('get', 'cdr/search', ['start_time' => $start, 'end_time' => $end, 'page' => $page, 'page_size' => 100]);
+            $cdrList = $data['data'] ?? [];
             if (empty($cdrList)) break;
 
             foreach ($cdrList as $cdr) {
@@ -200,21 +249,24 @@ class YeastarService
                 if (!empty($cdr['recording_file'])) {
                     Recording::firstOrCreate(
                         ['call_id' => $call->id],
-                        [
-                            'file_name' => basename($cdr['recording_file']),
-                            'file_path' => $cdr['recording_file'],
-                            'duration'  => (int)($cdr['duration'] ?? 0),
-                        ]
+                        ['file_name' => basename($cdr['recording_file']), 'file_path' => $cdr['recording_file'], 'duration' => (int)($cdr['duration'] ?? 0)]
                     );
                 }
 
                 $synced++;
             }
-
             $page++;
         } while (count($cdrList) === 100);
 
         return $synced;
+    }
+
+    private function mapDirectionFromDb(string $calltype): string
+    {
+        $t = strtolower($calltype);
+        if (str_contains($t, 'inbound')  || $t === 'in')  return 'inbound';
+        if (str_contains($t, 'outbound') || $t === 'out') return 'outbound';
+        return 'internal';
     }
 
     private function mapDirection(array $cdr): string

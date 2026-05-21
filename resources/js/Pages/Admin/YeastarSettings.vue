@@ -5,12 +5,13 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import axios from 'axios';
 import {
     EyeIcon, EyeSlashIcon, SignalIcon,
-    CheckCircleIcon, XCircleIcon, ArrowPathIcon, LinkIcon,
+    CheckCircleIcon, XCircleIcon, ArrowPathIcon, LinkIcon, CircleStackIcon,
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     settings:           Object,
     webhook_registered: Boolean,
+    db_connected:       Boolean,
 });
 
 const form = useForm({
@@ -203,6 +204,50 @@ async function registerWebhook() {
                         <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': webhookResult.status === 'loading' }" />
                         {{ webhookResult.status === 'loading' ? 'Registering…' : (webhookOk ? 'Re-register Webhook' : 'Register Webhook') }}
                     </button>
+                </div>
+            </div>
+
+            <!-- ── Database Grant ──────────────────────────────────────── -->
+            <div class="card">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600">
+                        <CircleStackIcon class="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                        <h2 class="text-base font-semibold text-gray-900">Database Grant (CDR)</h2>
+                        <p class="text-xs text-gray-500">
+                            Direct MySQL access — enables full CDR sync without API permission issues.
+                            Enable in Yeastar portal under <strong>Integrations → Database Grant</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Connection status -->
+                <div class="flex items-center gap-2 mb-5">
+                    <span class="text-sm font-medium text-gray-700">Status:</span>
+                    <span v-if="db_connected"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span class="h-1.5 w-1.5 rounded-full bg-green-500" />
+                        Connected
+                    </span>
+                    <span v-else
+                        class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <span class="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                        Not configured
+                    </span>
+                </div>
+
+                <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 mb-4 text-xs text-amber-800">
+                    Add these to your <code class="font-mono bg-amber-100 px-1 rounded">.env</code> file,
+                    then add <strong>192.168.10.10</strong> to the Permitted IP list in the PBX portal.
+                </div>
+
+                <div class="space-y-1 font-mono text-xs bg-gray-900 text-green-300 rounded-lg p-4 select-all leading-relaxed">
+                    <p>DB_YEASTAR_HOST=<span class="text-yellow-300">{{ settings.db_host || '&lt;Database Address from PBX portal&gt;' }}</span></p>
+                    <p>DB_YEASTAR_PORT=<span class="text-yellow-300">15023</span></p>
+                    <p>DB_YEASTAR_DATABASE=<span class="text-yellow-300">asterisk</span></p>
+                    <p>DB_YEASTAR_USERNAME=<span class="text-yellow-300">{{ settings.db_username || '&lt;username from PBX portal&gt;' }}</span></p>
+                    <p>DB_YEASTAR_PASSWORD=<span class="text-yellow-300">&lt;password from PBX portal&gt;</span></p>
                 </div>
             </div>
 
