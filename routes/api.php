@@ -28,6 +28,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::put('auth/profile', [AuthController::class, 'updateProfile']);
 
+    // Active calls (for popup polling)
+    Route::get('calls/active', [CallController::class, 'active']);
+
     // Dashboard
     Route::get('dashboard/stats',          [DashboardController::class, 'stats']);
     Route::get('dashboard/call-trend',     [DashboardController::class, 'callTrend']);
