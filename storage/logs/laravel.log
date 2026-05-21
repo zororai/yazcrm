@@ -1448,3 +1448,166 @@
 [2026-05-21 14:56:58] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
 [2026-05-21 14:57:04] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
 [2026-05-21 14:57:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 14:58:05] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 14:58:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 14:59:05] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 14:59:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:00:05] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:00:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:01:05] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:01:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:02:05] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:02:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:03:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:01] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:15] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:22] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:30] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:37] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:04:59] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:05:30] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:05:42] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:05:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:06:10] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:06:41] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:07:11] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:07:41] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:08:11] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:08:41] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:09:11] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:10:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:11:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:12:03] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:12:12] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:12:25] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:12:37] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:13:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:13:15] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:13:46] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:14:16] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:14:37] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:15:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:15:38] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:16:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:16:38] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:16:57] local.ERROR: PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 2 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 2 at C:/Users/Mazarura/crm-pbx/backend/vendor/psy/psysh/src/Exception/ParseErrorException.php:44)
+[stacktrace]
+#0 C:/Users/Mazarura/crm-pbx/backend/vendor/psy/psysh/src/CodeCleaner.php(657): Psy/Exception/ParseErrorException::fromParseError(Object(PhpParser/Error))
+#1 C:/Users/Mazarura/crm-pbx/backend/vendor/psy/psysh/src/CodeCleaner.php(273): Psy/CodeCleaner->parse('<?php /n// = DB::...', false)
+#2 C:/Users/Mazarura/crm-pbx/backend/vendor/psy/psysh/src/Shell.php(1358): Psy/CodeCleaner->clean(Array, false)
+#3 C:/Users/Mazarura/crm-pbx/backend/vendor/psy/psysh/src/Shell.php(1465): Psy/Shell->appendCode('/n// = DB::table(...', true, false)
+#4 C:/Users/Mazarura/crm-pbx/backend/vendor/psy/psysh/src/Shell.php(2173): Psy/Shell->setCode('/n// = DB::table(...', true)
+#5 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/tinker/src/Console/TinkerCommand.php(77): Psy/Shell->execute('/n// = DB::table(...')
+#6 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Laravel/Tinker/Console/TinkerCommand->handle()
+#7 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::Illuminate/Container/{closure}()
+#8 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#9 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#10 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#11 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Console/Command.php(211): Illuminate/Container/Container->call(Array)
+#12 C:/Users/Mazarura/crm-pbx/backend/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#13 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#14 C:/Users/Mazarura/crm-pbx/backend/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#15 C:/Users/Mazarura/crm-pbx/backend/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Laravel/Tinker/Console/TinkerCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#16 C:/Users/Mazarura/crm-pbx/backend/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#17 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#18 C:/Users/Mazarura/crm-pbx/backend/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#19 C:/Users/Mazarura/crm-pbx/backend/artisan(12): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#20 {main}
+"} 
+[2026-05-21 15:17:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:17:38] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:18:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:19:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:20:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:21:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:21:44] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:21:56] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:22:04] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:22:35] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:23:05] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:23:19] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:23:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:24:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:24:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:25:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:25:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:26:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:27:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:28:21] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:28:53] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:29:23] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:29:51] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:30:22] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:30:52] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:31:22] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:31:44] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:31:53] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:31:59] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:32:02] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:32:10] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:32:22] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:32:30] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:32:37] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:32:43] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:33:14] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:33:44] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:34:12] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:34:37] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:35:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:35:38] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:36:08] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:36:24] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:36:56] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:37:26] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:37:56] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:38:26] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:38:49] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:39:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:39:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:40:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:40:48] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:41:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:41:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:42:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:42:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:43:20] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:43:50] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:44:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:45:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:46:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:47:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:48:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:49:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:50:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:51:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:52:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:53:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:54:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:55:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:56:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:57:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:58:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 15:59:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:00:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:01:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:02:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:03:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:04:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:05:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:06:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:07:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:08:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:09:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:10:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:11:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:12:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:13:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:14:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:15:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:16:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:17:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:18:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:19:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:20:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-21 16:21:32] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  

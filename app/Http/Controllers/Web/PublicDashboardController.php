@@ -151,12 +151,23 @@ class PublicDashboardController extends Controller
                 ->groupBy('ym')->orderBy('ym')->pluck('cnt', 'ym')
         )->all();
 
+        // Smart defaults: first period that actually has data
+        $ticketDefaultPeriod = 'month';
+        foreach (['day', 'week', 'month', 'year'] as $p) {
+            if (($periodData[$p]['total'] ?? 0) > 0) { $ticketDefaultPeriod = $p; break; }
+        }
+        $callDefaultPeriod = 'month';
+        foreach (['day', 'week', 'month', 'year'] as $p) {
+            if (($callStats[$p]['total'] ?? 0) > 0) { $callDefaultPeriod = $p; break; }
+        }
+
         return view('public-dashboard', compact(
             'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
             'byStatus', 'byProvince', 'byGender', 'byMode', 'byPurpose',
             'byService', 'byReferral', 'byKeyPops', 'byMarital', 'months',
             'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
-            'callStats', 'periodData'
+            'callStats', 'periodData',
+            'ticketDefaultPeriod', 'callDefaultPeriod'
         ));
     }
 }
