@@ -55,6 +55,7 @@ class PublicDashboardController extends Controller
             'day'   => [now()->startOfDay(),   now()->endOfDay()],
             'week'  => [now()->startOfWeek(),  now()->endOfDay()],
             'month' => [now()->startOfMonth(), now()->endOfDay()],
+            'year'  => [now()->startOfYear(),  now()->endOfDay()],
         ];
 
         $periodData = [];
@@ -62,12 +63,21 @@ class PublicDashboardController extends Controller
             $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end]);
             $ptotal = (clone $pb)->count();
 
-            // trend by hour (day) or by date (week/month)
+            // trend: hourly (day), daily (week/month), monthly (year)
             if ($pKey === 'day') {
                 $hours = collect(range(0, 23))->mapWithKeys(fn ($h) => [$h => 0]);
                 $trend = $hours->merge(
                     (clone $pb)->select(DB::raw('HOUR(created_at) as h'), DB::raw('COUNT(*) as cnt'))
                         ->groupBy('h')->pluck('cnt', 'h')
+                )->all();
+            } elseif ($pKey === 'year') {
+                // Fill all 12 months so empty months still appear
+                $allMonths = collect(range(1, 12))->mapWithKeys(fn ($m) => [
+                    now()->startOfYear()->copy()->month($m)->format('Y-m') => 0,
+                ]);
+                $trend = $allMonths->merge(
+                    (clone $pb)->select(DB::raw("DATE_FORMAT(created_at,'%Y-%m') as ym"), DB::raw('COUNT(*) as cnt'))
+                        ->groupBy('ym')->orderBy('ym')->pluck('cnt', 'ym')
                 )->all();
             } else {
                 $trend = (clone $pb)->select(DB::raw('DATE(created_at) as d'), DB::raw('COUNT(*) as cnt'))
@@ -131,6 +141,15 @@ class PublicDashboardController extends Controller
         $callStats['month']['trend'] = DB::table('calls')->whereBetween('started_at', [now()->startOfMonth(), now()->endOfDay()])
             ->select(DB::raw('DATE(started_at) as d'), DB::raw('COUNT(*) as cnt'))
             ->groupBy('d')->orderBy('d')->pluck('cnt', 'd')->all();
+
+        $yearCallMonths = collect(range(1, 12))->mapWithKeys(fn ($m) => [
+            now()->startOfYear()->copy()->month($m)->format('Y-m') => 0,
+        ]);
+        $callStats['year']['trend'] = $yearCallMonths->merge(
+            DB::table('calls')->whereBetween('started_at', [now()->startOfYear(), now()->endOfDay()])
+                ->select(DB::raw("DATE_FORMAT(started_at,'%Y-%m') as ym"), DB::raw('COUNT(*) as cnt'))
+                ->groupBy('ym')->orderBy('ym')->pluck('cnt', 'ym')
+        )->all();
 
         return view('public-dashboard', compact(
             'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',

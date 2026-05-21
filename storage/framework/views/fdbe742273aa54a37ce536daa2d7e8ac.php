@@ -260,6 +260,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn active-period" onclick="setPeriod('overview','day',this)">Today</button>
       <button class="period-btn" onclick="setPeriod('overview','week',this)">This Week</button>
       <button class="period-btn" onclick="setPeriod('overview','month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('overview','year',this)">This Year</button>
     </div>
   </div>
 
@@ -363,6 +364,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn active-period" onclick="setPeriod('geographic','day',this)">Today</button>
       <button class="period-btn" onclick="setPeriod('geographic','week',this)">This Week</button>
       <button class="period-btn" onclick="setPeriod('geographic','month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('geographic','year',this)">This Year</button>
     </div>
   </div>
   <div class="g2">
@@ -386,6 +388,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn active-period" onclick="setPeriod('demographics','day',this)">Today</button>
       <button class="period-btn" onclick="setPeriod('demographics','week',this)">This Week</button>
       <button class="period-btn" onclick="setPeriod('demographics','month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('demographics','year',this)">This Year</button>
     </div>
   </div>
   <div class="g3">
@@ -407,6 +410,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn active-period" onclick="setPeriod('services','day',this)">Today</button>
       <button class="period-btn" onclick="setPeriod('services','week',this)">This Week</button>
       <button class="period-btn" onclick="setPeriod('services','month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('services','year',this)">This Year</button>
     </div>
   </div>
   <div class="g2">
@@ -427,6 +431,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn active-period" onclick="setPeriod('calls','day',this)">Today</button>
       <button class="period-btn" onclick="setPeriod('calls','week',this)">This Week</button>
       <button class="period-btn" onclick="setPeriod('calls','month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('calls','year',this)">This Year</button>
     </div>
   </div>
   <div class="kpi-row">
@@ -465,6 +470,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn active-period" onclick="setPeriod('trends','day',this)">Today</button>
       <button class="period-btn" onclick="setPeriod('trends','week',this)">This Week</button>
       <button class="period-btn" onclick="setPeriod('trends','month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('trends','year',this)">This Year</button>
     </div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
@@ -574,6 +580,12 @@ function trendLabels(period, keys) {
       return hr === 0 ? '12am' : hr < 12 ? hr+'am' : hr === 12 ? '12pm' : (hr-12)+'pm';
     });
   }
+  if (period === 'year') {
+    return keys.map(ym => {
+      const [y, m] = ym.split('-');
+      return new Date(+y, +m-1).toLocaleString('default', { month: 'short' });
+    });
+  }
   return keys.map(d => {
     const dt = new Date(d + 'T00:00:00');
     return period === 'week'
@@ -583,9 +595,12 @@ function trendLabels(period, keys) {
 }
 
 function trendTitle(period, prefix) {
-  return prefix + ' ' + (period === 'day' ? 'by Hour — Today'
-    : period === 'week' ? 'by Day — This Week'
-    : 'by Day — This Month');
+  return prefix + ' ' + ({
+    day:   'by Hour — Today',
+    week:  'by Day — This Week',
+    month: 'by Day — This Month',
+    year:  'by Month — This Year',
+  }[period] ?? '');
 }
 
 function progressBars(data, total, fillColor, emptyMsg) {
