@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import axios from 'axios';
 import {
     EyeIcon, EyeSlashIcon, SignalIcon,
     CheckCircleIcon, XCircleIcon, ArrowPathIcon, LinkIcon,
@@ -30,16 +31,8 @@ function save() {
 }
 
 async function apiPost(url, body) {
-    const res = await fetch(url, {
-        method:  'POST',
-        headers: {
-            'Content-Type':     'application/json',
-            'X-CSRF-TOKEN':     document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify(body),
-    });
-    return res.json();
+    const res = await axios.post(url, body);
+    return res.data;
 }
 
 async function testConnection() {
@@ -53,7 +46,7 @@ async function testConnection() {
         testResult.message = data.message;
     } catch (e) {
         testResult.status  = 'fail';
-        testResult.message = 'Request failed: ' + e.message;
+        testResult.message = e.response?.data?.message ?? e.message;
     }
 }
 
@@ -67,7 +60,7 @@ async function registerWebhook() {
         if (data.ok) webhookOk.value = true;
     } catch (e) {
         webhookResult.status  = 'fail';
-        webhookResult.message = 'Request failed: ' + e.message;
+        webhookResult.message = e.response?.data?.message ?? e.message;
     }
 }
 </script>
