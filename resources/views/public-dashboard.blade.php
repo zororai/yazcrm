@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="refresh" content="120">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Helpline Analytics</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -250,6 +253,24 @@ tr:hover td{background:#f8fafc}
   </div>
 </div>
 
+{{-- ── Debug banner (remove once confirmed working) ──────────────────────── --}}
+<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:11px;color:#92400e;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+  <span>📊 Server default: <strong>{{ $ticketDefaultPeriod }}</strong></span>
+  <span>📅 Month tickets: <strong>{{ number_format($periodData['month']['total']) }}</strong></span>
+  <span>📅 Year tickets: <strong>{{ number_format($periodData['year']['total']) }}</strong></span>
+  <span>📞 Month calls: <strong>{{ number_format($callStats['month']['total']) }}</strong></span>
+  <span>🕐 Today calls: <strong>{{ number_format($callStats['day']['total']) }}</strong></span>
+</div>
+
+@php
+  $dd   = $periodData[$ticketDefaultPeriod];
+  $ddT  = $dd['total'] ?: 1;
+  $ddVp = round($dd['valid']   / $ddT * 100);
+  $ddRp = round($dd['repeat']  / $ddT * 100);
+  $ddIp = round($dd['imm_act'] / $ddT * 100);
+  $sc   = $callStats[$ticketDefaultPeriod]; // match same period as tickets
+@endphp
+
 {{-- ══════════════════════════════════ OVERVIEW ══════════════════════════════════ --}}
 <div id="sec-overview" class="section">
 
@@ -257,21 +278,21 @@ tr:hover td{background:#f8fafc}
   <div class="sec-hdr">
     <span class="sec-title">Overview</span>
     <div class="period-wrap">
-      <button class="period-btn active-period" onclick="setPeriod('overview','day',this)">Today</button>
-      <button class="period-btn" onclick="setPeriod('overview','week',this)">This Week</button>
-      <button class="period-btn" onclick="setPeriod('overview','month',this)">This Month</button>
-      <button class="period-btn" onclick="setPeriod('overview','year',this)">This Year</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('overview','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('overview','week',this)">This Week</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('overview','month',this)">This Month</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('overview','year',this)">This Year</button>
     </div>
   </div>
 
   <!-- Top grid -->
   <div class="top-grid">
 
-    <!-- Activity bar chart -->
+    <!-- Activity bar chart (call volume from PBX) -->
     <div class="glass">
       <div class="card-hdr">
-        <span class="card-title">Activity</span>
-        <span class="card-tag" id="ov-trend-label">Today by hour</span>
+        <span class="card-title">Call Activity</span>
+        <span class="card-tag" id="ov-trend-label">Calls by Hour — Today</span>
       </div>
       <div class="ch140"><canvas id="ovTrendChart"></canvas></div>
     </div>
@@ -280,15 +301,15 @@ tr:hover td{background:#f8fafc}
     <div class="stat-stack">
       <div class="stat-mini">
         <div class="sm-icon" style="background:#eff6ff">📞</div>
-        <div><div class="sm-val" id="ov-total">0</div><div class="sm-lbl">Total</div></div>
+        <div><div class="sm-val" id="ov-total">{{ number_format($dd['total']) }}</div><div class="sm-lbl">Total</div></div>
       </div>
       <div class="stat-mini">
         <div class="sm-icon" style="background:#f0fdf4">✅</div>
-        <div><div class="sm-val" id="ov-valid">0</div><div class="sm-lbl">Valid</div></div>
+        <div><div class="sm-val" id="ov-valid">{{ number_format($dd['valid']) }}</div><div class="sm-lbl">Valid</div></div>
       </div>
       <div class="stat-mini">
         <div class="sm-icon" style="background:#fefce8">🔄</div>
-        <div><div class="sm-val" id="ov-repeat">0</div><div class="sm-lbl">Repeat</div></div>
+        <div><div class="sm-val" id="ov-repeat">{{ number_format($dd['repeat']) }}</div><div class="sm-lbl">Repeat</div></div>
       </div>
     </div>
 
@@ -298,17 +319,27 @@ tr:hover td{background:#f8fafc}
       <div class="donut-wrap">
         <canvas id="ovDonut"></canvas>
         <div class="donut-center">
-          <div class="donut-pct" id="ov-pct">0%</div>
+          <div class="donut-pct" id="ov-pct">{{ $ddVp }}%</div>
           <div class="donut-sub">Valid</div>
         </div>
       </div>
       <div class="ov-rows">
-        <div class="ov-row"><span class="ov-dot" style="background:#3b82f6"></span><span class="ov-lbl">Valid</span><span class="ov-val" id="ov-ov-valid">0</span><span class="ov-chg up" id="ov-ov-vpct"></span></div>
-        <div class="ov-row"><span class="ov-dot" style="background:#fbbf24"></span><span class="ov-lbl">Repeat</span><span class="ov-val" id="ov-ov-repeat">0</span><span class="ov-chg muted" id="ov-ov-rpct"></span></div>
-        <div class="ov-row"><span class="ov-dot" style="background:#f87171"></span><span class="ov-lbl">Immediate Action</span><span class="ov-val" id="ov-ov-imm">0</span><span class="ov-chg muted" id="ov-ov-ipct"></span></div>
+        <div class="ov-row"><span class="ov-dot" style="background:#3b82f6"></span><span class="ov-lbl">Valid</span><span class="ov-val" id="ov-ov-valid">{{ number_format($dd['valid']) }}</span><span class="ov-chg up" id="ov-ov-vpct">+{{ $ddVp }}%</span></div>
+        <div class="ov-row"><span class="ov-dot" style="background:#fbbf24"></span><span class="ov-lbl">Repeat</span><span class="ov-val" id="ov-ov-repeat">{{ number_format($dd['repeat']) }}</span><span class="ov-chg muted" id="ov-ov-rpct">{{ $ddRp }}%</span></div>
+        <div class="ov-row"><span class="ov-dot" style="background:#f87171"></span><span class="ov-lbl">Immediate Action</span><span class="ov-val" id="ov-ov-imm">{{ number_format($dd['imm_act']) }}</span><span class="ov-chg muted" id="ov-ov-ipct">{{ $ddIp }}%</span></div>
       </div>
     </div>
   </div><!-- /top-grid -->
+
+  <!-- Call KPIs row (from Yeastar / calls table) -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-icon">📞</div><div class="kpi-val" id="ov-c-total">{{ number_format($sc['total']) }}</div><div class="kpi-lbl">Total Calls</div></div>
+    <div class="kpi"><div class="kpi-icon">📥</div><div class="kpi-val" id="ov-c-inbound">{{ number_format($sc['inbound']) }}</div><div class="kpi-lbl">Inbound</div></div>
+    <div class="kpi"><div class="kpi-icon">📤</div><div class="kpi-val" id="ov-c-outbound">{{ number_format($sc['outbound']) }}</div><div class="kpi-lbl">Outbound</div></div>
+    <div class="kpi"><div class="kpi-icon">📵</div><div class="kpi-val" id="ov-c-missed">{{ number_format($sc['missed']) }}</div><div class="kpi-lbl">Missed</div></div>
+    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="ov-c-answered">{{ number_format($sc['answered']) }}</div><div class="kpi-lbl">Answered</div></div>
+    <div class="kpi"><div class="kpi-icon">⏱️</div><div class="kpi-val" id="ov-c-avgdur">{{ $sc['avg_dur'] }}s</div><div class="kpi-lbl">Avg Duration</div></div>
+  </div>
 
   <!-- Bottom grid -->
   <div class="bot-grid">
@@ -335,20 +366,20 @@ tr:hover td{background:#f8fafc}
       </div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9">
         <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Uptake Confirmed</div>
-        <div style="font-size:20px;font-weight:800;color:#0f172a" id="ov-uptake">0</div>
-        <div style="font-size:10px;color:#94a3b8;margin-top:2px" id="ov-uptake-sub"></div>
+        <div style="font-size:20px;font-weight:800;color:#0f172a" id="ov-uptake">{{ number_format($dd['uptake']) }}</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px" id="ov-uptake-sub">{{ $dd['valid'] ? round($dd['uptake']/$dd['valid']*100,1) : 0 }}% of valid</div>
       </div>
     </div>
 
     <!-- Output -->
     <div class="glass" style="position:relative;overflow:hidden">
       <div class="card-title" style="margin-bottom:10px">Immediate Actions</div>
-      <div class="out-val" id="ov-imm">0</div>
+      <div class="out-val" id="ov-imm">{{ number_format($dd['imm_act']) }}</div>
       <div class="out-lbl">Requiring immediate action</div>
-      <span class="out-badge" id="ov-imm-badge">All Clear</span>
+      <span class="out-badge" id="ov-imm-badge">{{ $dd['imm_act'] > 0 ? 'Needs Attention' : 'All Clear' }}</span>
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9">
         <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Valid Rate</div>
-        <div style="font-size:20px;font-weight:800;color:#16a34a" id="ov-vrate">0%</div>
+        <div style="font-size:20px;font-weight:800;color:#16a34a" id="ov-vrate">{{ $ddVp }}%</div>
         <div style="font-size:10px;color:#94a3b8;margin-top:2px">of period interactions</div>
       </div>
     </div>
@@ -361,10 +392,10 @@ tr:hover td{background:#f8fafc}
   <div class="sec-hdr">
     <span class="sec-title">Geographic Distribution</span>
     <div class="period-wrap">
-      <button class="period-btn active-period" onclick="setPeriod('geographic','day',this)">Today</button>
-      <button class="period-btn" onclick="setPeriod('geographic','week',this)">This Week</button>
-      <button class="period-btn" onclick="setPeriod('geographic','month',this)">This Month</button>
-      <button class="period-btn" onclick="setPeriod('geographic','year',this)">This Year</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('geographic','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('geographic','week',this)">This Week</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('geographic','month',this)">This Month</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('geographic','year',this)">This Year</button>
     </div>
   </div>
   <div class="g2">
@@ -385,10 +416,10 @@ tr:hover td{background:#f8fafc}
   <div class="sec-hdr">
     <span class="sec-title">Demographics</span>
     <div class="period-wrap">
-      <button class="period-btn active-period" onclick="setPeriod('demographics','day',this)">Today</button>
-      <button class="period-btn" onclick="setPeriod('demographics','week',this)">This Week</button>
-      <button class="period-btn" onclick="setPeriod('demographics','month',this)">This Month</button>
-      <button class="period-btn" onclick="setPeriod('demographics','year',this)">This Year</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('demographics','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('demographics','week',this)">This Week</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('demographics','month',this)">This Month</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('demographics','year',this)">This Year</button>
     </div>
   </div>
   <div class="g3">
@@ -407,10 +438,10 @@ tr:hover td{background:#f8fafc}
   <div class="sec-hdr">
     <span class="sec-title">Services &amp; Referrals</span>
     <div class="period-wrap">
-      <button class="period-btn active-period" onclick="setPeriod('services','day',this)">Today</button>
-      <button class="period-btn" onclick="setPeriod('services','week',this)">This Week</button>
-      <button class="period-btn" onclick="setPeriod('services','month',this)">This Month</button>
-      <button class="period-btn" onclick="setPeriod('services','year',this)">This Year</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('services','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('services','week',this)">This Week</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('services','month',this)">This Month</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('services','year',this)">This Year</button>
     </div>
   </div>
   <div class="g2">
@@ -428,10 +459,10 @@ tr:hover td{background:#f8fafc}
   <div class="sec-hdr">
     <span class="sec-title">Call Activity</span>
     <div class="period-wrap">
-      <button class="period-btn active-period" onclick="setPeriod('calls','day',this)">Today</button>
-      <button class="period-btn" onclick="setPeriod('calls','week',this)">This Week</button>
-      <button class="period-btn" onclick="setPeriod('calls','month',this)">This Month</button>
-      <button class="period-btn" onclick="setPeriod('calls','year',this)">This Year</button>
+      <button class="period-btn {{ $callDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('calls','day',this)">Today</button>
+      <button class="period-btn {{ $callDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('calls','week',this)">This Week</button>
+      <button class="period-btn {{ $callDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('calls','month',this)">This Month</button>
+      <button class="period-btn {{ $callDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('calls','year',this)">This Year</button>
     </div>
   </div>
   <div class="kpi-row">
@@ -467,10 +498,10 @@ tr:hover td{background:#f8fafc}
   <div class="sec-hdr">
     <span class="sec-title">Trends</span>
     <div class="period-wrap">
-      <button class="period-btn active-period" onclick="setPeriod('trends','day',this)">Today</button>
-      <button class="period-btn" onclick="setPeriod('trends','week',this)">This Week</button>
-      <button class="period-btn" onclick="setPeriod('trends','month',this)">This Month</button>
-      <button class="period-btn" onclick="setPeriod('trends','year',this)">This Year</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('trends','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('trends','week',this)">This Week</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('trends','month',this)">This Month</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('trends','year',this)">This Year</button>
     </div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
@@ -620,11 +651,20 @@ function progressBars(data, total, fillColor, emptyMsg) {
 function updateOverview(p) {
   const d = periodData[p];
   const t = d.total || 1;
+  const s = callStats[p]; // call stats from Yeastar/calls table
 
-  // KPIs
+  // Ticket KPIs
   document.getElementById('ov-total').textContent  = fmt(d.total);
   document.getElementById('ov-valid').textContent  = fmt(d.valid);
   document.getElementById('ov-repeat').textContent = fmt(d.repeat);
+
+  // Call KPIs (from Yeastar / calls table)
+  document.getElementById('ov-c-total').textContent    = fmt(s.total);
+  document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
+  document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
+  document.getElementById('ov-c-missed').textContent   = fmt(s.missed);
+  document.getElementById('ov-c-answered').textContent = fmt(s.answered);
+  document.getElementById('ov-c-avgdur').textContent   = s.avg_dur + 's';
 
   // Donut
   const vp = t ? Math.round(d.valid/t*100) : 0;
@@ -650,12 +690,11 @@ function updateOverview(p) {
     { colors: ['#3b82f6','#fbbf24','#f87171','#e2e8f0'], legend: false }
   );
 
-  // Trend chart
-  const tkeys  = Object.keys(d.trend);
-  const tvals  = Object.values(d.trend);
-  const tlbls  = trendLabels(p, tkeys);
-  document.getElementById('ov-trend-label').textContent = trendTitle(p, 'Interactions');
-  rc('ovTrendChart', 'bar', tlbls, tvals, { accent: '#3b82f6', muted: '#dbeafe' });
+  // Activity chart: use call trend (Yeastar data — has data even when no tickets)
+  const ctkeys = Object.keys(s.trend);
+  const ctvals = Object.values(s.trend);
+  document.getElementById('ov-trend-label').textContent = trendTitle(p, 'Calls');
+  rc('ovTrendChart', 'bar', trendLabels(p, ctkeys), ctvals, { accent: '#3b82f6', muted: '#dbeafe' });
 
   // Top purposes
   document.getElementById('ov-purposes').innerHTML = (d.by_purpose.length
@@ -798,20 +837,9 @@ function showSection(name, btn) {
   }
 }
 
-// ── Smart default: first period that has data ─────────────────────────────
-function smartDefault(section) {
-  const src = section === 'calls' ? callStats : periodData;
-  for (const p of ['day', 'week', 'month', 'year']) {
-    if (src[p] && src[p].total > 0) return p;
-  }
-  return 'month';
-}
-
-function activatePeriodBtn(section, period) {
-  document.querySelectorAll(`#sec-${section} .period-btn`).forEach(b => b.classList.remove('active-period'));
-  const btn = document.querySelector(`#sec-${section} .period-btn[onclick*="'${period}'"]`);
-  if (btn) btn.classList.add('active-period');
-}
+// ── PHP-determined defaults (server guarantees these periods have data) ───
+const TICKET_DEFAULT = @json($ticketDefaultPeriod);
+const CALL_DEFAULT   = @json($callDefaultPeriod);
 
 function labelPeriodBtns() {
   const LABELS = { day:'Today', week:'This Week', month:'This Month', year:'This Year' };
@@ -820,31 +848,28 @@ function labelPeriodBtns() {
       const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
       if (!m) return;
       const p = m[1], count = periodData[p]?.total ?? 0;
-      btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${count})</span>` : '');
+      btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${fmt(count)})</span>` : '');
     });
   });
   document.querySelectorAll('#sec-calls .period-btn').forEach(btn => {
     const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
     if (!m) return;
     const p = m[1], count = callStats[p]?.total ?? 0;
-    btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${count})</span>` : '');
+    btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${fmt(count)})</span>` : '');
   });
 }
 
-// ── Bootstrap: auto-select the first period with data ────────────────────
+// ── Bootstrap ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  lucide.createIcons();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
   labelPeriodBtns();
-
-  ['overview','geographic','demographics','services','trends'].forEach(sec => activatePeriodBtn(sec, smartDefault(sec)));
-  activatePeriodBtn('calls', smartDefault('calls'));
-
-  updateOverview(smartDefault('overview'));
-  updateGeographic(smartDefault('geographic'));
-  updateDemographics(smartDefault('demographics'));
-  updateServices(smartDefault('services'));
-  updateCalls(smartDefault('calls'));
-  updateTrends(smartDefault('trends'));
+  console.log('[screen] TICKET_DEFAULT='+TICKET_DEFAULT+' month_total='+periodData['month']?.total+' day_calls='+callStats['day']?.total);
+  updateOverview(TICKET_DEFAULT);
+  updateGeographic(TICKET_DEFAULT);
+  updateDemographics(TICKET_DEFAULT);
+  updateServices(TICKET_DEFAULT);
+  updateCalls(CALL_DEFAULT);
+  updateTrends(TICKET_DEFAULT);
 });
 </script>
 </body>
