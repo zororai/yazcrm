@@ -8,6 +8,7 @@ use App\Services\YeastarService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -19,12 +20,17 @@ class YeastarSettingsController extends Controller
 
         return Inertia::render('Admin/YeastarSettings', [
             'settings' => [
-                'base_url'    => Setting::get('yeastar_base_url', config('yeastar.base_url')),
-                'app_id'      => Setting::get('yeastar_app_id', config('yeastar.app_id')),
+                'base_url'    => Setting::get('yeastar_base_url',   config('yeastar.base_url')),
+                'app_id'      => Setting::get('yeastar_app_id',     config('yeastar.app_id')),
                 'app_secret'  => Setting::get('yeastar_app_secret', config('yeastar.app_secret')),
                 'webhook_url' => Setting::get('yeastar_webhook_url', $defaultWebhookUrl),
+                'db_host'     => env('DB_YEASTAR_HOST', ''),
+                'db_port'     => env('DB_YEASTAR_PORT', '15023'),
+                'db_database' => env('DB_YEASTAR_DATABASE', 'asterisk'),
+                'db_username' => env('DB_YEASTAR_USERNAME', ''),
             ],
             'webhook_registered' => (bool) Setting::get('yeastar_webhook_registered', false),
+            'db_connected'       => $this->testDbConnection(),
         ]);
     }
 
@@ -44,6 +50,17 @@ class YeastarSettingsController extends Controller
         Cache::forget('yeastar_access_token');
 
         return back()->with('success', 'Yeastar settings saved.');
+    }
+
+    private function testDbConnection(): bool
+    {
+        if (empty(env('DB_YEASTAR_HOST'))) return false;
+        try {
+            DB::connection('yeastar')->getPdo();
+            return true;
+        } catch (\Exception) {
+            return false;
+        }
     }
 
     public function registerWebhook(Request $request): \Illuminate\Http\JsonResponse
