@@ -83,7 +83,7 @@ const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6
 function avatarColor(i) { return avatarColors[i % avatarColors.length]; }
 function callerInitials(num) {
     if (!num) return '?';
-    const d = num.replace(/\D/g, '');
+    const d = String(num).replace(/\D/g, '');
     return d.slice(-2) || '??';
 }
 
@@ -380,9 +380,9 @@ const qualityColor = computed(() => ({
                         <div
                             class="flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white select-none"
                             :style="{ background: avatarColor(i) }"
-                        >{{ callerInitials(call.caller_number) }}</div>
+                        >{{ callerInitials(call.caller) }}</div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-medium text-gray-200 truncate">{{ call.caller_number || 'Unknown' }}</p>
+                            <p class="text-xs font-medium text-gray-200 truncate">{{ call.caller || 'Unknown' }}</p>
                             <p class="text-xs text-gray-600">{{ fmtTime(call.started_at) }}</p>
                         </div>
                         <span
@@ -502,7 +502,7 @@ const qualityColor = computed(() => ({
                                 {{ call.direction === 'inbound' ? 'Inbound' : 'Outbound' }} call
                                 <span :class="call.status === 'missed' ? 'text-red-400' : 'text-green-400'">{{ call.status }}</span>
                             </p>
-                            <p class="text-xs text-gray-600 truncate">{{ call.caller_number }}</p>
+                            <p class="text-xs text-gray-600 truncate">{{ call.caller }}</p>
                         </div>
                         <span class="text-xs text-gray-700 flex-shrink-0 mt-0.5">{{ fmtTime(call.started_at) }}</span>
                     </div>
