@@ -111,11 +111,24 @@ function logout() {
             ]"
         >
             <!-- Logo -->
-            <div class="flex h-16 items-center gap-3 px-6 border-b border-gray-700">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
-                    <PhoneIcon class="h-5 w-5 text-white" />
+            <div class="flex h-16 items-center gap-3 px-5 border-b border-gray-700">
+                <!-- Youth Advocates mark -->
+                <svg width="38" height="34" viewBox="0 0 130 108" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
+                    <!-- Left arm: orange -->
+                    <rect x="12" y="0" width="28" height="82" rx="14"
+                          fill="#e8512a"
+                          transform="rotate(34 26 66)"/>
+                    <!-- Right arm: purple -->
+                    <rect x="90" y="0" width="28" height="82" rx="14"
+                          fill="#6835a2"
+                          transform="rotate(-34 104 66)"/>
+                    <!-- Teardrop head (white so it shows on dark sidebar) -->
+                    <ellipse cx="65" cy="13" rx="11" ry="14" fill="#ffffff"/>
+                </svg>
+                <div class="leading-tight min-w-0">
+                    <div class="text-white font-bold text-sm leading-none">youth</div>
+                    <div class="text-gray-400 text-[11px] leading-none mt-0.5 tracking-wide">advocates</div>
                 </div>
-                <span class="text-white font-semibold text-lg">CRM PBX</span>
             </div>
 
             <!-- Nav -->
