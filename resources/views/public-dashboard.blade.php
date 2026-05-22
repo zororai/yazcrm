@@ -179,8 +179,48 @@ tr:hover td{background:#f8fafc}
 /* Footer */
 .footer{text-align:center;padding:12px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0}
 
+/* ── Social Listening Matrix ── */
+.slm-5col{display:grid;grid-template-columns:175px 215px 1fr 235px 165px;gap:0;padding:0;overflow:hidden}
+.slm-panel{padding:11px 12px;border-right:1px solid #e2e8f0;min-width:0}
+.slm-panel:last-child{border-right:none}
+.slm-ptitle{font-size:10px;font-weight:700;color:#fff;background:#1e3a5f;padding:6px 10px;margin:-11px -12px 10px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.slm-src-row{display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px dotted #f1f5f9;font-size:10.5px}
+.slm-src-row:last-child{border-bottom:none}
+.slm-src-name{flex:1;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slm-src-cnt{font-weight:700;color:#0f172a;font-size:11px;flex-shrink:0}
+.slm-src-sub{font-size:9px;font-weight:700;color:#fff;background:#3b82f6;border-radius:3px;padding:2px 6px;margin:5px 0 3px;text-transform:uppercase;letter-spacing:.3px}
+.slm-total-row{display:flex;justify-content:space-between;background:#0f172a;color:#fff;padding:4px 7px;border-radius:4px;margin-top:5px;font-weight:700;font-size:11px}
+.slm-issue-row{display:flex;align-items:center;gap:4px;padding:2px 0;border-bottom:1px dotted #f1f5f9;font-size:10px}
+.slm-issue-num{color:#94a3b8;min-width:16px;font-size:9px}
+.slm-issue-name{flex:1;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slm-issue-cnt{font-weight:700;color:#0f172a;flex-shrink:0}
+.slm-cat-title{font-size:10px;font-weight:700;padding:2px 5px;border-radius:3px;margin:5px 0 3px;display:flex;align-items:center;gap:4px}
+.slm-risk-row{padding:6px 0;border-bottom:1px solid #f1f5f9}
+.slm-risk-row:last-child{border-bottom:none}
+.slm-risk-hdr{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.slm-ref-row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px dotted #f1f5f9;font-size:10.5px}
+.slm-ref-row:last-child{border-bottom:none}
+.slm-ref-name{flex:1;color:#475569}
+.slm-ref-cnt{font-weight:700;color:#0f172a;font-size:13px;flex-shrink:0}
+.slm-wf-steps{display:flex;gap:8px;padding:10px 14px}
+.slm-wf-step{flex:1;background:rgba(255,255,255,.07);border-radius:10px;padding:10px 6px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+.slm-wf-icon{font-size:20px;margin-bottom:3px}
+.slm-wf-name{font-weight:700;font-size:11px;color:#fff;text-transform:uppercase;letter-spacing:.3px}
+.slm-wf-desc{font-size:8.5px;color:#64748b;margin:2px 0 5px;line-height:1.3}
+.slm-wf-stat{font-size:14px;font-weight:800;color:#60a5fa}
+.slm-wf-slbl{font-size:8px;color:#475569}
+.slm-urg-card{flex:1;min-width:80px;background:#fff;border:2px solid #dc2626;border-radius:12px;padding:10px;text-align:center}
+.slm-urg-icon{font-size:18px;margin-bottom:3px}
+.slm-urg-lbl{font-size:9px;color:#6b7280;line-height:1.2;margin-bottom:3px}
+.slm-urg-num{font-size:24px;font-weight:900;color:#dc2626;line-height:1}
+.rpill-low{background:#dcfce7;color:#16a34a;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:700}
+.rpill-med{background:#fef9c3;color:#a16207;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:700}
+.rpill-high{background:#fee2e2;color:#dc2626;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:700}
+.rpill-emerg{background:#7f1d1d;color:#fff;border-radius:4px;padding:1px 7px;font-size:9.5px;font-weight:700}
+
 @media(max-width:900px){
   .sidebar{display:none}
+  .slm-5col{grid-template-columns:1fr}
   .top-grid,.bot-grid,.g2,.g3{grid-template-columns:1fr}
   .main{padding:14px}
 }
@@ -235,6 +275,9 @@ tr:hover td{background:#f8fafc}
   </button>
   <button class="sb-btn" onclick="showSection('trends',this)" title="Trends">
     <i data-lucide="trending-up"></i>
+  </button>
+  <button class="sb-btn" onclick="showSection('social',this)" title="Social Listening Matrix">
+    <i data-lucide="activity"></i>
   </button>
 </aside>
 
@@ -543,16 +586,335 @@ tr:hover td{background:#f8fafc}
   </div>
 </div>
 
-<div class="footer">Helpline Analytics &middot; Auto-refreshes every 2 minutes &middot; {{ now()->format('d M Y') }}</div>
+{{-- ══════════════════════════════ SOCIAL LISTENING MATRIX ══════════════════════════════ --}}
+<div id="sec-social" class="section" style="display:none">
+
+  <!-- Header -->
+  <div class="sec-hdr">
+    <div>
+      <span class="sec-title">Social Listening Matrix</span>
+      <span style="font-size:11px;color:#94a3b8;margin-left:8px">Listening · Understanding · Responding · Protecting</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="background:#1e3a5f;color:#fff;border-radius:12px;padding:6px 14px;font-size:12px;font-weight:700">
+        <span id="slm-total">0</span> Interactions
+      </div>
+      <div class="period-wrap">
+        <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('social','day',this)">Today</button>
+        <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('social','week',this)">This Week</button>
+        <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('social','month',this)">This Month</button>
+        <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('social','year',this)">This Year</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5-column main matrix -->
+  <div class="glass slm-5col" style="margin-bottom:14px">
+
+    <!-- Panel 1: Listening Sources -->
+    <div class="slm-panel">
+      <div class="slm-ptitle">1. Listening Sources</div>
+      <div class="slm-src-sub">📱 Digital Channels</div>
+      <div id="slm-digital-sources"><p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">Loading…</p></div>
+      <div class="slm-src-sub" style="background:#0d9488">👥 Community</div>
+      <div id="slm-community-sources"><p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">Loading…</p></div>
+      <div class="slm-total-row" id="slm-src-total"><span>TOTAL</span><span>0</span></div>
+    </div>
+
+    <!-- Panel 2: Issues / Topics -->
+    <div class="slm-panel">
+      <div class="slm-ptitle">2. Issues / Topics</div>
+      <div class="slm-cat-title" style="background:#e8f4ed;color:#15803d">🏥 Health &amp; Wellbeing</div>
+      <div id="slm-issues-health"></div>
+      <div class="slm-cat-title" style="background:#eef3fa;color:#1e40af">🛡️ Protection &amp; Safety</div>
+      <div id="slm-issues-protection"></div>
+      <div class="slm-cat-title" style="background:#fff7ed;color:#c2410c">🏘️ Social &amp; Community</div>
+      <div id="slm-issues-social"></div>
+      <div class="slm-total-row" id="slm-issues-total"><span>TOTAL ISSUES</span><span>0</span></div>
+    </div>
+
+    <!-- Panel 3: Risk Classification -->
+    <div class="slm-panel">
+      <div class="slm-ptitle">3. Risk Classification</div>
+      <div id="slm-risk">
+        <div class="slm-risk-row">
+          <div class="slm-risk-hdr">
+            <span style="width:10px;height:10px;border-radius:50%;background:#7f1d1d;display:inline-block;flex-shrink:0"></span>
+            <strong style="color:#7f1d1d;font-size:11px">EMERGENCY</strong>
+            <span style="margin-left:auto;font-size:18px;font-weight:800;color:#7f1d1d" id="slm-r-emerg">0</span>
+          </div>
+          <div style="font-size:9px;color:#94a3b8;margin-bottom:3px">Immediate danger · Life-threatening</div>
+          <div style="background:#fee2e2;border-radius:2px;height:5px"><div id="slm-rb-emerg" style="height:5px;border-radius:2px;background:#7f1d1d;width:0%"></div></div>
+          <div style="font-size:9px;color:#7f1d1d;font-weight:600;margin-top:2px" id="slm-rp-emerg">0%</div>
+        </div>
+        <div class="slm-risk-row">
+          <div class="slm-risk-hdr">
+            <span style="width:10px;height:10px;border-radius:50%;background:#dc2626;display:inline-block;flex-shrink:0"></span>
+            <strong style="color:#dc2626;font-size:11px">HIGH</strong>
+            <span style="margin-left:auto;font-size:18px;font-weight:800;color:#dc2626" id="slm-r-high">0</span>
+          </div>
+          <div style="font-size:9px;color:#94a3b8;margin-bottom:3px">Serious risk · Potential harm</div>
+          <div style="background:#fee2e2;border-radius:2px;height:5px"><div id="slm-rb-high" style="height:5px;border-radius:2px;background:#dc2626;width:0%"></div></div>
+          <div style="font-size:9px;color:#dc2626;font-weight:600;margin-top:2px" id="slm-rp-high">0%</div>
+        </div>
+        <div class="slm-risk-row">
+          <div class="slm-risk-hdr">
+            <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;flex-shrink:0"></span>
+            <strong style="color:#a16207;font-size:11px">MEDIUM</strong>
+            <span style="margin-left:auto;font-size:18px;font-weight:800;color:#a16207" id="slm-r-med">0</span>
+          </div>
+          <div style="font-size:9px;color:#94a3b8;margin-bottom:3px">Some risk · Needs follow-up</div>
+          <div style="background:#fef9c3;border-radius:2px;height:5px"><div id="slm-rb-med" style="height:5px;border-radius:2px;background:#f59e0b;width:0%"></div></div>
+          <div style="font-size:9px;color:#a16207;font-weight:600;margin-top:2px" id="slm-rp-med">0%</div>
+        </div>
+        <div class="slm-risk-row">
+          <div class="slm-risk-hdr">
+            <span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0"></span>
+            <strong style="color:#15803d;font-size:11px">LOW</strong>
+            <span style="margin-left:auto;font-size:18px;font-weight:800;color:#15803d" id="slm-r-low">0</span>
+          </div>
+          <div style="font-size:9px;color:#94a3b8;margin-bottom:3px">General concern · No immediate threat</div>
+          <div style="background:#dcfce7;border-radius:2px;height:5px"><div id="slm-rb-low" style="height:5px;border-radius:2px;background:#22c55e;width:0%"></div></div>
+          <div style="font-size:9px;color:#15803d;font-weight:600;margin-top:2px" id="slm-rp-low">0%</div>
+        </div>
+        <div class="slm-total-row" style="margin-top:8px" id="slm-risk-total"><span>TOTAL CLASSIFIED</span><span>0</span></div>
+      </div>
+    </div>
+
+    <!-- Panel 4: Response Actions -->
+    <div class="slm-panel">
+      <div class="slm-ptitle">4. Response Actions</div>
+      <div id="slm-actions"><p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">Loading…</p></div>
+      <div class="slm-total-row" id="slm-actions-total" style="margin-top:6px"><span>TOTAL ACTIONS</span><span>0</span></div>
+    </div>
+
+    <!-- Panel 5: Referral Pathways -->
+    <div class="slm-panel" style="border-right:none">
+      <div class="slm-ptitle">5. Referral Pathways</div>
+      <div id="slm-referrals"><p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">Loading…</p></div>
+      <div class="slm-total-row" id="slm-ref-total" style="margin-top:6px"><span>TOTAL REFERRALS</span><span>0</span></div>
+    </div>
+
+  </div><!-- end 5col -->
+
+  <!-- Section 6: Workflow -->
+  <div style="background:#0f172a;border-radius:20px;padding:12px 14px;margin-bottom:14px">
+    <div style="text-align:center;color:#fff;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">
+      6. Social Listening Workflow
+    </div>
+    <div class="slm-wf-steps">
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">👂</div>
+        <div class="slm-wf-name">Listen</div>
+        <div class="slm-wf-desc">Collect across all channels</div>
+        <div class="slm-wf-stat" id="slm-wf-total">0</div>
+        <div class="slm-wf-slbl">Interactions</div>
+      </div>
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">🔍</div>
+        <div class="slm-wf-name">Analyze</div>
+        <div class="slm-wf-desc">Identify issues &amp; risks</div>
+        <div class="slm-wf-stat" id="slm-wf-issues">0</div>
+        <div class="slm-wf-slbl">Issues Captured</div>
+      </div>
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">🏷️</div>
+        <div class="slm-wf-name">Classify</div>
+        <div class="slm-wf-desc">Assign risk level</div>
+        <div class="slm-wf-stat">4</div>
+        <div class="slm-wf-slbl">Risk Levels</div>
+      </div>
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">⚡</div>
+        <div class="slm-wf-name">Respond</div>
+        <div class="slm-wf-desc">Take appropriate actions</div>
+        <div class="slm-wf-stat" id="slm-wf-actions">0</div>
+        <div class="slm-wf-slbl">Actions Taken</div>
+      </div>
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">🔄</div>
+        <div class="slm-wf-name">Follow-Up</div>
+        <div class="slm-wf-desc">Monitor &amp; continued support</div>
+        <div class="slm-wf-stat" id="slm-wf-uptake">0</div>
+        <div class="slm-wf-slbl">Uptake Confirmed</div>
+      </div>
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">📊</div>
+        <div class="slm-wf-name">Report</div>
+        <div class="slm-wf-desc">Generate insights</div>
+        <div class="slm-wf-stat" id="slm-wf-referrals">0</div>
+        <div class="slm-wf-slbl">Referrals Made</div>
+      </div>
+      <div class="slm-wf-step">
+        <div class="slm-wf-icon">📈</div>
+        <div class="slm-wf-name">Improve</div>
+        <div class="slm-wf-desc">Strengthen programs</div>
+        <div class="slm-wf-stat">100%</div>
+        <div class="slm-wf-slbl">Continuous</div>
+      </div>
+    </div>
+    <div style="text-align:center;padding-bottom:4px;font-size:10px;color:#334155;letter-spacing:1px">↺ CONTINUOUS IMPROVEMENT LOOP ↺</div>
+  </div>
+
+  <!-- Sections 7 + 8: Trends & Geographic -->
+  <div class="g2" style="margin-bottom:14px">
+    <div class="glass">
+      <div class="card-hdr">
+        <span class="card-title">7. Community Trends</span>
+        <span style="font-size:10px;color:#94a3b8">vs previous period</span>
+      </div>
+      <div class="tbl-wrap">
+        <table style="font-size:11px">
+          <thead>
+            <tr><th>#</th><th>Issue / Topic</th><th>Cases</th><th>Trend</th></tr>
+          </thead>
+          <tbody id="slm-trends-tbody">
+            <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="glass">
+      <div class="card-hdr">
+        <span class="card-title">8. Geographic Intelligence</span>
+        <span style="font-size:10px;color:#94a3b8">by province</span>
+      </div>
+      <div class="tbl-wrap">
+        <table style="font-size:11px">
+          <thead>
+            <tr><th>#</th><th>Province</th><th>Cases</th><th>%</th><th>Volume</th></tr>
+          </thead>
+          <tbody id="slm-geo-tbody">
+            <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:14px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="slm-total-row" id="slm-geo-total" style="margin-top:8px"><span>TOTAL</span><span>0</span></div>
+    </div>
+  </div>
+
+  <!-- Section 9: Case Recording -->
+  <div class="glass" style="margin-bottom:14px">
+    <div class="card-hdr">
+      <span class="card-title">9. Case Recording Matrix</span>
+      <span style="font-size:10px;color:#94a3b8">Last 8 interactions</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Case ID</th><th>Channel</th><th>Issue</th><th>Risk</th>
+            <th>Referred To</th><th>Status</th><th>Province</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse ($recentTickets as $rt)
+          @php
+            $rPriority = strtolower($rt->priority ?? '');
+            $rImm = (bool)$rt->immediate_action_required;
+            $rPillClass = $rImm ? 'rpill-emerg' : ($rPriority === 'high' ? 'rpill-high' : ($rPriority === 'medium' ? 'rpill-med' : 'rpill-low'));
+            $rPillLabel = $rImm ? 'EMERGENCY' : strtoupper($rPriority ?: 'LOW');
+          @endphp
+          <tr>
+            <td style="white-space:nowrap">{{ \Carbon\Carbon::parse($rt->created_at)->format('d/m/Y') }}</td>
+            <td style="color:#94a3b8;font-size:10px">#{{ $rt->id }}</td>
+            <td>{{ $rt->mode_of_communication ?? '—' }}</td>
+            <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $rt->purpose_of_call ?? '—' }}</td>
+            <td><span class="{{ $rPillClass }}">{{ $rPillLabel }}</span></td>
+            <td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $rt->referred_to ?? '—' }}</td>
+            <td><span style="font-weight:600;color:{{ $rt->status==='closed'?'#16a34a':($rt->status==='open'?'#3b82f6':'#f59e0b') }}">{{ ucfirst($rt->status ?? '—') }}</span></td>
+            <td>{{ $rt->province ?? '—' }}</td>
+          </tr>
+          @empty
+          <tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:16px">No recent interactions recorded</td></tr>
+          @endforelse
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section 10: Urgent Escalation -->
+  <div style="background:#fff5f5;border:2px solid #dc2626;border-radius:20px;padding:14px 16px;margin-bottom:14px">
+    <div style="color:#dc2626;font-weight:800;font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+      ⚠️ 10. Urgent Escalation Alerts
+      <span style="font-size:11px;font-weight:400;color:#6b7280">(Immediate Action Required)</span>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="slm-urg-card">
+        <div class="slm-urg-icon">⚠️</div>
+        <div class="slm-urg-lbl">Immediate Action<br>Required</div>
+        <div class="slm-urg-num" id="slm-urg-imm">0</div>
+      </div>
+      <div class="slm-urg-card">
+        <div class="slm-urg-icon">📵</div>
+        <div class="slm-urg-lbl">Missed Calls<br>(Unanswered)</div>
+        <div class="slm-urg-num" id="slm-urg-missed">0</div>
+      </div>
+      <div class="slm-urg-card">
+        <div class="slm-urg-icon">🔴</div>
+        <div class="slm-urg-lbl">High Priority<br>Cases</div>
+        <div class="slm-urg-num" id="slm-urg-high">0</div>
+      </div>
+      <div class="slm-urg-card">
+        <div class="slm-urg-icon">🔄</div>
+        <div class="slm-urg-lbl">Repeat<br>Callers</div>
+        <div class="slm-urg-num" id="slm-urg-repeat">0</div>
+      </div>
+      <div class="slm-urg-card">
+        <div class="slm-urg-icon">📋</div>
+        <div class="slm-urg-lbl">Valid<br>Interactions</div>
+        <div class="slm-urg-num" id="slm-urg-valid">0</div>
+      </div>
+      <div class="slm-urg-card">
+        <div class="slm-urg-icon">✅</div>
+        <div class="slm-urg-lbl">Uptake<br>Confirmed</div>
+        <div class="slm-urg-num" id="slm-urg-uptake">0</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:10px;font-weight:700;font-size:12px;color:#dc2626">
+      TOTAL URGENT ALERTS: <span id="slm-urg-total">0</span>
+    </div>
+  </div>
+
+  <!-- Section 11: Expected Outcomes -->
+  <div class="glass" style="margin-bottom:14px">
+    <div class="card-hdr">
+      <span class="card-title">11. Expected Outcomes</span>
+      <span style="font-size:10px;color:#94a3b8">What we aim to achieve</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      @foreach([
+        ['✅','Early detection of risks and needs'],
+        ['✅','Timely referrals and emergency response'],
+        ['✅','Improved service delivery and coordination'],
+        ['✅','Stronger community trust and engagement'],
+        ['✅','Data-driven decision making and reporting'],
+        ['✅','Safer communities. Healthier youth. Brighter futures.'],
+      ] as [$icon,$text])
+      <div style="display:flex;align-items:flex-start;gap:7px;padding:8px 10px;background:#f8fafc;border-radius:10px">
+        <span style="color:#16a34a;font-size:13px;flex-shrink:0">{{ $icon }}</span>
+        <span style="font-size:11px;color:#374151">{{ $text }}</span>
+      </div>
+      @endforeach
+    </div>
+    <div style="margin-top:12px;padding-top:10px;border-top:2px solid #0f172a;text-align:center;font-weight:800;font-size:14px;color:#0f172a;letter-spacing:.5px">
+      Every Voice Matters. Every Case Counts.
+    </div>
+  </div>
+
+</div>{{-- end sec-social --}}
+
+<div class="footer">Helpline Analytics &middot; Auto-refreshes every minute &middot; {{ now()->format('d M Y') }}</div>
 </main>
 </div>
 
 <script>
 // ── PHP data ──────────────────────────────────────────────────────────────────
-const periodData = @json($periodData);
-const callStats  = @json($callStats);
-const months12   = @json($months);
-const last7      = @json($last7);
+const periodData     = @json($periodData);
+const callStats      = @json($callStats);
+const months12       = @json($months);
+const last7          = @json($last7);
+const prevPeriodData = @json($prevPeriodData);
 
 // ── Chart registry ─────────────────────────────────────────────────────────────
 const CC = {};
@@ -833,6 +1195,200 @@ function updateTrends(p) {
   rc('trendMainChart', 'line', trendLabels(p, tkeys), tvals, { accent:'#3b82f6', fill:true, legend:false });
 }
 
+// ── SOCIAL LISTENING MATRIX ────────────────────────────────────────────────────
+const DIGITAL_KEYWORDS  = ['whatsapp','facebook','tiktok','twitter','instagram','chatbot','sms','email','web','online','hotline','helpline','app','platform','chat'];
+const COMMUNITY_KEYWORDS = ['ambassador','school','teacher','clinic','health','youth','church','mosque','community','leader','village','ward','organization'];
+const HEALTH_KEYWORDS    = ['hiv','sti','mental','health','srhr','substance','drug','alcohol','pregnancy','medical','disease','outbreak','nutrition','tb'];
+const PROTECT_KEYWORDS   = ['gbv','violence','abuse','assault','rape','suicide','self-harm','bullying','harassment','child','safety','protection','neglect'];
+
+function slmKeywords(name, list) {
+  const n = (name ?? '').toLowerCase();
+  return list.some(k => n.includes(k));
+}
+
+function slmPillHtml(level, imm) {
+  if (imm) return '<span class="rpill-emerg">EMERGENCY</span>';
+  if (!level) return '<span class="rpill-low">LOW</span>';
+  const l = level.toLowerCase();
+  if (l === 'high') return '<span class="rpill-high">HIGH</span>';
+  if (l === 'medium') return '<span class="rpill-med">MEDIUM</span>';
+  return '<span class="rpill-low">LOW</span>';
+}
+
+function updateSocial(p) {
+  const d    = periodData[p];
+  const s    = callStats[p];
+  const prev = prevPeriodData[p] ?? {};
+  const total = d.total;
+
+  // ── Grand total pill ──
+  el('slm-total').textContent = fmt(total);
+
+  // ── Workflow stats ──
+  el('slm-wf-total').textContent    = fmt(total);
+  el('slm-wf-issues').textContent   = fmt(d.by_purpose.length ? d.by_purpose.reduce((a, r) => a + r[1], 0) : 0);
+  el('slm-wf-actions').textContent  = fmt(total);
+  el('slm-wf-uptake').textContent   = fmt(d.uptake ?? 0);
+  el('slm-wf-referrals').textContent = fmt(d.by_referral.reduce((a, r) => a + r[1], 0));
+
+  // ── Sources (split digital vs community) ──
+  const modes    = d.by_mode;
+  const digital  = modes.filter(r => slmKeywords(r[0], DIGITAL_KEYWORDS));
+  const community = modes.filter(r => !slmKeywords(r[0], DIGITAL_KEYWORDS));
+  const maxSrc   = Math.max(...modes.map(r => r[1]), 1);
+  const digTotal = digital.reduce((a, r) => a + r[1], 0);
+  const comTotal = community.reduce((a, r) => a + r[1], 0);
+
+  function srcRows(arr) {
+    if (!arr.length) return '<p style="font-size:10px;color:#94a3b8;padding:4px 0">—</p>';
+    return arr.map(([name, cnt]) => {
+      const bar = Math.round(cnt / maxSrc * 100);
+      return `<div class="slm-src-row">
+        <span class="slm-src-name">${name}</span>
+        <div style="flex:1;margin:0 5px;background:#f1f5f9;border-radius:2px;height:4px"><div style="width:${bar}%;background:#3b82f6;height:4px;border-radius:2px"></div></div>
+        <span class="slm-src-cnt">${fmt(cnt)}</span>
+      </div>`;
+    }).join('');
+  }
+  el('slm-digital-sources').innerHTML = srcRows(digital) + (digTotal ? `<div class="slm-total-row" style="margin-top:4px"><span>SUB-TOTAL</span><span>${fmt(digTotal)}</span></div>` : '');
+  el('slm-community-sources').innerHTML = srcRows(community) + (comTotal ? `<div class="slm-total-row" style="margin-top:4px;background:#0d9488"><span>SUB-TOTAL</span><span>${fmt(comTotal)}</span></div>` : '');
+  el('slm-src-total').innerHTML = `<span>GRAND TOTAL</span><span>${fmt(digTotal + comTotal)}</span>`;
+
+  // ── Issues (grouped by category) ──
+  const purposes = d.by_purpose;
+  const healthIss    = purposes.filter(r => slmKeywords(r[0], HEALTH_KEYWORDS));
+  const protectIss   = purposes.filter(r => !slmKeywords(r[0], HEALTH_KEYWORDS) && slmKeywords(r[0], PROTECT_KEYWORDS));
+  const socialIss    = purposes.filter(r => !slmKeywords(r[0], HEALTH_KEYWORDS) && !slmKeywords(r[0], PROTECT_KEYWORDS));
+  const allIssTotal  = purposes.reduce((a, r) => a + r[1], 0);
+
+  function issueRows(arr, startIdx) {
+    if (!arr.length) return '<p style="font-size:10px;color:#94a3b8;padding:2px 4px">—</p>';
+    return arr.slice(0, 6).map(([name, cnt], i) => `
+      <div class="slm-issue-row">
+        <span class="slm-issue-num">${startIdx + i + 1}</span>
+        <span class="slm-issue-name" title="${name}">${name}</span>
+        <span class="slm-issue-cnt">${fmt(cnt)}</span>
+      </div>`).join('');
+  }
+  el('slm-issues-health').innerHTML     = issueRows(healthIss, 0);
+  el('slm-issues-protection').innerHTML = issueRows(protectIss, healthIss.length);
+  el('slm-issues-social').innerHTML     = issueRows(socialIss, healthIss.length + protectIss.length);
+  el('slm-issues-total').innerHTML      = `<span>TOTAL ISSUES</span><span>${fmt(allIssTotal)}</span>`;
+
+  // ── Risk Classification ──
+  const priMap = {};
+  d.by_priority.forEach(([k, v]) => { priMap[(k ?? '').toLowerCase()] = v; });
+  const rEmerg = d.imm_act ?? 0;
+  const rHigh  = priMap.high   ?? 0;
+  const rMed   = priMap.medium ?? 0;
+  const rLow   = priMap.low    ?? 0;
+  const rTot   = total || 1;
+
+  function setRisk(suffix, count, total) {
+    const pct = ((count / total) * 100).toFixed(1);
+    el('slm-r-' + suffix).textContent  = fmt(count);
+    el('slm-rp-' + suffix).textContent = pct + '%';
+    el('slm-rb-' + suffix).style.width = Math.min(100, parseFloat(pct)) + '%';
+  }
+  setRisk('emerg', rEmerg, rTot);
+  setRisk('high',  rHigh,  rTot);
+  setRisk('med',   rMed,   rTot);
+  setRisk('low',   rLow,   rTot);
+  el('slm-risk-total').innerHTML = `<span>TOTAL CLASSIFIED</span><span>${fmt(total)}</span>`;
+
+  // ── Response Actions (from by_status) ──
+  const actMap = {
+    open        : ['🫂 Counselling / Support',   '#dcfce7', '#16a34a'],
+    in_progress : ['⚡ Active Intervention',      '#fef9c3', '#a16207'],
+    pending     : ['📋 Pending Follow-Up',        '#eff6ff', '#3b82f6'],
+    referred    : ['🏥 Referral Made',            '#f0fdf4', '#15803d'],
+    closed      : ['✅ Case Closed / Resolved',   '#f0fdf4', '#0d9488'],
+    resolved    : ['✅ Case Resolved',             '#f0fdf4', '#0d9488'],
+  };
+  const actTotal = d.by_status.reduce((a, r) => a + r[1], 0);
+  const actMax   = Math.max(...d.by_status.map(r => r[1]), 1);
+  el('slm-actions').innerHTML = d.by_status.length ? d.by_status.map(([status, cnt]) => {
+    const [label, bg, col] = actMap[status] ?? [`📌 ${status.replace(/_/g,' ')}`, '#f8fafc', '#374151'];
+    const pct = actTotal ? ((cnt / actTotal) * 100).toFixed(1) : 0;
+    const bar = Math.round(cnt / actMax * 100);
+    return `<div style="padding:4px 0;border-bottom:1px dotted #f1f5f9">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:2px">
+        <span style="font-weight:600;color:#374151">${label}</span>
+        <span style="font-weight:700;color:#0f172a">${fmt(cnt)}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="flex:1;background:#f1f5f9;border-radius:2px;height:5px">
+          <div style="width:${bar}%;background:${col};height:5px;border-radius:2px"></div>
+        </div>
+        <span style="font-size:9px;color:#94a3b8">${pct}%</span>
+      </div>
+    </div>`;
+  }).join('') : '<p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">No action data</p>';
+  el('slm-actions-total').innerHTML = `<span>TOTAL ACTIONS</span><span>${fmt(actTotal)}</span>`;
+
+  // ── Referrals ──
+  const refs    = d.by_referral;
+  const refTotal = refs.reduce((a, r) => a + r[1], 0);
+  el('slm-referrals').innerHTML = refs.length ? refs.map(([name, cnt]) => `
+    <div class="slm-ref-row">
+      <span class="slm-ref-name">${name}</span>
+      <span class="slm-ref-cnt">${fmt(cnt)}</span>
+    </div>`).join('') : '<p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px">No referral data</p>';
+  el('slm-ref-total').innerHTML = `<span>TOTAL REFERRALS</span><span>${fmt(refTotal)}</span>`;
+
+  // ── Community Trends ──
+  const prevPurp = prev.by_purpose ?? {};
+  const tbody7 = document.getElementById('slm-trends-tbody');
+  if (tbody7) {
+    tbody7.innerHTML = purposes.length ? purposes.slice(0, 9).map(([name, cnt], i) => {
+      const prevCnt = prevPurp[name] ?? 0;
+      const chg     = prevCnt > 0 ? Math.round(((cnt - prevCnt) / prevCnt) * 100) : null;
+      const trend   = chg === null ? '<span style="color:#94a3b8">–</span>'
+        : chg > 0  ? `<span style="color:#dc2626;font-weight:700">↑ +${chg}%</span>`
+        : chg < 0  ? `<span style="color:#16a34a;font-weight:700">↓ ${chg}%</span>`
+        : '<span style="color:#94a3b8">→ 0%</span>';
+      return `<tr>
+        <td style="color:#94a3b8">${i + 1}</td>
+        <td style="color:#374151">${name}</td>
+        <td style="font-weight:700;color:#0f172a">${fmt(cnt)}</td>
+        <td>${trend}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px">No purpose data for this period</td></tr>';
+  }
+
+  // ── Geographic (provinces) ──
+  const provs  = d.by_province;
+  const geoMax = Math.max(...provs.map(r => r[1]), 1);
+  const tbody8 = document.getElementById('slm-geo-tbody');
+  if (tbody8) {
+    tbody8.innerHTML = provs.length ? provs.map(([name, cnt], i) => {
+      const pct = total ? ((cnt / total) * 100).toFixed(1) : 0;
+      const bar = Math.round(cnt / geoMax * 100);
+      return `<tr>
+        <td style="color:#94a3b8">${i + 1}</td>
+        <td style="font-weight:600;color:#0f172a">${name}</td>
+        <td>${fmt(cnt)}</td>
+        <td>${pct}%</td>
+        <td style="min-width:70px"><div style="background:#e2e8f0;border-radius:2px;height:5px">
+          <div style="width:${bar}%;height:5px;border-radius:2px;background:#3b82f6"></div>
+        </div></td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:14px">No geographic data</td></tr>';
+  }
+  el('slm-geo-total').innerHTML = `<span>TOTAL</span><span>${fmt(total)}</span>`;
+
+  // ── Urgent Escalation ──
+  el('slm-urg-imm').textContent    = fmt(d.imm_act ?? 0);
+  el('slm-urg-missed').textContent = fmt(s.missed ?? 0);
+  el('slm-urg-high').textContent   = fmt(rHigh);
+  el('slm-urg-repeat').textContent = fmt(d.repeat ?? 0);
+  el('slm-urg-valid').textContent  = fmt(d.valid ?? 0);
+  el('slm-urg-uptake').textContent = fmt(d.uptake ?? 0);
+  el('slm-urg-total').textContent  = fmt((d.imm_act ?? 0) + rHigh);
+}
+
+function el(id) { return document.getElementById(id); }
+
 // ── 12-month all-time trend (static, always shown) ────────────────────────────
 (function () {
   const mLabels = Object.keys(months12).map(ym => {
@@ -847,7 +1403,7 @@ function setPeriod(section, period, btn) {
   document.querySelectorAll(`#sec-${section} .period-btn`).forEach(b => b.classList.remove('active-period'));
   btn.classList.add('active-period');
 
-  const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends };
+  const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
   if (fn[section]) fn[section](period);
 }
 
@@ -871,7 +1427,7 @@ const CALL_DEFAULT   = @json($callDefaultPeriod);
 
 function labelPeriodBtns() {
   const LABELS = { day:'Today', week:'This Week', month:'This Month', year:'This Year' };
-  ['overview','geographic','demographics','services','trends'].forEach(sec => {
+  ['overview','geographic','demographics','services','trends','social'].forEach(sec => {
     document.querySelectorAll(`#sec-${sec} .period-btn`).forEach(btn => {
       const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
       if (!m) return;
@@ -898,6 +1454,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateServices(TICKET_DEFAULT);
   updateCalls(CALL_DEFAULT);
   updateTrends(TICKET_DEFAULT);
+  updateSocial(TICKET_DEFAULT);
 });
 </script>
 </body>

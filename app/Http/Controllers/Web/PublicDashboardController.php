@@ -97,6 +97,7 @@ class PublicDashboardController extends Controller
                 'by_mode'     => (clone $pb)->whereNotNull('mode_of_communication')->where('mode_of_communication', '!=', '')->select('mode_of_communication', DB::raw('count(*) as cnt'))->groupBy('mode_of_communication')->orderByDesc('cnt')->get()->map(fn ($r) => [$r->mode_of_communication, $r->cnt]),
 
                 'by_province' => (clone $pb)->whereNotNull('province')->where('province', '!=', '')->select('province', DB::raw('count(*) as cnt'))->groupBy('province')->orderByDesc('cnt')->get()->map(fn ($r) => [$r->province, $r->cnt]),
+                'by_district' => (clone $pb)->whereNotNull('district')->where('district', '!=', '')->select('district', DB::raw('count(*) as cnt'))->groupBy('district')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->district, $r->cnt]),
 
                 'by_gender'   => (clone $pb)->whereNotNull('caller_gender')->where('caller_gender', '!=', '')->select('caller_gender', DB::raw('count(*) as cnt'))->groupBy('caller_gender')->orderByDesc('cnt')->get()->map(fn ($r) => [$r->caller_gender, $r->cnt]),
                 'by_marital'  => (clone $pb)->whereNotNull('caller_marital_status')->where('caller_marital_status', '!=', '')->select('caller_marital_status', DB::raw('count(*) as cnt'))->groupBy('caller_marital_status')->orderByDesc('cnt')->get()->map(fn ($r) => [$r->caller_marital_status, $r->cnt]),
@@ -114,6 +115,38 @@ class PublicDashboardController extends Controller
                 'by_purpose'  => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get()->map(fn ($r) => [$r->purpose_of_call, $r->cnt]),
             ];
         }
+
+        // ── Previous equivalent periods for trend comparison ─────────────────
+        $prevBounds = [
+            'day'   => [now()->subDay()->startOfDay(),     now()->subDay()->endOfDay()],
+            'week'  => [now()->subWeek()->startOfWeek(),   now()->subWeek()->endOfWeek()],
+            'month' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            'year'  => [now()->subYear()->startOfYear(),   now()->subYear()->endOfYear()],
+        ];
+        $prevPeriodData = [];
+        foreach ($prevBounds as $pKey => [$start, $end]) {
+            $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end]);
+            $prevPeriodData[$pKey] = [
+                'total'      => (clone $pb)->count(),
+                'by_purpose' => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')
+                    ->select('purpose_of_call', DB::raw('count(*) as cnt'))
+                    ->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)
+                    ->pluck('cnt', 'purpose_of_call'),
+                'by_mode'    => (clone $pb)->whereNotNull('mode_of_communication')->where('mode_of_communication', '!=', '')
+                    ->select('mode_of_communication', DB::raw('count(*) as cnt'))
+                    ->groupBy('mode_of_communication')->orderByDesc('cnt')
+                    ->pluck('cnt', 'mode_of_communication'),
+            ];
+        }
+
+        // ── Recent tickets for case recording matrix ──────────────────────────
+        $recentTickets = DB::table('tickets')
+            ->whereNull('deleted_at')
+            ->select('id', 'created_at', 'mode_of_communication', 'purpose_of_call',
+                     'priority', 'immediate_action_required', 'referred_to', 'status', 'province')
+            ->orderByDesc('created_at')
+            ->limit(8)
+            ->get();
 
         // ── Period-filtered call data ─────────────────────────────────────────
         $callStats = [];
@@ -170,7 +203,8 @@ class PublicDashboardController extends Controller
                 'byService', 'byReferral', 'byKeyPops', 'byMarital', 'months',
                 'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
                 'callStats', 'periodData',
-                'ticketDefaultPeriod', 'callDefaultPeriod'
+                'ticketDefaultPeriod', 'callDefaultPeriod',
+                'prevPeriodData', 'recentTickets'
             ))
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache')
