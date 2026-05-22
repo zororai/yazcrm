@@ -7169,3 +7169,4 @@
 #35 C:/Users/Mazarura/crm-pbx/backend/artisan(12): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
 #36 {main}
 "} 
+[2026-05-22 14:59:25] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  

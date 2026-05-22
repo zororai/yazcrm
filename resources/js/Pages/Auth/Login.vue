@@ -22,18 +22,19 @@ function submit() {
 
             <!-- Logo -->
             <div class="lp-logo">
-                <div class="lp-logo-icon">
-                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-                        <path d="M13 2C13 2 5 8 5 14C5 18.4 8.6 22 13 22C17.4 22 21 18.4 21 14C21 8 13 2 13 2Z" fill="url(#lg1)" opacity=".9"/>
-                        <path d="M9 14L13 18L21 8" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <defs>
-                            <linearGradient id="lg1" x1="5" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
-                                <stop stop-color="#f97316"/>
-                                <stop offset="1" stop-color="#7c3aed"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
+                <!-- Youth Advocates mark: two overlapping rounded-pill arms + teardrop -->
+                <svg width="52" height="44" viewBox="0 0 130 108" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Left arm (orange) -->
+                    <rect x="12" y="0" width="28" height="82" rx="14"
+                          fill="#e8512a"
+                          transform="rotate(34 26 66)"/>
+                    <!-- Right arm (purple) -->
+                    <rect x="90" y="0" width="28" height="82" rx="14"
+                          fill="#6835a2"
+                          transform="rotate(-34 104 66)"/>
+                    <!-- Teardrop at top center (white on dark bg) -->
+                    <ellipse cx="65" cy="14" rx="11" ry="14" fill="#ffffff"/>
+                </svg>
                 <div>
                     <div class="lp-logo-name">youth</div>
                     <div class="lp-logo-sub">advocates</div>
