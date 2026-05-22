@@ -8463,3 +8463,8 @@
 #65 C:/Program Files/Herd/resources/app.asar.unpacked/resources/valet/server.php(139): require('C://Users//Mazaru...')
 #66 {main}
 "} 
+[2026-05-22 15:28:09] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-22 15:28:18] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-22 15:28:19] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-22 15:28:40] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  
+[2026-05-22 15:29:10] local.WARNING: Yeastar API [active_call/list]: INTERFACE NOT EXISTED  

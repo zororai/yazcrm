@@ -101,7 +101,7 @@ class DashboardController extends Controller
             : null;
 
         // ── Recent calls for activity feed ────────────────────────────────────
-        $recentQuery = Call::select('id', 'caller_number', 'extension_number', 'direction', 'status', 'duration', 'started_at')
+        $recentQuery = Call::select('id', 'caller', 'extension_number', 'direction', 'status', 'duration', 'started_at')
             ->orderByDesc('started_at')
             ->limit(6);
         if ($extNumber) $recentQuery->where('extension_number', $extNumber);
