@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="120">
+<meta http-equiv="refresh" content="60">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -274,6 +274,12 @@ tr:hover td{background:#f8fafc}
 {{-- ══════════════════════════════════ OVERVIEW ══════════════════════════════════ --}}
 <div id="sec-overview" class="section">
 
+  <!-- No-tickets notice (hidden by JS when period has data) -->
+  <div id="ov-no-data-notice" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 16px;font-size:12px;color:#1d4ed8;margin-bottom:12px">
+    No ticket interactions for this period &mdash; <span id="ov-notice-calls"></span> calls recorded.
+    <span style="color:#64748b;margin-left:6px">Switch to <strong>This Month</strong> or <strong>This Year</strong> for ticket data.</span>
+  </div>
+
   <!-- Period selector -->
   <div class="sec-hdr">
     <span class="sec-title">Overview</span>
@@ -297,36 +303,42 @@ tr:hover td{background:#f8fafc}
       <div class="ch140"><canvas id="ovTrendChart"></canvas></div>
     </div>
 
-    <!-- Mini stats -->
+    <!-- Mini stats — always use CALL data so Today is never empty -->
     <div class="stat-stack">
       <div class="stat-mini">
         <div class="sm-icon" style="background:#eff6ff">📞</div>
-        <div><div class="sm-val" id="ov-total">{{ number_format($dd['total']) }}</div><div class="sm-lbl">Total</div></div>
+        <div><div class="sm-val" id="ov-total">{{ number_format($sc['total']) }}</div><div class="sm-lbl">Total Calls</div></div>
       </div>
       <div class="stat-mini">
         <div class="sm-icon" style="background:#f0fdf4">✅</div>
-        <div><div class="sm-val" id="ov-valid">{{ number_format($dd['valid']) }}</div><div class="sm-lbl">Valid</div></div>
+        <div><div class="sm-val" id="ov-valid">{{ number_format($sc['answered']) }}</div><div class="sm-lbl">Answered</div></div>
       </div>
       <div class="stat-mini">
-        <div class="sm-icon" style="background:#fefce8">🔄</div>
-        <div><div class="sm-val" id="ov-repeat">{{ number_format($dd['repeat']) }}</div><div class="sm-lbl">Repeat</div></div>
+        <div class="sm-icon" style="background:#fef2f2">📵</div>
+        <div><div class="sm-val" id="ov-repeat">{{ number_format($sc['missed']) }}</div><div class="sm-lbl">Missed</div></div>
       </div>
     </div>
 
     <!-- Donut overview -->
+@php
+  $scT   = $sc['total'] ?: 1;
+  $ansP  = round($sc['answered'] / $scT * 100);
+  $misP  = round($sc['missed']   / $scT * 100);
+  $inP   = round($sc['inbound']  / $scT * 100);
+@endphp
     <div class="glass">
-      <div class="card-hdr"><span class="card-title">Overview</span><span class="card-tag">Period share</span></div>
+      <div class="card-hdr"><span class="card-title">Calls Overview</span><span class="card-tag" id="ov-donut-label">Call share</span></div>
       <div class="donut-wrap">
         <canvas id="ovDonut"></canvas>
         <div class="donut-center">
-          <div class="donut-pct" id="ov-pct">{{ $ddVp }}%</div>
-          <div class="donut-sub">Valid</div>
+          <div class="donut-pct" id="ov-pct">{{ $ansP }}%</div>
+          <div class="donut-sub" id="ov-donut-sub">Answered</div>
         </div>
       </div>
       <div class="ov-rows">
-        <div class="ov-row"><span class="ov-dot" style="background:#3b82f6"></span><span class="ov-lbl">Valid</span><span class="ov-val" id="ov-ov-valid">{{ number_format($dd['valid']) }}</span><span class="ov-chg up" id="ov-ov-vpct">+{{ $ddVp }}%</span></div>
-        <div class="ov-row"><span class="ov-dot" style="background:#fbbf24"></span><span class="ov-lbl">Repeat</span><span class="ov-val" id="ov-ov-repeat">{{ number_format($dd['repeat']) }}</span><span class="ov-chg muted" id="ov-ov-rpct">{{ $ddRp }}%</span></div>
-        <div class="ov-row"><span class="ov-dot" style="background:#f87171"></span><span class="ov-lbl">Immediate Action</span><span class="ov-val" id="ov-ov-imm">{{ number_format($dd['imm_act']) }}</span><span class="ov-chg muted" id="ov-ov-ipct">{{ $ddIp }}%</span></div>
+        <div class="ov-row"><span class="ov-dot" style="background:#3b82f6"></span><span class="ov-lbl">Answered</span><span class="ov-val" id="ov-ov-valid">{{ number_format($sc['answered']) }}</span><span class="ov-chg up" id="ov-ov-vpct">{{ $ansP }}%</span></div>
+        <div class="ov-row"><span class="ov-dot" style="background:#f87171"></span><span class="ov-lbl">Missed</span><span class="ov-val" id="ov-ov-repeat">{{ number_format($sc['missed']) }}</span><span class="ov-chg muted" id="ov-ov-rpct">{{ $misP }}%</span></div>
+        <div class="ov-row"><span class="ov-dot" style="background:#4ade80"></span><span class="ov-lbl">Inbound</span><span class="ov-val" id="ov-ov-imm">{{ number_format($sc['inbound']) }}</span><span class="ov-chg muted" id="ov-ov-ipct">{{ $inP }}%</span></div>
       </div>
     </div>
   </div><!-- /top-grid -->
@@ -653,12 +665,24 @@ function updateOverview(p) {
   const t = d.total || 1;
   const s = callStats[p]; // call stats from Yeastar/calls table
 
-  // Ticket KPIs
-  document.getElementById('ov-total').textContent  = fmt(d.total);
-  document.getElementById('ov-valid').textContent  = fmt(d.valid);
-  document.getElementById('ov-repeat').textContent = fmt(d.repeat);
+  // No-data notice
+  const notice = document.getElementById('ov-no-data-notice');
+  if (notice) {
+    if (d.total === 0 && s.total > 0) {
+      notice.style.display = 'block';
+      const nc = document.getElementById('ov-notice-calls');
+      if (nc) nc.textContent = fmt(s.total);
+    } else {
+      notice.style.display = 'none';
+    }
+  }
 
-  // Call KPIs (from Yeastar / calls table)
+  // Mini stats — CALL data (always populated, even when no tickets)
+  document.getElementById('ov-total').textContent  = fmt(s.total);
+  document.getElementById('ov-valid').textContent  = fmt(s.answered);
+  document.getElementById('ov-repeat').textContent = fmt(s.missed);
+
+  // Call KPI detail row
   document.getElementById('ov-c-total').textContent    = fmt(s.total);
   document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
@@ -666,28 +690,32 @@ function updateOverview(p) {
   document.getElementById('ov-c-answered').textContent = fmt(s.answered);
   document.getElementById('ov-c-avgdur').textContent   = s.avg_dur + 's';
 
-  // Donut
+  // Donut — call breakdown (Answered / Missed / Inbound)
+  const st = s.total || 1;
+  const ansP = Math.round(s.answered / st * 100);
+  const misP = Math.round(s.missed   / st * 100);
+  const inP  = Math.round(s.inbound  / st * 100);
+  document.getElementById('ov-pct').textContent      = ansP + '%';
+  document.getElementById('ov-ov-valid').textContent  = fmt(s.answered);
+  document.getElementById('ov-ov-vpct').textContent   = ansP + '%';
+  document.getElementById('ov-ov-repeat').textContent = fmt(s.missed);
+  document.getElementById('ov-ov-rpct').textContent   = misP + '%';
+  document.getElementById('ov-ov-imm').textContent    = fmt(s.inbound);
+  document.getElementById('ov-ov-ipct').textContent   = inP + '%';
+
+  // Ticket stats (uptake / immediate action / valid rate)
   const vp = t ? Math.round(d.valid/t*100) : 0;
-  const rp = t ? Math.round(d.repeat/t*100) : 0;
-  const ip = t ? Math.round(d.imm_act/t*100) : 0;
-  document.getElementById('ov-pct').textContent         = vp + '%';
-  document.getElementById('ov-ov-valid').textContent    = fmt(d.valid);
-  document.getElementById('ov-ov-vpct').textContent     = '+' + vp + '%';
-  document.getElementById('ov-ov-repeat').textContent   = fmt(d.repeat);
-  document.getElementById('ov-ov-rpct').textContent     = rp + '%';
-  document.getElementById('ov-ov-imm').textContent      = fmt(d.imm_act);
-  document.getElementById('ov-ov-ipct').textContent     = ip + '%';
-  document.getElementById('ov-uptake').textContent      = fmt(d.uptake);
-  document.getElementById('ov-uptake-sub').textContent  = (d.valid ? ((d.uptake/d.valid)*100).toFixed(1) : 0) + '% of valid';
-  document.getElementById('ov-imm').textContent         = fmt(d.imm_act);
-  document.getElementById('ov-vrate').textContent       = vp + '%';
-  document.getElementById('ov-imm-badge').textContent   = d.imm_act > 0 ? 'Needs Attention' : 'All Clear';
+  document.getElementById('ov-uptake').textContent     = fmt(d.uptake);
+  document.getElementById('ov-uptake-sub').textContent = (d.valid ? ((d.uptake/d.valid)*100).toFixed(1) : 0) + '% of valid';
+  document.getElementById('ov-imm').textContent        = fmt(d.imm_act);
+  document.getElementById('ov-vrate').textContent      = vp + '%';
+  document.getElementById('ov-imm-badge').textContent  = d.imm_act > 0 ? 'Needs Attention' : 'All Clear';
 
   // Donut chart
   rc('ovDonut', 'doughnut',
-    ['Valid','Repeat','Immediate','Other'],
-    [vp, rp, ip, Math.max(0, 100 - vp - rp - ip)],
-    { colors: ['#3b82f6','#fbbf24','#f87171','#e2e8f0'], legend: false }
+    ['Answered','Missed','Inbound'],
+    [ansP, misP, inP],
+    { colors: ['#3b82f6','#f87171','#4ade80'], legend: false }
   );
 
   // Activity chart: use call trend (Yeastar data — has data even when no tickets)
