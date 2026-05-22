@@ -65,11 +65,11 @@ class PublicDashboardController extends Controller
 
             // trend: hourly (day), daily (week/month), monthly (year)
             if ($pKey === 'day') {
-                $hours = collect(range(0, 23))->mapWithKeys(fn ($h) => [$h => 0]);
-                $trend = $hours->merge(
+                $trend = array_replace(
+                    array_fill(0, 24, 0),
                     (clone $pb)->select(DB::raw('HOUR(created_at) as h'), DB::raw('COUNT(*) as cnt'))
-                        ->groupBy('h')->pluck('cnt', 'h')
-                )->all();
+                        ->groupBy('h')->pluck('cnt', 'h')->toArray()
+                );
             } elseif ($pKey === 'year') {
                 // Fill all 12 months so empty months still appear
                 $allMonths = collect(range(1, 12))->mapWithKeys(fn ($m) => [
@@ -129,10 +129,12 @@ class PublicDashboardController extends Controller
             ];
         }
 
-        $callStats['day']['trend'] = collect(range(0, 23))->mapWithKeys(fn ($h) => [$h => 0])
-            ->merge(DB::table('calls')->whereBetween('started_at', [now()->startOfDay(), now()->endOfDay()])
+        $callStats['day']['trend'] = array_replace(
+            array_fill(0, 24, 0),
+            DB::table('calls')->whereBetween('started_at', [now()->startOfDay(), now()->endOfDay()])
                 ->select(DB::raw('HOUR(started_at) as h'), DB::raw('COUNT(*) as cnt'))
-                ->groupBy('h')->orderBy('h')->pluck('cnt', 'h'))->all();
+                ->groupBy('h')->orderBy('h')->pluck('cnt', 'h')->toArray()
+        );
 
         $callStats['week']['trend'] = DB::table('calls')->whereBetween('started_at', [now()->startOfWeek(), now()->endOfDay()])
             ->select(DB::raw('DATE(started_at) as d'), DB::raw('COUNT(*) as cnt'))
