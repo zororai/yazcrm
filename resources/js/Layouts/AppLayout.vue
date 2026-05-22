@@ -5,7 +5,7 @@ import axios from 'axios';
 import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
-    Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon,
+    Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -94,7 +94,7 @@ function logout() {
 </script>
 
 <template>
-    <div class="min-h-screen flex bg-gray-100">
+    <div class="min-h-screen flex bg-[#0d1117]">
         <!-- Sidebar backdrop (mobile) -->
         <div
             v-if="sidebarOpen"
@@ -161,37 +161,64 @@ function logout() {
         <!-- Main content -->
         <div class="flex-1 flex flex-col min-w-0">
             <!-- Top bar -->
-            <header class="h-16 bg-white border-b border-gray-200 flex items-center gap-4 px-4 lg:px-6">
+            <header class="h-16 bg-[#0f1117] border-b border-gray-800 flex items-center gap-4 px-4 lg:px-6 flex-shrink-0">
                 <button
-                    class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 lg:hidden"
+                    class="p-2 rounded-lg text-gray-400 hover:bg-gray-800 lg:hidden"
                     @click="sidebarOpen = true"
                 >
                     <Bars3Icon class="h-5 w-5" />
                 </button>
-                <h1 class="text-lg font-semibold text-gray-900 flex-1">
-                    <slot name="title" />
-                </h1>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-base font-semibold text-white leading-tight truncate">
+                        <slot name="title" />
+                    </h1>
+                    <p class="text-xs text-gray-400 leading-tight truncate hidden sm:block">
+                        <slot name="subtitle" />
+                    </p>
+                </div>
                 <slot name="header-actions" />
+                <!-- Notification bell -->
+                <button class="relative p-2 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors flex-shrink-0">
+                    <BellIcon class="h-5 w-5" />
+                    <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0f1117]"></span>
+                </button>
+                <!-- User profile -->
+                <div class="flex items-center gap-3 pl-3 border-l border-gray-700 flex-shrink-0">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
+                        {{ user?.name?.charAt(0)?.toUpperCase() }}
+                    </div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-medium text-white leading-tight">{{ user?.name }}</p>
+                        <p class="text-xs text-gray-400 capitalize leading-tight">{{ user?.role }}</p>
+                    </div>
+                    <button
+                        @click="logout"
+                        class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+                        title="Logout"
+                    >
+                        <ArrowRightOnRectangleIcon class="h-4 w-4" />
+                    </button>
+                </div>
             </header>
 
             <!-- Flash messages -->
             <div v-if="flash.success || flash.error" class="px-4 lg:px-6 pt-4">
                 <div
                     v-if="flash.success"
-                    class="flex items-center gap-2 p-3 rounded-lg bg-green-50 text-green-800 text-sm border border-green-200"
+                    class="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 text-green-400 text-sm border border-green-500/20"
                 >
                     {{ flash.success }}
                 </div>
                 <div
                     v-if="flash.error"
-                    class="flex items-center gap-2 p-3 rounded-lg bg-red-50 text-red-800 text-sm border border-red-200"
+                    class="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 text-red-400 text-sm border border-red-500/20"
                 >
                     {{ flash.error }}
                 </div>
             </div>
 
             <!-- Page content -->
-            <main class="flex-1 p-4 lg:p-6 overflow-auto">
+            <main class="flex-1 p-4 lg:p-6 overflow-auto bg-[#0d1117]">
                 <slot />
             </main>
         </div>

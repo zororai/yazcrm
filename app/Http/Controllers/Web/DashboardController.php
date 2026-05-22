@@ -53,6 +53,24 @@ class DashboardController extends Controller
             $stats['active_calls'] = $this->yeastar->getActiveCalls();
         } catch (\Exception) {}
 
+        // ── Previous period for % comparison ─────────────────────────────────
+        [$prevStart, $prevEnd] = $this->prevPeriodRange($period);
+        $prevBase = Call::whereBetween('started_at', [$prevStart, $prevEnd]);
+        if ($extNumber) $prevBase->where('extension_number', $extNumber);
+        elseif ($user->role !== 'admin') $prevBase->whereRaw('0 = 1');
+
+        $prevStats = [
+            'total_calls'      => (clone $prevBase)->count(),
+            'inbound_calls'    => (clone $prevBase)->where('direction', 'inbound')->count(),
+            'outbound_calls'   => (clone $prevBase)->where('direction', 'outbound')->count(),
+            'missed_calls'     => (clone $prevBase)->where('status', 'missed')->count(),
+            'answered_calls'   => (clone $prevBase)->where('status', 'answered')->count(),
+            'avg_duration'     => (int)(clone $prevBase)->where('status', 'answered')->avg('duration'),
+            'active_clients'   => $stats['active_clients'],
+            'open_tickets'     => $stats['open_tickets'],
+            'callback_pending' => $stats['callback_pending'],
+        ];
+
         $trendQuery = Call::select(
                 DB::raw('DATE(started_at) as date'),
                 DB::raw('COUNT(*) as total'),
@@ -82,13 +100,23 @@ class DashboardController extends Controller
             ? CallTargetController::summaryForAgent($request->user()->id)
             : null;
 
+        // ── Recent calls for activity feed ────────────────────────────────────
+        $recentQuery = Call::select('id', 'caller_number', 'extension_number', 'direction', 'status', 'duration', 'started_at')
+            ->orderByDesc('started_at')
+            ->limit(6);
+        if ($extNumber) $recentQuery->where('extension_number', $extNumber);
+        elseif ($user->role !== 'admin') $recentQuery->whereRaw('0 = 1');
+        $recentCalls = $recentQuery->get();
+
         return Inertia::render('Dashboard/Index', [
             'stats'         => $stats,
+            'prevStats'     => $prevStats,
             'callTrend'     => $callTrend,
             'topExtensions' => $topExtensions,
             'period'        => $period,
             'targetSummary' => $targetSummary,
             'extension'     => $extNumber,
+            'recentCalls'   => $recentCalls,
         ]);
     }
 
@@ -98,6 +126,15 @@ class DashboardController extends Controller
             'week'  => [now()->startOfWeek(), now()->endOfDay()],
             'month' => [now()->startOfMonth(), now()->endOfDay()],
             default => [now()->startOfDay(), now()->endOfDay()],
+        };
+    }
+
+    private function prevPeriodRange(string $period): array
+    {
+        return match ($period) {
+            'week'  => [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()],
+            'month' => [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()],
+            default => [now()->subDay()->startOfDay(), now()->subDay()->endOfDay()],
         };
     }
 }
