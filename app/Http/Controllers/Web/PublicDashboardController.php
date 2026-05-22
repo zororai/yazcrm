@@ -161,13 +161,17 @@ class PublicDashboardController extends Controller
             if (($callStats[$p]['total'] ?? 0) > 0) { $callDefaultPeriod = $p; break; }
         }
 
-        return view('public-dashboard', compact(
-            'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
-            'byStatus', 'byProvince', 'byGender', 'byMode', 'byPurpose',
-            'byService', 'byReferral', 'byKeyPops', 'byMarital', 'months',
-            'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
-            'callStats', 'periodData',
-            'ticketDefaultPeriod', 'callDefaultPeriod'
-        ));
+        return response()
+            ->view('public-dashboard', compact(
+                'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
+                'byStatus', 'byProvince', 'byGender', 'byMode', 'byPurpose',
+                'byService', 'byReferral', 'byKeyPops', 'byMarital', 'months',
+                'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
+                'callStats', 'periodData',
+                'ticketDefaultPeriod', 'callDefaultPeriod'
+            ))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }
