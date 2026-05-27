@@ -10,7 +10,7 @@ class Ticket extends Model
     use SoftDeletes;
     protected $fillable = [
         'call_id', 'client_id', 'agent_id', 'subject', 'contact_number', 'description',
-        'status', 'priority', 'resolved_at',
+        'status', 'priority', 'resolved_at', 'follow_up_date',
         'mode_of_communication', 'call_validity', 'purpose_of_call',
         'immediate_action_required', 'caller_age', 'caller_gender',
         'caller_marital_status', 'key_pops', 'province', 'district',

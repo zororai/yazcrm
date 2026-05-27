@@ -27,7 +27,7 @@ function onContactInput() { debouncedContactSearch(addForm.contact_number); }
 function selectContact(num) { addForm.contact_number = num; showContactDrop.value = false; contactResults.value = []; }
 
 const addForm = useForm({
-    subject: '', contact_number: '', description: '', priority: 'medium',
+    subject: '', contact_number: '', description: '', priority: 'medium', follow_up_date: '',
     // CRM fields
     mode_of_communication:    'phone',
     call_validity:            'valid',
@@ -229,6 +229,10 @@ const statusColor = {
                                     <option value="high">High</option>
                                     <option value="urgent">Urgent</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label class="label">Follow-up Date</label>
+                                <input v-model="addForm.follow_up_date" type="date" class="input w-48" />
                             </div>
                         </div>
                     </div>
