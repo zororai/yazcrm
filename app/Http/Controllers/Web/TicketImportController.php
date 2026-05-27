@@ -24,7 +24,7 @@ class TicketImportController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:51200',
         ]);
 
         ini_set('memory_limit', '512M');
