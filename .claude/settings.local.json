@@ -8,7 +8,10 @@
       "Read(//c/php/**)",
       "Read(//c/xampp/php/**)",
       "Read(//c/laragon/bin/**)",
-      "Bash(xxd)"
+      "Bash(xxd)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Mazarura\\.config\\herd\\bin\\php84"
