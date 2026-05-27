@@ -3,7 +3,7 @@
         'name' => 'crm/pbx-backend',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'bed48d8c81342248aa9c6ef9003c4730faca97de',
+        'reference' => 'b8cc1ee67fa24cab489d69cd54350ea118da9b28',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -46,7 +46,7 @@
         'crm/pbx-backend' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'bed48d8c81342248aa9c6ef9003c4730faca97de',
+            'reference' => 'b8cc1ee67fa24cab489d69cd54350ea118da9b28',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

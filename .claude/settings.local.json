@@ -7,7 +7,8 @@
       "Bash(where php *)",
       "Read(//c/php/**)",
       "Read(//c/xampp/php/**)",
-      "Read(//c/laragon/bin/**)"
+      "Read(//c/laragon/bin/**)",
+      "Bash(xxd)"
     ]
   }
 }
