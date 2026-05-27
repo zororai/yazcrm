@@ -14,15 +14,35 @@ class DistressDomainController extends Controller
 {
     public function index(): Response
     {
-        $lookups = [];
-        foreach (array_keys(LookupItem::TYPES) as $type) {
-            $lookups[$type] = LookupItem::where('type', $type)->orderBy('sort_order')->orderBy('name')->get();
+        $sections = [
+            ['type' => 'distress-domains', 'label' => 'Distress Domains', 'count' => DistressDomain::count()],
+        ];
+
+        foreach (LookupItem::TYPES as $type => $label) {
+            $sections[] = ['type' => $type, 'label' => $label, 'count' => LookupItem::where('type', $type)->count()];
         }
 
-        return Inertia::render('DistressDomains/Index', [
-            'domains' => DistressDomain::orderBy('sort_order')->orderBy('name')->get(),
-            'lookups' => $lookups,
-            'lookupTypes' => LookupItem::TYPES,
+        return Inertia::render('DistressDomains/Index', ['sections' => $sections]);
+    }
+
+    public function section(string $type): Response
+    {
+        if ($type === 'distress-domains') {
+            return Inertia::render('DistressDomains/Section', [
+                'type'     => 'distress-domains',
+                'label'    => 'Distress Domains',
+                'items'    => DistressDomain::orderBy('sort_order')->orderBy('name')->get(),
+                'isLookup' => false,
+            ]);
+        }
+
+        abort_unless(array_key_exists($type, LookupItem::TYPES), 404);
+
+        return Inertia::render('DistressDomains/Section', [
+            'type'     => $type,
+            'label'    => LookupItem::TYPES[$type],
+            'items'    => LookupItem::where('type', $type)->orderBy('sort_order')->orderBy('name')->get(),
+            'isLookup' => true,
         ]);
     }
 

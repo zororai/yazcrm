@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Call;
 use App\Models\Client;
 use App\Models\LookupItem;
 use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -47,6 +49,8 @@ class TicketController extends Controller
             'filters' => $request->only(['status', 'priority', 'search']),
             'keyPops'             => LookupItem::where('type', 'key_pops')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'modesOfCommunication' => LookupItem::where('type', 'mode_of_communication')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'projects'             => LookupItem::where('type', 'project')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'servicesRequested'    => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -63,7 +67,29 @@ class TicketController extends Controller
         ]);
     }
 
+    public function searchNumbers(Request $request): JsonResponse
+    {
+        $q = trim($request->get('q', ''));
+        if (strlen($q) < 2) return response()->json([]);
+
+        $numbers = Call::where(function ($query) use ($q) {
+                $query->where('caller', 'like', "%{$q}%")
+                      ->orWhere('callee', 'like', "%{$q}%");
+            })
+            ->orderByDesc('started_at')
+            ->limit(100)
+            ->get(['caller', 'callee'])
+            ->flatMap(fn($c) => [$c->caller, $c->callee])
+            ->filter(fn($n) => str_contains($n, $q) && $n !== '')
+            ->unique()
+            ->values()
+            ->take(15);
+
+        return response()->json($numbers);
+    }
+
     private array $crmRules = [
+        'contact_number'           => 'nullable|string|max:50',
         'mode_of_communication'    => 'nullable|string|max:100',
         'call_validity'            => 'nullable|in:valid,invalid',
         'purpose_of_call'          => 'nullable|string|max:255',
