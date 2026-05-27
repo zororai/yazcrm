@@ -7,7 +7,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
-const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object });
+const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const search   = ref(props.filters.search ?? '');
 const status   = ref(props.filters.status ?? '');
@@ -119,7 +119,7 @@ const statusColor = {
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Subject</th>
+                        <th class="table-th">Name</th>
                         <th class="table-th">Purpose</th>
                         <th class="table-th">Priority</th>
                         <th class="table-th">Status</th>
@@ -183,7 +183,7 @@ const statusColor = {
                         <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Basic Info</h4>
                         <div class="space-y-3">
                             <div>
-                                <label class="label">Subject *</label>
+                                <label class="label">Name *</label>
                                 <input v-model="addForm.subject" class="input" :class="{ 'border-red-500': addForm.errors.subject }" required />
                                 <p v-if="addForm.errors.subject" class="mt-1 text-xs text-red-600">{{ addForm.errors.subject }}</p>
                             </div>
@@ -207,11 +207,7 @@ const statusColor = {
                                 <label class="label">Mode of Communication</label>
                                 <select v-model="addForm.mode_of_communication" class="input">
                                     <option value="">— select —</option>
-                                    <option value="phone">Phone</option>
-                                    <option value="whatsapp">WhatsApp</option>
-                                    <option value="walk_in">Walk-In</option>
-                                    <option value="email">Email</option>
-                                    <option value="sms">SMS</option>
+                                    <option v-for="m in props.modesOfCommunication" :key="m" :value="m">{{ m }}</option>
                                 </select>
                             </div>
                             <div>
@@ -273,7 +269,10 @@ const statusColor = {
                             </div>
                             <div>
                                 <label class="label">Key Pops</label>
-                                <input v-model="addForm.key_pops" class="input" placeholder="e.g. AGYW, MSM, FSW…" />
+                                <select v-model="addForm.key_pops" class="input">
+                                    <option value="">— select —</option>
+                                    <option v-for="kp in props.keyPops" :key="kp" :value="kp">{{ kp }}</option>
+                                </select>
                             </div>
                             <div class="flex items-center gap-2 pt-5">
                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">

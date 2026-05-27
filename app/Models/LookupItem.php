@@ -16,6 +16,8 @@ class LookupItem extends Model
         'second_service_requested' => 'Second Service Requested',
         'radio_channel'            => 'Radio Channel',
         'project'                  => 'Project',
+        'key_pops'                 => 'Key Pops',
+        'mode_of_communication'    => 'Mode of Communication',
     ];
 
     public function scopeActive($query)
