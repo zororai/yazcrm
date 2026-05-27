@@ -38,12 +38,21 @@ class AnalyticsController extends Controller
             ->orderBy('date')
             ->get();
 
-        $agentPerformance = User::select('users.id', 'users.name')
-            ->withCount(['calls as total_calls' => fn ($q) => $q->where('started_at', '>=', $since)])
-            ->withCount(['calls as answered_calls' => fn ($q) => $q->where('started_at', '>=', $since)->where('status', 'answered')])
-            ->withCount(['calls as missed_calls' => fn ($q) => $q->where('started_at', '>=', $since)->where('status', 'missed')])
-            ->withCount(['tickets as open_tickets' => fn ($q) => $q->where('status', 'open')])
-            ->where('is_active', true)
+        $agentPerformance = User::select(
+                'users.id',
+                'users.name',
+                DB::raw('COUNT(DISTINCT calls.id) as total_calls'),
+                DB::raw('SUM(calls.status = "answered") as answered_calls'),
+                DB::raw('SUM(calls.status = "missed") as missed_calls'),
+                DB::raw('(SELECT COUNT(*) FROM tickets WHERE tickets.agent_id = users.id AND tickets.status = "open") as open_tickets')
+            )
+            ->leftJoin('extensions', 'extensions.user_id', '=', 'users.id')
+            ->leftJoin('calls', function ($join) use ($since) {
+                $join->on('calls.extension_number', '=', 'extensions.extension_number')
+                     ->where('calls.started_at', '>=', $since);
+            })
+            ->where('users.is_active', true)
+            ->groupBy('users.id', 'users.name')
             ->orderByDesc('total_calls')
             ->get();
 

@@ -9,6 +9,9 @@
       "Read(//c/xampp/php/**)",
       "Read(//c/laragon/bin/**)",
       "Bash(xxd)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Mazarura\\.config\\herd\\bin\\php84"
     ]
   }
 }
