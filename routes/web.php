@@ -59,6 +59,11 @@ Route::middleware('auth')->group(function () {
         Route::put('distress-domains/{distressDomain}', [Web\DistressDomainController::class, 'update'])->name('distress-domains.update');
         Route::delete('distress-domains/{distressDomain}', [Web\DistressDomainController::class, 'destroy'])->name('distress-domains.destroy');
 
+        // Lookup items (purpose of call, services, radio channel, project)
+        Route::post('lookup-items', [Web\LookupItemController::class, 'store'])->name('lookup-items.store');
+        Route::put('lookup-items/{lookupItem}', [Web\LookupItemController::class, 'update'])->name('lookup-items.update');
+        Route::delete('lookup-items/{lookupItem}', [Web\LookupItemController::class, 'destroy'])->name('lookup-items.destroy');
+
         // Call targets
         Route::get('call-targets', [Web\CallTargetController::class, 'index'])->name('call-targets.index');
         Route::post('call-targets', [Web\CallTargetController::class, 'store'])->name('call-targets.store');
