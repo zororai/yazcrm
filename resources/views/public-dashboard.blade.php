@@ -91,6 +91,15 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
 .kpi-icon{font-size:16px;margin-bottom:6px}
 .kpi-val{font-size:22px;font-weight:800;color:#0f172a;line-height:1}
 .kpi-lbl{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
+.svc-kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.svc-kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.svc-kpi-title{font-weight:700;font-size:14px;color:#1e293b;margin-bottom:14px}
+.svc-kpi-body{display:flex;align-items:center;gap:14px}
+.svc-kpi-icon{width:48px;height:48px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.svc-kpi-num{font-size:28px;font-weight:900;color:#6366f1;letter-spacing:-1px;line-height:1}
+.svc-kpi-foot{margin-top:16px;padding-top:12px;border-top:2px solid #f97316;display:flex;align-items:center;justify-content:space-between}
+.svc-kpi-foot-lbl{font-size:11px;color:#64748b;font-weight:600}
+.svc-kpi-rate{font-size:15px;font-weight:800;color:#f97316}
 
 /* Grids */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
@@ -502,6 +511,41 @@ tr:hover td{background:#f8fafc}
   <div class="s-card" style="margin-bottom:14px">
     <h3 style="text-align:center;font-size:15px;font-weight:700;margin-bottom:12px">Referral By Service</h3>
     <div style="height:280px"><canvas id="svcReferralByServiceChart"></canvas></div>
+  </div>
+  <div class="svc-kpi-row">
+    <div class="svc-kpi-card">
+      <div class="svc-kpi-title">Referred Cases</div>
+      <div class="svc-kpi-body">
+        <div class="svc-kpi-icon">👥</div>
+        <div class="svc-kpi-num" id="svc-kpi-referred">0</div>
+      </div>
+      <div class="svc-kpi-foot">
+        <span class="svc-kpi-foot-lbl">Referral Completion</span>
+        <span class="svc-kpi-rate" id="svc-kpi-ref-rate">0%</span>
+      </div>
+    </div>
+    <div class="svc-kpi-card">
+      <div class="svc-kpi-title">Services Requested</div>
+      <div class="svc-kpi-body">
+        <div class="svc-kpi-icon">🏥</div>
+        <div class="svc-kpi-num" id="svc-kpi-services">0</div>
+      </div>
+      <div class="svc-kpi-foot">
+        <span class="svc-kpi-foot-lbl">Uptake Rate</span>
+        <span class="svc-kpi-rate" id="svc-kpi-svc-rate">0%</span>
+      </div>
+    </div>
+    <div class="svc-kpi-card">
+      <div class="svc-kpi-title">Confirmed Uptake</div>
+      <div class="svc-kpi-body">
+        <div class="svc-kpi-icon">✅</div>
+        <div class="svc-kpi-num" id="svc-kpi-uptake">0</div>
+      </div>
+      <div class="svc-kpi-foot">
+        <span class="svc-kpi-foot-lbl">Completion Rate</span>
+        <span class="svc-kpi-rate" id="svc-kpi-uptake-rate">0%</span>
+      </div>
+    </div>
   </div>
   <div class="g3">
     <div class="s-card"><h3>Top Services Requested</h3><div class="ch220"><canvas id="svcServiceChart"></canvas></div></div>
@@ -1187,6 +1231,18 @@ function rcGrouped(id, labels, datasets) {
 // ── SERVICES ───────────────────────────────────────────────────────────────────
 function updateServices(p) {
   const d = periodData[p];
+
+  // KPI cards
+  const refCount = d.referral_count ?? 0;
+  const svcCount = d.service_count  ?? 0;
+  const uptake   = d.uptake         ?? 0;
+  const total    = d.total          ?? 0;
+  document.getElementById('svc-kpi-referred').textContent    = fmt(refCount);
+  document.getElementById('svc-kpi-ref-rate').textContent    = (refCount ? Math.round(uptake / refCount * 100) : 0) + '%';
+  document.getElementById('svc-kpi-services').textContent    = fmt(svcCount);
+  document.getElementById('svc-kpi-svc-rate').textContent    = (svcCount ? Math.round(uptake / svcCount * 100) : 0) + '%';
+  document.getElementById('svc-kpi-uptake').textContent      = fmt(uptake);
+  document.getElementById('svc-kpi-uptake-rate').textContent = (total  ? Math.round(uptake / total  * 100) : 0) + '%';
 
   // Referral By Service — grouped bar (referred vs confirmed uptake)
   const svcLabels  = d.by_service.map(r => r[0]);
