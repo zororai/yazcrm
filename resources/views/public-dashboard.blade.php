@@ -499,9 +499,14 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('services','year',this)">This Year</button>
     </div>
   </div>
-  <div class="g2">
+  <div class="s-card" style="margin-bottom:14px">
+    <h3 style="text-align:center;font-size:15px;font-weight:700;margin-bottom:12px">Referral By Service</h3>
+    <div style="height:280px"><canvas id="svcReferralByServiceChart"></canvas></div>
+  </div>
+  <div class="g3">
     <div class="s-card"><h3>Top Services Requested</h3><div class="ch220"><canvas id="svcServiceChart"></canvas></div></div>
     <div class="s-card"><h3>Top Referral Destinations</h3><div class="ch220"><canvas id="svcReferralChart"></canvas></div></div>
+    <div class="s-card"><h3>Key Population Groups</h3><div class="ch220"><canvas id="svcKeyPopsChart"></canvas></div></div>
   </div>
   <div class="s-card">
     <h3>Services Detail</h3>
@@ -1157,12 +1162,46 @@ function updateDemographics(p) {
     progressBars(d.by_key_pops, d.total, '#8b5cf6', 'No key pops data for this period');
 }
 
+// ── Grouped bar chart (2 series) ───────────────────────────────────────────────
+function rcGrouped(id, labels, datasets) {
+  if (CC[id]) { CC[id].destroy(); delete CC[id]; }
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  CC[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 16, font: { size: 12 } } },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 45, font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+}
+
 // ── SERVICES ───────────────────────────────────────────────────────────────────
 function updateServices(p) {
   const d = periodData[p];
 
+  // Referral By Service — grouped bar (referred vs confirmed uptake)
+  const svcLabels  = d.by_service.map(r => r[0]);
+  const svcReferred = d.by_service.map(r => r[1]);
+  const uptakeMap  = d.by_service_uptake ?? {};
+  const svcUptake  = svcLabels.map(lbl => uptakeMap[lbl] ?? 0);
+
+  rcGrouped('svcReferralByServiceChart', svcLabels, [
+    { label: 'Referred Cases',           data: svcReferred, backgroundColor: '#6366f1', borderRadius: 4 },
+    { label: 'Confirmed Service Uptake', data: svcUptake,   backgroundColor: '#f97316', borderRadius: 4 },
+  ]);
+
   rc('svcServiceChart',  'bar', d.by_service.map(r  => r[0]), d.by_service.map(r  => r[1]), { single:'#0d9488', legend:false, indexAxis:'y' });
   rc('svcReferralChart', 'bar', d.by_referral.map(r => r[0]), d.by_referral.map(r => r[1]), { single:'#fbbf24', legend:false, indexAxis:'y' });
+  rc('svcKeyPopsChart',  'doughnut', d.by_key_pops.map(r => r[0]), d.by_key_pops.map(r => r[1]), {});
 
   document.getElementById('svc-bars').innerHTML =
     progressBars(d.by_service, d.total, '#0d9488', 'No services data for this period');
