@@ -175,47 +175,69 @@ class YeastarService
         $start  = $startTime ?? now()->subDays(30)->format('Y-m-d H:i:s');
         $end    = $endTime   ?? now()->format('Y-m-d H:i:s');
         $synced = 0;
+        $offset = 0;
+        $limit  = 500;
 
-        DB::connection('yeastar')
-            ->table('cdr')
-            ->whereBetween('datetime', [$start, $end])
-            ->where('displayonweb', 1)
-            ->orderBy('datetime')
-            ->chunk(200, function ($rows) use (&$synced) {
-                foreach ($rows as $row) {
-                    $row       = (array) $row;
-                    $direction = $this->mapDirectionFromDb($row['calltype'] ?? '');
+        // One best row per uniqueid: prefer inbound/outbound over internal,
+        // then longest talkduration. Uses COALESCE to pick the external leg id
+        // when available, otherwise falls back to any leg.
+        $sql = "
+            SELECT c.*
+            FROM cdr c
+            INNER JOIN (
+                SELECT uniqueid,
+                    COALESCE(
+                        MIN(CASE WHEN calltype != 'Internal' THEN id END),
+                        MIN(id)
+                    ) AS best_id
+                FROM cdr
+                WHERE datetime BETWEEN ? AND ?
+                  AND displayonweb = 1
+                GROUP BY uniqueid
+            ) best ON c.id = best.best_id
+            ORDER BY c.datetime
+            LIMIT ? OFFSET ?
+        ";
 
-                    $call = Call::updateOrCreate(
-                        ['call_id' => (string)($row['uniqueid'] ?? $row['id'])],
+        do {
+            $rows = DB::connection('yeastar')->select($sql, [$start, $end, $limit, $offset]);
+
+            foreach ($rows as $row) {
+                $row       = (array) $row;
+                $direction = $this->mapDirectionFromDb($row['calltype'] ?? '');
+
+                $call = Call::updateOrCreate(
+                    ['call_id' => (string) $row['uniqueid']],
+                    [
+                        'caller'           => $row['src']          ?? '',
+                        'callee'           => $row['dst']          ?? '',
+                        'direction'        => $direction,
+                        'status'           => $this->mapStatus($row['disposition'] ?? ''),
+                        'duration'         => (int)($row['talkduration'] ?? $row['duration'] ?? 0),
+                        'started_at'       => $row['datetime']     ?? null,
+                        'ended_at'         => null,
+                        'extension_number' => $direction === 'inbound' ? ($row['dst'] ?? null) : ($row['src'] ?? null),
+                        'recording_file'   => $row['recordfile'] ?: null,
+                        'raw_data'         => $row,
+                    ]
+                );
+
+                if (!empty($row['recordfile'])) {
+                    Recording::firstOrCreate(
+                        ['call_id' => $call->id],
                         [
-                            'caller'           => $row['src']          ?? '',
-                            'callee'           => $row['dst']          ?? '',
-                            'direction'        => $direction,
-                            'status'           => $this->mapStatus($row['disposition'] ?? ''),
-                            'duration'         => (int)($row['talkduration'] ?? $row['duration'] ?? 0),
-                            'started_at'       => $row['datetime']     ?? null,
-                            'ended_at'         => null,
-                            'extension_number' => $direction === 'inbound' ? ($row['dst'] ?? null) : ($row['src'] ?? null),
-                            'recording_file'   => $row['recordfile'] ?: null,
-                            'raw_data'         => $row,
+                            'file_name' => basename($row['recordfile']),
+                            'file_path' => $row['recordfile'],
+                            'duration'  => (int)($row['talkduration'] ?? 0),
                         ]
                     );
-
-                    if (!empty($row['recordfile'])) {
-                        Recording::firstOrCreate(
-                            ['call_id' => $call->id],
-                            [
-                                'file_name' => basename($row['recordfile']),
-                                'file_path' => $row['recordfile'],
-                                'duration'  => (int)($row['talkduration'] ?? 0),
-                            ]
-                        );
-                    }
-
-                    $synced++;
                 }
-            });
+
+                $synced++;
+            }
+
+            $offset += $limit;
+        } while (count($rows) === $limit);
 
         return $synced;
     }

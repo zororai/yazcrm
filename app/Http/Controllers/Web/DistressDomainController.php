@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\DistressDomain;
+use App\Models\LookupItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,8 +14,15 @@ class DistressDomainController extends Controller
 {
     public function index(): Response
     {
+        $lookups = [];
+        foreach (array_keys(LookupItem::TYPES) as $type) {
+            $lookups[$type] = LookupItem::where('type', $type)->orderBy('sort_order')->orderBy('name')->get();
+        }
+
         return Inertia::render('DistressDomains/Index', [
             'domains' => DistressDomain::orderBy('sort_order')->orderBy('name')->get(),
+            'lookups' => $lookups,
+            'lookupTypes' => LookupItem::TYPES,
         ]);
     }
 
