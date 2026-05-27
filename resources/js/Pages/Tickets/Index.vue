@@ -7,15 +7,27 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
-const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array });
+const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const search   = ref(props.filters.search ?? '');
 const status   = ref(props.filters.status ?? '');
 const priority = ref(props.filters.priority ?? '');
 const showAdd  = ref(false);
 
+const showContactDrop = ref(false);
+const contactResults  = ref([]);
+
+const debouncedContactSearch = debounce(async (q) => {
+    if (!q || q.length < 2) { contactResults.value = []; return; }
+    const res = await fetch(`/calls/number-search?q=${encodeURIComponent(q)}`);
+    contactResults.value = await res.json();
+}, 300);
+
+function onContactInput() { debouncedContactSearch(addForm.contact_number); }
+function selectContact(num) { addForm.contact_number = num; showContactDrop.value = false; contactResults.value = []; }
+
 const addForm = useForm({
-    subject: '', description: '', priority: 'medium',
+    subject: '', contact_number: '', description: '', priority: 'medium',
     // CRM fields
     mode_of_communication:    'phone',
     call_validity:            'valid',
@@ -187,6 +199,28 @@ const statusColor = {
                                 <input v-model="addForm.subject" class="input" :class="{ 'border-red-500': addForm.errors.subject }" required />
                                 <p v-if="addForm.errors.subject" class="mt-1 text-xs text-red-600">{{ addForm.errors.subject }}</p>
                             </div>
+                            <div class="relative">
+                                <label class="label">Contact / Sisters Number</label>
+                                <input
+                                    v-model="addForm.contact_number"
+                                    @input="onContactInput"
+                                    @focus="showContactDrop = true"
+                                    @blur="() => setTimeout(() => showContactDrop = false, 150)"
+                                    class="input"
+                                    placeholder="Type or search number…"
+                                    autocomplete="off"
+                                />
+                                <ul v-if="showContactDrop && contactResults.length"
+                                    class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    <li v-for="num in contactResults" :key="num">
+                                        <button type="button"
+                                            @mousedown.prevent="selectContact(num)"
+                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                            {{ num }}
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
                             <div>
                                 <label class="label">Priority</label>
                                 <select v-model="addForm.priority" class="input w-40">
@@ -227,7 +261,10 @@ const statusColor = {
                             </div>
                             <div>
                                 <label class="label">Project</label>
-                                <input v-model="addForm.project" class="input" />
+                                <select v-model="addForm.project" class="input">
+                                    <option value="">— select —</option>
+                                    <option v-for="p in props.projects" :key="p" :value="p">{{ p }}</option>
+                                </select>
                             </div>
                             <div class="flex items-center gap-4 pt-5">
                                 <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
@@ -312,7 +349,10 @@ const statusColor = {
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="label">Services Requested</label>
-                                    <input v-model="addForm.services_requested" class="input" />
+                                    <select v-model="addForm.services_requested" class="input">
+                                        <option value="">— select —</option>
+                                        <option v-for="s in props.servicesRequested" :key="s" :value="s">{{ s }}</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="label">Second Service Requested</label>

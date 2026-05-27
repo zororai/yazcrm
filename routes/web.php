@@ -21,6 +21,7 @@ Route::middleware('auth')->group(function () {
 
     // Calls
     Route::get('calls', [Web\CallController::class, 'index'])->name('calls.index');
+    Route::get('calls/number-search', [Web\TicketController::class, 'searchNumbers'])->name('calls.number-search');
     Route::get('calls/{call}', [Web\CallController::class, 'show'])->name('calls.show');
     Route::post('calls/{call}/link-client', [Web\CallController::class, 'linkClient'])->name('calls.link-client');
 
@@ -53,8 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
 
-        // Distress domains
+        // Distress domains / lookup settings
         Route::get('distress-domains', [Web\DistressDomainController::class, 'index'])->name('distress-domains.index');
+        Route::get('distress-domains/section/{type}', [Web\DistressDomainController::class, 'section'])->name('distress-domains.section');
         Route::post('distress-domains', [Web\DistressDomainController::class, 'store'])->name('distress-domains.store');
         Route::put('distress-domains/{distressDomain}', [Web\DistressDomainController::class, 'update'])->name('distress-domains.update');
         Route::delete('distress-domains/{distressDomain}', [Web\DistressDomainController::class, 'destroy'])->name('distress-domains.destroy');
