@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php --version)",
+      "Bash(php c:/Users/Mazarura/Documents/GitHub/yazcrm/artisan --version)",
+      "Bash(npm --version)",
+      "Bash(where php *)",
+      "Read(//c/php/**)",
+      "Read(//c/xampp/php/**)",
+      "Read(//c/laragon/bin/**)"
+    ]
+  }
+}
