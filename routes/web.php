@@ -42,6 +42,12 @@ Route::middleware('auth')->group(function () {
     Route::post('callbacks/{callbackQueue}/complete', [Web\CallbackController::class, 'complete'])->name('callbacks.complete');
     Route::delete('callbacks/{callbackQueue}', [Web\CallbackController::class, 'destroy'])->name('callbacks.destroy');
 
+    // Urgent Cases (visible to all agents)
+    Route::get('urgent-cases', [Web\UrgentCaseController::class, 'index'])->name('urgent-cases.index');
+    Route::post('urgent-cases', [Web\UrgentCaseController::class, 'store'])->name('urgent-cases.store');
+    Route::patch('urgent-cases/{urgentCase}/resolve', [Web\UrgentCaseController::class, 'resolve'])->name('urgent-cases.resolve');
+    Route::post('urgent-cases/{urgentCase}/ticket', [Web\UrgentCaseController::class, 'createTicket'])->name('urgent-cases.ticket');
+
     // Tickets
     Route::get('tickets', [Web\TicketController::class, 'index'])->name('tickets.index');
     Route::post('tickets', [Web\TicketController::class, 'store'])->name('tickets.store');

@@ -7,6 +7,7 @@ use App\Models\Call;
 use App\Models\Client;
 use App\Models\LookupItem;
 use App\Models\Ticket;
+use App\Models\UrgentCase;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -133,6 +134,18 @@ class TicketController extends Controller
             'agent_id' => $request->user()->id,
             'priority' => $data['priority'] ?? 'medium',
         ]);
+
+        // Auto-create an urgent case so all agents can follow up
+        if (!empty($data['immediate_action_required'])) {
+            UrgentCase::create([
+                'agent_id'        => $request->user()->id,
+                'subject'         => $ticket->subject,
+                'contact_number'  => $ticket->contact_number ?? null,
+                'description'     => $ticket->description ?? null,
+                'status'          => 'open',
+                'source_ticket_id' => $ticket->id,
+            ]);
+        }
 
         return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket created.');
     }
