@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Web\CallTargetController;
 use Illuminate\Support\Facades\DB;
 
 class PublicDashboardController extends Controller
@@ -158,6 +159,9 @@ class PublicDashboardController extends Controller
             ];
         }
 
+        // ── Call target rows ─────────────────────────────────────────────────
+        $callTargetRows = CallTargetController::allRows();
+
         // ── Recent tickets for case recording matrix ──────────────────────────
         $recentTickets = DB::table('tickets')
             ->whereNull('deleted_at')
@@ -227,7 +231,7 @@ class PublicDashboardController extends Controller
                 'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
                 'callStats', 'periodData',
                 'ticketDefaultPeriod', 'callDefaultPeriod',
-                'prevPeriodData', 'recentTickets'
+                'prevPeriodData', 'recentTickets', 'callTargetRows'
             ))
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache')
