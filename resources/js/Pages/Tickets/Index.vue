@@ -49,6 +49,7 @@ const addForm = useForm({
     number_of_services:       '',
     referred_to:              '',
     uptake_confirmed:         false,
+    referral_uptake_date:     '',
 });
 
 function apply() {
@@ -304,6 +305,11 @@ const statusColor = {
                                     class="mt-1 text-xs text-red-600 font-medium">
                                     This will create an urgent case visible to all agents.
                                 </p>
+                            </div>
+                            <div v-if="addForm.immediate_action_required == 1">
+                                <label class="label">Referral Uptake Date</label>
+                                <input v-model="addForm.referral_uptake_date" type="date" class="input" />
+                                <p class="mt-1 text-xs text-gray-400">Expected date for referral to be acted on.</p>
                             </div>
                         </div>
                     </div>
