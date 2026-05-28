@@ -86,7 +86,12 @@ const navigation = computed(() => [
 ]);
 
 function isActive(href) {
-    return page.url.startsWith(href);
+    if (!page.url.startsWith(href)) return false;
+    // If a more-specific nav item also matches the current URL, don't highlight this one
+    const moreSpecific = navigation.value.some(
+        item => item.href !== href && item.href.startsWith(href) && page.url.startsWith(item.href)
+    );
+    return !moreSpecific;
 }
 
 function logout() {
