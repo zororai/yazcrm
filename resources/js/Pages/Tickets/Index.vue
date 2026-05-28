@@ -33,6 +33,7 @@ const addForm = useForm({
     call_validity:            'valid',
     purpose_of_call:          '',
     immediate_action_required: false,
+    action_status:             '',
     caller_age:               '',
     caller_gender:            '',
     caller_marital_status:    '',
@@ -280,6 +281,16 @@ const statusColor = {
                                 <select v-model="addForm.project" class="input">
                                     <option value="">— select —</option>
                                     <option v-for="p in props.projects" :key="p" :value="p">{{ p }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label">Action Status</label>
+                                <select v-model="addForm.action_status" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="yes">Yes</option>
+                                    <option value="ongoing">Ongoing</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="no">No</option>
                                 </select>
                             </div>
                             <div class="flex items-center gap-4 pt-5">

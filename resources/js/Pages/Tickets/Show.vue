@@ -83,6 +83,10 @@ function label(val) {
                                     {{ label(ticket.immediate_action_required) }}
                                 </dd>
                             </div>
+                            <div>
+                                <dt class="text-gray-400 text-xs">Action Status</dt>
+                                <dd class="font-medium capitalize">{{ label(ticket.action_status) }}</dd>
+                            </div>
                         </dl>
                     </div>
 

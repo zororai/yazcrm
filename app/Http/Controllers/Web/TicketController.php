@@ -99,6 +99,7 @@ class TicketController extends Controller
         'call_validity'            => 'nullable|in:valid,invalid',
         'purpose_of_call'          => 'nullable|string|max:255',
         'immediate_action_required' => 'nullable|boolean',
+        'action_status'            => 'nullable|in:yes,ongoing,pending,no',
         'caller_age'               => 'nullable|integer|min:1|max:120',
         'caller_gender'            => 'nullable|in:male,female,other,prefer_not_to_say',
         'caller_marital_status'    => 'nullable|string|max:100',
