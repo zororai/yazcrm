@@ -18,6 +18,7 @@ class LookupItem extends Model
         'project'                  => 'Project',
         'key_pops'                 => 'Key Pops',
         'mode_of_communication'    => 'Mode of Communication',
+        'referred_to'              => 'Referred To',
     ];
 
     public function scopeActive($query)
