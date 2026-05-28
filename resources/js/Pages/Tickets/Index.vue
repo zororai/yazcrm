@@ -41,7 +41,7 @@ const addForm = useForm({
     province:                 '',
     district:                 '',
     location:                 '',
-    is_repeat_caller:         false,
+    is_repeat_caller:         '',
     project:                   '',
     services_requested_before: '',
     services_requested:        '',
@@ -338,11 +338,13 @@ const statusColor = {
                                     <option v-for="kp in props.keyPops" :key="kp" :value="kp">{{ kp }}</option>
                                 </select>
                             </div>
-                            <div class="flex items-center gap-2 pt-5">
-                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-                                    <input type="checkbox" v-model="addForm.is_repeat_caller" class="rounded border-gray-300 text-brand-600" />
-                                    Repeat Caller
-                                </label>
+                            <div>
+                                <label class="label">Repeat Caller</label>
+                                <select v-model="addForm.is_repeat_caller" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="1">Repeat Call</option>
+                                    <option value="0">New</option>
+                                </select>
                             </div>
                         </div>
                     </div>
