@@ -55,88 +55,139 @@ class DistressDomainController extends Controller
 
     private function projectSection(): Response
     {
-        $today        = Carbon::today();
-        $monthStart   = $today->copy()->startOfMonth();
-        $sixMonthsAgo = $today->copy()->subMonths(5)->startOfMonth();
+        $filter      = request('filter', 'all');
+        $filterMonth = request('month');
+        $filterYear  = request('year', (string) Carbon::today()->year);
+        $today       = Carbon::today();
 
-        // Month labels for the chart
-        $months = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $months[] = $today->copy()->subMonths($i)->format('M y');
-        }
+        // ── Build chart slots & period range based on filter ─────────────
+        [$periodStart, $periodEnd, $periodLabel, $chartSlots, $groupExpr] =
+            $this->resolveProjectFilter($filter, $filterMonth, $filterYear, $today);
 
-        // All-time totals per project
-        $totals = DB::table('tickets')
+        $chartKeys   = array_column($chartSlots, 'key');
+        $chartLabels = array_column($chartSlots, 'label');
+        $chartFrom   = $chartSlots[0]['start'];
+        $chartTo     = end($chartSlots)['end'];
+
+        // ── All-time totals (always displayed) ────────────────────────────
+        $allTimeTotals = DB::table('tickets')
             ->selectRaw('project, COUNT(*) as cnt')
             ->whereNotNull('project')->where('project', '!=', '')
-            ->groupBy('project')
-            ->pluck('cnt', 'project');
+            ->groupBy('project')->pluck('cnt', 'project');
 
-        // This-month totals
-        $thisMonth = DB::table('tickets')
+        // ── Period totals (filtered) ──────────────────────────────────────
+        $periodTotals = ($filter === 'all') ? $allTimeTotals : DB::table('tickets')
             ->selectRaw('project, COUNT(*) as cnt')
             ->whereNotNull('project')->where('project', '!=', '')
-            ->where('created_at', '>=', $monthStart)
-            ->groupBy('project')
-            ->pluck('cnt', 'project');
+            ->where('created_at', '>=', $periodStart)
+            ->where('created_at', '<=', $periodEnd)
+            ->groupBy('project')->pluck('cnt', 'project');
 
-        // Monthly counts per project (last 6 months)
-        $monthlyCounts = DB::table('tickets')
-            ->selectRaw("project, DATE_FORMAT(created_at, '%Y-%m') as m, COUNT(*) as cnt")
+        // ── Chart counts per slot ─────────────────────────────────────────
+        $chartCounts = DB::table('tickets')
+            ->selectRaw("project, {$groupExpr} as slot, COUNT(*) as cnt")
             ->whereNotNull('project')->where('project', '!=', '')
-            ->where('created_at', '>=', $sixMonthsAgo)
-            ->groupBy('project', 'm')
-            ->get()
-            ->groupBy('project')
-            ->map(fn ($rows) => $rows->pluck('cnt', 'm'));
+            ->where('created_at', '>=', $chartFrom)
+            ->where('created_at', '<=', $chartTo)
+            ->groupBy('project', 'slot')
+            ->get()->groupBy('project')
+            ->map(fn ($rows) => $rows->pluck('cnt', 'slot'));
 
-        // Purpose breakdown per project
-        $purposes = DB::table('tickets')
+        // ── Purpose & services breakdowns (respect period filter) ─────────
+        $breakdownBase = fn () => DB::table('tickets')
+            ->whereNotNull('project')->where('project', '!=', '')
+            ->when($filter !== 'all', fn ($q) => $q
+                ->where('created_at', '>=', $periodStart)
+                ->where('created_at', '<=', $periodEnd));
+
+        $purposes = $breakdownBase()
             ->selectRaw('project, COALESCE(NULLIF(purpose_of_call,""),"Unknown") as purpose, COUNT(*) as cnt')
-            ->whereNotNull('project')->where('project', '!=', '')
-            ->groupBy('project', 'purpose')
-            ->orderByDesc('cnt')
-            ->get()
-            ->groupBy('project')
+            ->groupBy('project', 'purpose')->orderByDesc('cnt')
+            ->get()->groupBy('project')
             ->map(fn ($rows) => $rows->map(fn ($r) => ['purpose' => $r->purpose, 'count' => (int) $r->cnt])->values());
 
-        // Services requested breakdown per project (top 5)
-        $services = DB::table('tickets')
+        $services = $breakdownBase()
             ->selectRaw('project, COALESCE(NULLIF(services_requested,""),"Unknown") as service, COUNT(*) as cnt')
-            ->whereNotNull('project')->where('project', '!=', '')
-            ->groupBy('project', 'service')
-            ->orderByDesc('cnt')
-            ->get()
-            ->groupBy('project')
+            ->groupBy('project', 'service')->orderByDesc('cnt')
+            ->get()->groupBy('project')
             ->map(fn ($rows) => $rows->map(fn ($r) => ['service' => $r->service, 'count' => (int) $r->cnt])->take(5)->values());
+
+        // ── Years list for the year dropdown ─────────────────────────────
+        $minYear = (int) (DB::table('tickets')->whereNotNull('project')->min(DB::raw('YEAR(created_at)')) ?: $today->year);
+        $years   = range($minYear, $today->year);
 
         $items = LookupItem::where('type', 'project')->orderBy('sort_order')->orderBy('name')->get();
 
-        $projects = $items->map(function ($item) use ($today, $months, $totals, $thisMonth, $monthlyCounts, $purposes, $services) {
-            $monthly = [];
-            for ($i = 5; $i >= 0; $i--) {
-                $key      = $today->copy()->subMonths($i)->format('Y-m');
-                $monthly[] = (int) ($monthlyCounts[$item->name][$key] ?? 0);
-            }
-
+        $projects = $items->map(function ($item) use ($chartKeys, $chartCounts, $allTimeTotals, $periodTotals, $purposes, $services) {
             return [
-                'id'         => $item->id,
-                'name'       => $item->name,
-                'sort_order' => $item->sort_order,
-                'is_active'  => $item->is_active,
-                'total'      => (int) ($totals[$item->name] ?? 0),
-                'this_month' => (int) ($thisMonth[$item->name] ?? 0),
-                'monthly'    => $monthly,
-                'purposes'   => ($purposes[$item->name] ?? collect())->all(),
-                'services'   => ($services[$item->name] ?? collect())->all(),
+                'id'           => $item->id,
+                'name'         => $item->name,
+                'sort_order'   => $item->sort_order,
+                'is_active'    => $item->is_active,
+                'total'        => (int) ($allTimeTotals[$item->name] ?? 0),
+                'period_total' => (int) ($periodTotals[$item->name] ?? 0),
+                'monthly'      => array_map(fn ($k) => (int) ($chartCounts[$item->name][$k] ?? 0), $chartKeys),
+                'purposes'     => ($purposes[$item->name] ?? collect())->all(),
+                'services'     => ($services[$item->name] ?? collect())->all(),
             ];
         })->all();
 
         return Inertia::render('DistressDomains/ProjectStats', [
-            'projects' => $projects,
-            'items'    => $items,
-            'months'   => $months,
+            'projects'    => $projects,
+            'items'       => $items,
+            'months'      => $chartLabels,
+            'filter'      => $filter,
+            'filterMonth' => $filterMonth ?? $today->format('Y-m'),
+            'filterYear'  => (string) $filterYear,
+            'periodLabel' => $periodLabel,
+            'years'       => $years,
         ]);
+    }
+
+    private function resolveProjectFilter(string $filter, ?string $filterMonth, string $filterYear, Carbon $today): array
+    {
+        switch ($filter) {
+            case 'today':
+                $slots = [];
+                for ($i = 6; $i >= 0; $i--) {
+                    $d = $today->copy()->subDays($i);
+                    $slots[] = ['label' => $d->format('D d'), 'key' => $d->toDateString(),
+                                'start' => $d->copy()->startOfDay(), 'end' => $d->copy()->endOfDay()];
+                }
+                return [$today->copy()->startOfDay(), $today->copy()->endOfDay(),
+                        'Today — ' . $today->format('d M Y'), $slots, "DATE(created_at)"];
+
+            case 'month':
+                $m = $filterMonth ? Carbon::createFromFormat('Y-m', $filterMonth)->startOfMonth() : $today->copy()->startOfMonth();
+                $slots = [];
+                for ($d = 1; $d <= $m->daysInMonth; $d++) {
+                    $day = $m->copy()->day($d);
+                    $slots[] = ['label' => (string) $d, 'key' => $day->toDateString(),
+                                'start' => $day->copy()->startOfDay(), 'end' => $day->copy()->endOfDay()];
+                }
+                return [$m->copy()->startOfMonth(), $m->copy()->endOfMonth(),
+                        $m->format('F Y'), $slots, "DATE(created_at)"];
+
+            case 'year':
+                $yr = Carbon::createFromFormat('Y', $filterYear)->startOfYear();
+                $slots = [];
+                for ($mo = 1; $mo <= 12; $mo++) {
+                    $month = $yr->copy()->month($mo);
+                    $slots[] = ['label' => $month->format('M'), 'key' => $month->format('Y-m'),
+                                'start' => $month->copy()->startOfMonth(), 'end' => $month->copy()->endOfMonth()];
+                }
+                return [$yr->copy()->startOfYear(), $yr->copy()->endOfYear(),
+                        $filterYear, $slots, "DATE_FORMAT(created_at, '%Y-%m')"];
+
+            default: // all — last 6 months chart
+                $slots = [];
+                for ($i = 5; $i >= 0; $i--) {
+                    $m = $today->copy()->subMonths($i);
+                    $slots[] = ['label' => $m->format('M y'), 'key' => $m->format('Y-m'),
+                                'start' => $m->copy()->startOfMonth(), 'end' => $m->copy()->endOfMonth()];
+                }
+                return [null, null, 'All Time', $slots, "DATE_FORMAT(created_at, '%Y-%m')"];
+        }
     }
 
     public function store(Request $request): RedirectResponse
