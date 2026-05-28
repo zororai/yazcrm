@@ -6,6 +6,7 @@ import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon, FolderOpenIcon,
+    ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -15,8 +16,11 @@ const user  = computed(() => page.props.auth.user);
 const flash = computed(() => page.props.flash);
 const isAdmin = computed(() => user.value?.role === 'admin');
 
-const sidebarOpen = ref(false);
-const pendingCall = ref(null);
+const sidebarOpen     = ref(false);
+const pendingCall     = ref(null);
+const urgentCount     = ref(0);
+const urgentAlert     = ref(false); // banner shown when count increases
+let   prevUrgentCount = 0;
 
 // ── Incoming call popup ──────────────────────────────────────────────────────
 const activeCalls   = ref([]);
@@ -33,6 +37,16 @@ const visibleCalls = computed(() =>
 function dismissCall(index) {
     const call = visibleCalls.value[index];
     if (call) dismissedIds.value.add(call.id ?? call.caller);
+}
+
+async function pollUrgentCount() {
+    try {
+        const { data } = await axios.get('/api/urgent-cases/open-count');
+        const n = data.count ?? 0;
+        if (n > prevUrgentCount && prevUrgentCount !== null) urgentAlert.value = true;
+        prevUrgentCount = n;
+        urgentCount.value = n;
+    } catch { /* ignore */ }
 }
 
 async function pollActiveCalls() {
@@ -62,6 +76,10 @@ onMounted(() => {
     // Poll for active inbound calls every 8 seconds
     pollActiveCalls();
     pollTimer = setInterval(pollActiveCalls, 8000);
+
+    // Poll urgent cases count every 30 seconds
+    pollUrgentCount();
+    setInterval(pollUrgentCount, 30000);
 });
 
 onUnmounted(() => {
@@ -74,6 +92,7 @@ const navigation = computed(() => [
     { name: 'Calls',      href: '/calls',      icon: PhoneIcon },
     { name: 'Callbacks',  href: '/callbacks',  icon: QueueListIcon },
     { name: 'Tickets',    href: '/tickets',    icon: TicketIcon },
+    { name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount },
     ...(isAdmin.value ? [
         { name: 'Extensions', href: '/extensions',   icon: SignalIcon },
         { name: 'Analytics',  href: '/analytics',    icon: ChartBarIcon },
@@ -147,12 +166,18 @@ function logout() {
                         'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                         isActive(item.href)
                             ? 'bg-brand-600 text-white'
-                            : 'text-gray-300 hover:bg-gray-800 hover:text-white',
+                            : item.badge?.value > 0
+                                ? 'text-red-300 hover:bg-gray-800 hover:text-red-200'
+                                : 'text-gray-300 hover:bg-gray-800 hover:text-white',
                     ]"
                     @click="sidebarOpen = false"
                 >
                     <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
-                    {{ item.name }}
+                    <span class="flex-1">{{ item.name }}</span>
+                    <span v-if="item.badge?.value > 0"
+                        class="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full text-xs font-bold bg-red-500 text-white">
+                        {{ item.badge.value }}
+                    </span>
                 </Link>
             </nav>
 
@@ -219,6 +244,26 @@ function logout() {
                     </button>
                 </div>
             </header>
+
+            <!-- Urgent cases alert banner -->
+            <div v-if="urgentAlert" class="px-4 lg:px-6 pt-3">
+                <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 text-sm">
+                    <span class="flex items-center gap-2">
+                        <ExclamationTriangleIcon class="h-4 w-4 text-red-400 flex-shrink-0" />
+                        <strong class="text-red-200">New urgent case logged!</strong>
+                        There {{ urgentCount > 1 ? `are ${urgentCount} open urgent cases` : 'is 1 open urgent case' }} requiring attention.
+                    </span>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <Link href="/urgent-cases" class="text-xs font-semibold text-red-200 hover:text-white underline"
+                            @click="urgentAlert = false">
+                            View Cases
+                        </Link>
+                        <button @click="urgentAlert = false" class="text-red-400 hover:text-red-200">
+                            <XMarkIcon class="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Flash messages -->
             <div v-if="flash.success || flash.error" class="px-4 lg:px-6 pt-4">

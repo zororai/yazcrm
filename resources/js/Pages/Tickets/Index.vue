@@ -32,7 +32,7 @@ const addForm = useForm({
     mode_of_communication:    'phone',
     call_validity:            'valid',
     purpose_of_call:          '',
-    immediate_action_required: false,
+    immediate_action_required: '',
     action_status:             '',
     caller_age:               '',
     caller_gender:            '',
@@ -293,11 +293,17 @@ const statusColor = {
                                     <option value="no">No</option>
                                 </select>
                             </div>
-                            <div class="flex items-center gap-4 pt-5">
-                                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
-                                    <input type="checkbox" v-model="addForm.immediate_action_required" class="rounded border-gray-300 text-brand-600" />
-                                    Immediate Action Required
-                                </label>
+                            <div>
+                                <label class="label">Immediate Action Required</label>
+                                <select v-model="addForm.immediate_action_required" class="input">
+                                    <option value="">— select —</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                                <p v-if="addForm.immediate_action_required == 1"
+                                    class="mt-1 text-xs text-red-600 font-medium">
+                                    This will create an urgent case visible to all agents.
+                                </p>
                             </div>
                         </div>
                     </div>

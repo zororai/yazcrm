@@ -28,6 +28,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::put('auth/profile', [AuthController::class, 'updateProfile']);
 
+    // Urgent cases count (for sidebar badge polling)
+    Route::get('urgent-cases/open-count', function () {
+        return response()->json(['count' => \App\Models\UrgentCase::where('status', 'open')->count()]);
+    });
+
     // Active calls (for popup polling)
     Route::get('calls/active', [CallController::class, 'active']);
 
