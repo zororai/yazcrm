@@ -68,6 +68,13 @@ function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
 }
 
+function setReferralDate(ticket, date) {
+    router.put(`/tickets/${ticket.id}`,
+        { referral_uptake_date: date || null },
+        { preserveState: true, preserveScroll: true }
+    );
+}
+
 const provinces = [
     'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
     'Mashonaland East', 'Mashonaland West', 'Masvingo',
@@ -138,6 +145,7 @@ const statusColor = {
                         <th class="table-th">Purpose</th>
                         <th class="table-th">Priority</th>
                         <th class="table-th">Status</th>
+                        <th class="table-th">Ref. Uptake Date</th>
                         <th class="table-th">Agent</th>
                         <th class="table-th">Created</th>
                         <th class="table-th w-16" />
@@ -145,7 +153,7 @@ const statusColor = {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-if="!tickets.data.length">
-                        <td colspan="7" class="py-12 text-center text-sm text-gray-400">No tickets found.</td>
+                        <td colspan="8" class="py-12 text-center text-sm text-gray-400">No tickets found.</td>
                     </tr>
                     <tr v-for="t in tickets.data" :key="t.id" class="hover:bg-gray-50">
                         <td class="table-td font-medium max-w-xs truncate">
@@ -157,6 +165,24 @@ const statusColor = {
                         </td>
                         <td class="table-td">
                             <span :class="['badge', statusColor[t.status]]">{{ t.status.replace('_', ' ') }}</span>
+                        </td>
+                        <td class="table-td">
+                            <template v-if="t.immediate_action_required">
+                                <input
+                                    type="date"
+                                    :value="t.referral_uptake_date ?? ''"
+                                    @change="setReferralDate(t, $event.target.value)"
+                                    :class="[
+                                        'block w-36 rounded border px-2 py-1 text-xs focus:outline-none focus:ring-1',
+                                        t.referral_uptake_date
+                                            ? 'border-green-300 bg-green-50 text-green-800 focus:ring-green-400'
+                                            : 'border-red-300 bg-red-50 text-red-700 focus:ring-red-400'
+                                    ]"
+                                    title="Expected referral uptake date"
+                                />
+                                <p v-if="!t.referral_uptake_date" class="mt-0.5 text-[10px] text-red-400">Enter expected date</p>
+                            </template>
+                            <span v-else class="text-gray-300 text-xs">—</span>
                         </td>
                         <td class="table-td">{{ t.agent?.name ?? '—' }}</td>
                         <td class="table-td text-xs">{{ new Date(t.created_at).toLocaleDateString() }}</td>
