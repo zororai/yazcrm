@@ -50,6 +50,7 @@ class CallTargetController extends Controller
                     'start_date'     => null,
                     'end_date'       => null,
                     'target_day'     => null,
+                    'span_days'      => null,
                     'period_days'    => null,
                     'today_calls'    => $todayCount,
                     'carry_forward'  => 0,
@@ -66,6 +67,10 @@ class CallTargetController extends Controller
             );
             $todayRequired = $expired ? null : $target->daily_target + $carryForward;
 
+            // Total span in days (start → end/today) — used to constrain the Day input
+            $spanEnd  = $target->end_date ?? $today;
+            $spanDays = $target->start_date->diffInDays($spanEnd) + 1;
+
             [$periodTarget, $periodCalls, $periodDays] = $this->periodTotals(
                 $agent->id, $target->daily_target, $target->start_date, $target->end_date, $today, $target->target_day
             );
@@ -76,7 +81,8 @@ class CallTargetController extends Controller
                 'daily_target'   => $target->daily_target,
                 'start_date'     => $target->start_date->toDateString(),
                 'end_date'       => $target->end_date?->toDateString(),
-                'target_day'     => $target->target_day?->toDateString(),
+                'target_day'     => $target->target_day,      // integer
+                'span_days'      => (int) $spanDays,          // max allowed value for Day input
                 'period_days'    => $periodDays,
                 'today_calls'    => $todayCount,
                 'carry_forward'  => $carryForward,
@@ -95,7 +101,7 @@ class CallTargetController extends Controller
             'daily_target' => 'required|integer|min:1|max:9999',
             'start_date'   => 'required|date',
             'end_date'     => 'nullable|date|after_or_equal:start_date',
-            'target_day'   => 'nullable|date|after_or_equal:start_date',
+            'target_day'   => 'nullable|integer|min:1',
         ]);
 
         CallTarget::updateOrCreate(
@@ -159,23 +165,25 @@ class CallTargetController extends Controller
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Returns [total_target_for_period, total_calls_made_in_period, total_days] */
-    private function periodTotals(int $agentId, int $dailyTarget, Carbon $startDate, ?Carbon $endDate, Carbon $today, ?Carbon $targetDay = null): array
+    /** Returns [total_target_for_period, total_calls_made_in_period, days_used] */
+    private function periodTotals(int $agentId, int $dailyTarget, Carbon $startDate, ?Carbon $endDate, Carbon $today, ?int $targetDays = null): array
     {
-        // target_day overrides end_date for target calculation; fall back to end_date or today
-        $targetEnd = $targetDay ?? ($endDate ?? $today);
-
-        // Ensure target_day is clamped within the period
-        if ($endDate && $targetEnd->gt($endDate)) {
-            $targetEnd = $endDate->copy();
+        if ($targetDays !== null && $targetDays >= 1) {
+            // User specified a day count — clamp to the actual period span
+            $maxSpan   = $endDate ? ($startDate->diffInDays($endDate) + 1) : null;
+            $totalDays = $maxSpan !== null ? min($targetDays, $maxSpan) : $targetDays;
+            // The end of the counting window = start + (totalDays - 1)
+            $countEnd  = $startDate->copy()->addDays($totalDays - 1);
+        } else {
+            // No day set — use end_date or today
+            $countEnd  = $endDate ?? $today;
+            $totalDays = max(0, $startDate->diffInDays($countEnd) + 1);
         }
 
-        // Total days from start to target day (what the target is multiplied by)
-        $totalDays    = max(0, $startDate->diffInDays($targetEnd) + 1);
         $periodTarget = $dailyTarget * $totalDays;
 
-        // Calls made from start_date up to min(today, targetEnd)
-        $countUpTo = $targetEnd->gt($today) ? $today : $targetEnd;
+        // Count calls from start up to min(today, countEnd)
+        $countUpTo = $countEnd->gt($today) ? $today : $countEnd;
 
         $periodCalls = DB::table('calls')
             ->join('extensions', 'calls.extension_number', '=', 'extensions.extension_number')
@@ -184,7 +192,7 @@ class CallTargetController extends Controller
             ->where('calls.started_at', '<=', $countUpTo->copy()->endOfDay())
             ->count();
 
-        return [$periodTarget, $periodCalls, $totalDays];
+        return [$periodTarget, $periodCalls, (int) $totalDays];
     }
 
     private function callsOnDate(int $agentId, Carbon $date): int

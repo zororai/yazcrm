@@ -35,18 +35,21 @@ function openEdit(row) {
     form.target_day   = row.target_day   ?? '';
 }
 
-// Live preview: days from start to target_day × daily_target
-const previewDays = computed(() => {
-    if (!form.start_date || !form.target_day) return null;
+// Max days = span from start to end (or no limit if no end date)
+const maxSpanDays = computed(() => {
+    if (!form.start_date || !form.end_date) return null;
     const start = new Date(form.start_date + 'T00:00:00');
-    const day   = new Date(form.target_day  + 'T00:00:00');
-    const diff  = Math.round((day - start) / 86400000) + 1;
+    const end   = new Date(form.end_date   + 'T00:00:00');
+    const diff  = Math.round((end - start) / 86400000) + 1;
     return diff >= 1 ? diff : null;
 });
 
+// Live preview: Day (number) × Daily Target = Total
 const previewTotal = computed(() => {
-    if (!previewDays.value || !form.daily_target) return null;
-    return previewDays.value * Number(form.daily_target);
+    const d = Number(form.target_day);
+    const t = Number(form.daily_target);
+    if (!d || !t || d < 1) return null;
+    return d * t;
 });
 
 function closeEdit() { editing.value = null; form.reset(); }
@@ -115,8 +118,8 @@ function fmt(d) {
                         <th class="table-th">Agent</th>
                         <th class="table-th text-right">Daily Target</th>
                         <th class="table-th">Period</th>
-                        <th class="table-th">Target Day</th>
-                        <th class="table-th text-right">Days</th>
+                        <th class="table-th text-right">Day</th>
+                        <th class="table-th text-right">Days Used</th>
                         <th class="table-th text-right">Period Target</th>
                         <th class="table-th text-right">Calls Made</th>
                         <th class="table-th">Period Coverage</th>
@@ -149,10 +152,11 @@ function fmt(d) {
                                 <span v-else class="text-gray-400">—</span>
                             </td>
 
-                            <!-- Target day -->
-                            <td class="table-td text-xs whitespace-nowrap">
-                                <span v-if="row.target_day" class="text-indigo-700 font-medium">{{ fmt(row.target_day) }}</span>
-                                <span v-else class="text-gray-400">—</span>
+                            <!-- Day (number) -->
+                            <td class="table-td text-right">
+                                <span v-if="row.target_day" class="text-indigo-700 font-semibold">{{ row.target_day }}</span>
+                                <span v-else class="text-gray-400 text-xs">—</span>
+                                <span v-if="row.span_days" class="block text-gray-400 text-xs">max {{ row.span_days }}</span>
                             </td>
 
                             <!-- Days used for calculation -->
@@ -242,16 +246,18 @@ function fmt(d) {
                                         <label class="text-xs text-indigo-600 font-medium">Day</label>
                                         <input
                                             v-model="form.target_day"
-                                            type="date"
-                                            class="input w-36 py-1 text-sm border-indigo-300 focus:ring-indigo-500"
-                                            :min="form.start_date || undefined"
-                                            :max="form.end_date || undefined"
+                                            type="number" min="1"
+                                            :max="maxSpanDays ?? undefined"
+                                            class="input w-24 py-1 text-sm border-indigo-300 focus:ring-indigo-500"
+                                            placeholder="e.g. 15"
                                         />
-                                        <span class="text-xs text-gray-400">(between start &amp; end)</span>
+                                        <span class="text-xs text-gray-400">
+                                            1 – {{ maxSpanDays ?? '∞' }} days
+                                        </span>
                                     </div>
-                                    <!-- Live preview -->
-                                    <span v-if="previewDays" class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-medium">
-                                        {{ previewDays }} days × {{ form.daily_target }} = <strong>{{ previewTotal?.toLocaleString() }}</strong>
+                                    <!-- Live preview: Day × Daily Target = Total -->
+                                    <span v-if="previewTotal" class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-medium">
+                                        {{ form.target_day }} days × {{ form.daily_target }} = <strong>{{ previewTotal.toLocaleString() }}</strong>
                                     </span>
                                     <p v-if="form.errors.target_day" class="text-xs text-red-600">{{ form.errors.target_day }}</p>
                                     <p v-if="form.errors.end_date" class="text-xs text-red-600">{{ form.errors.end_date }}</p>
