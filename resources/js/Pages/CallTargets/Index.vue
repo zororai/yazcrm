@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PencilSquareIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
@@ -23,6 +23,7 @@ const form = useForm({
     daily_target: '',
     start_date:   '',
     end_date:     '',
+    target_day:   '',
 });
 
 function openEdit(row) {
@@ -31,7 +32,22 @@ function openEdit(row) {
     form.daily_target = row.daily_target ?? '';
     form.start_date   = row.start_date   ?? new Date().toISOString().slice(0, 10);
     form.end_date     = row.end_date     ?? '';
+    form.target_day   = row.target_day   ?? '';
 }
+
+// Live preview: days from start to target_day × daily_target
+const previewDays = computed(() => {
+    if (!form.start_date || !form.target_day) return null;
+    const start = new Date(form.start_date + 'T00:00:00');
+    const day   = new Date(form.target_day  + 'T00:00:00');
+    const diff  = Math.round((day - start) / 86400000) + 1;
+    return diff >= 1 ? diff : null;
+});
+
+const previewTotal = computed(() => {
+    if (!previewDays.value || !form.daily_target) return null;
+    return previewDays.value * Number(form.daily_target);
+});
 
 function closeEdit() { editing.value = null; form.reset(); }
 function save() { form.post('/call-targets', { onSuccess: closeEdit }); }
@@ -99,6 +115,8 @@ function fmt(d) {
                         <th class="table-th">Agent</th>
                         <th class="table-th text-right">Daily Target</th>
                         <th class="table-th">Period</th>
+                        <th class="table-th">Target Day</th>
+                        <th class="table-th text-right">Days</th>
                         <th class="table-th text-right">Period Target</th>
                         <th class="table-th text-right">Calls Made</th>
                         <th class="table-th">Period Coverage</th>
@@ -128,6 +146,18 @@ function fmt(d) {
                                         {{ row.end_date ? fmt(row.end_date) : 'ongoing' }}
                                     </span>
                                 </template>
+                                <span v-else class="text-gray-400">—</span>
+                            </td>
+
+                            <!-- Target day -->
+                            <td class="table-td text-xs whitespace-nowrap">
+                                <span v-if="row.target_day" class="text-indigo-700 font-medium">{{ fmt(row.target_day) }}</span>
+                                <span v-else class="text-gray-400">—</span>
+                            </td>
+
+                            <!-- Days used for calculation -->
+                            <td class="table-td text-right text-sm">
+                                <span v-if="row.period_days != null" class="font-semibold text-gray-700">{{ row.period_days }}</span>
                                 <span v-else class="text-gray-400">—</span>
                             </td>
 
@@ -195,7 +225,7 @@ function fmt(d) {
                                 />
                                 <p v-if="form.errors.daily_target" class="text-xs text-red-600 mt-1">{{ form.errors.daily_target }}</p>
                             </td>
-                            <td class="table-td" colspan="6">
+                            <td class="table-td" colspan="8">
                                 <div class="flex items-center gap-3 flex-wrap">
                                     <div class="flex items-center gap-1.5">
                                         <label class="text-xs text-gray-500">Start</label>
@@ -207,6 +237,23 @@ function fmt(d) {
                                         <input v-model="form.end_date" type="date" class="input w-36 py-1 text-sm" />
                                         <span class="text-xs text-gray-400">(blank = ongoing)</span>
                                     </div>
+                                    <span class="text-gray-300">|</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <label class="text-xs text-indigo-600 font-medium">Day</label>
+                                        <input
+                                            v-model="form.target_day"
+                                            type="date"
+                                            class="input w-36 py-1 text-sm border-indigo-300 focus:ring-indigo-500"
+                                            :min="form.start_date || undefined"
+                                            :max="form.end_date || undefined"
+                                        />
+                                        <span class="text-xs text-gray-400">(between start &amp; end)</span>
+                                    </div>
+                                    <!-- Live preview -->
+                                    <span v-if="previewDays" class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-medium">
+                                        {{ previewDays }} days × {{ form.daily_target }} = <strong>{{ previewTotal?.toLocaleString() }}</strong>
+                                    </span>
+                                    <p v-if="form.errors.target_day" class="text-xs text-red-600">{{ form.errors.target_day }}</p>
                                     <p v-if="form.errors.end_date" class="text-xs text-red-600">{{ form.errors.end_date }}</p>
                                 </div>
                             </td>
@@ -226,7 +273,7 @@ function fmt(d) {
 
                     <!-- Grand total row -->
                     <tr class="bg-gray-50 font-semibold border-t-2 border-gray-200">
-                        <td class="table-td" colspan="3">Total (active)</td>
+                        <td class="table-td" colspan="5">Total (active)</td>
                         <td class="table-td text-right">{{ grandTotal.period_target.toLocaleString() }}</td>
                         <td class="table-td text-right" :class="grandTotal.period_calls >= grandTotal.period_target ? 'text-green-600' : ''">
                             {{ grandTotal.period_calls.toLocaleString() }}
@@ -246,7 +293,7 @@ function fmt(d) {
                     </tr>
 
                     <tr v-if="!rows.length">
-                        <td colspan="10" class="py-12 text-center text-sm text-gray-400">No agents found.</td>
+                        <td colspan="12" class="py-12 text-center text-sm text-gray-400">No agents found.</td>
                     </tr>
                 </tbody>
             </table>

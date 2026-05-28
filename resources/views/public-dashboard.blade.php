@@ -288,6 +288,9 @@ tr:hover td{background:#f8fafc}
   <button class="sb-btn" onclick="showSection('social',this)" title="Social Listening Matrix">
     <i data-lucide="activity"></i>
   </button>
+  <button class="sb-btn" onclick="showSection('targets',this)" title="Call Targets">
+    <i data-lucide="target"></i>
+  </button>
 </aside>
 
 <!-- ── Main ── -->
@@ -953,17 +956,47 @@ tr:hover td{background:#f8fafc}
 
 </div>{{-- end sec-social --}}
 
+{{-- ══════════════════════════════════ CALL TARGETS ══════════════════════════════════ --}}
+<div id="sec-targets" class="section" style="display:none">
+  <div class="sec-hdr">
+    <span class="sec-title">Call Targets</span>
+    <span style="font-size:11px;color:#94a3b8">Agent performance against daily targets</span>
+  </div>
+
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-val" id="tgt-period-target">—</div><div class="kpi-lbl">Period Target</div></div>
+    <div class="kpi"><div class="kpi-icon">📞</div><div class="kpi-val" id="tgt-period-calls">—</div><div class="kpi-lbl">Calls Made</div></div>
+    <div class="kpi"><div class="kpi-icon">📊</div><div class="kpi-val" id="tgt-coverage">—</div><div class="kpi-lbl">Coverage</div></div>
+    <div class="kpi"><div class="kpi-icon">👥</div><div class="kpi-val" id="tgt-active-agents">—</div><div class="kpi-lbl">Active Agents</div></div>
+    <div class="kpi"><div class="kpi-icon">📅</div><div class="kpi-val" id="tgt-today-required">—</div><div class="kpi-lbl">Today Required</div></div>
+    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="tgt-today-calls">—</div><div class="kpi-lbl">Today's Calls</div></div>
+  </div>
+
+  <!-- Agent performance chart -->
+  <div class="s-card" style="margin-bottom:14px">
+    <h3>Target vs Calls Made — Per Agent</h3>
+    <div style="height:260px"><canvas id="tgtAgentChart"></canvas></div>
+  </div>
+
+  <!-- Per-agent cards -->
+  <div id="tgt-agent-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+    <p style="color:#94a3b8;text-align:center;padding:24px;grid-column:1/-1">Loading…</p>
+  </div>
+</div>
+
 <div class="footer">Helpline Analytics &middot; Auto-refreshes every minute &middot; {{ now()->format('d M Y') }}</div>
 </main>
 </div>
 
 <script>
 // ── PHP data ──────────────────────────────────────────────────────────────────
-const periodData     = @json($periodData);
-const callStats      = @json($callStats);
-const months12       = @json($months);
-const last7          = @json($last7);
-const prevPeriodData = @json($prevPeriodData);
+const periodData      = @json($periodData);
+const callStats       = @json($callStats);
+const months12        = @json($months);
+const last7           = @json($last7);
+const prevPeriodData  = @json($prevPeriodData);
+const callTargetRows  = @json($callTargetRows);
 
 // ── Chart registry ─────────────────────────────────────────────────────────────
 const CC = {};
@@ -1482,6 +1515,142 @@ function updateSocial(p) {
   el('slm-urg-total').textContent  = fmt((d.imm_act ?? 0) + rHigh);
 }
 
+// ── CALL TARGETS ───────────────────────────────────────────────────────────────
+function renderTargets() {
+  const active = callTargetRows.filter(r => r.daily_target && !r.expired);
+
+  const totalPeriodTarget = active.reduce((s, r) => s + (r.period_target ?? 0), 0);
+  const totalPeriodCalls  = active.reduce((s, r) => s + (r.period_calls  ?? 0), 0);
+  const totalTodayReq     = active.reduce((s, r) => s + (r.today_required ?? 0), 0);
+  const totalTodayCalls   = active.reduce((s, r) => s + (r.today_calls   ?? 0), 0);
+  const coverage          = totalPeriodTarget ? Math.min(100, Math.round(totalPeriodCalls / totalPeriodTarget * 100)) : 0;
+
+  el('tgt-period-target').textContent  = fmt(totalPeriodTarget);
+  el('tgt-period-calls').textContent   = fmt(totalPeriodCalls);
+  el('tgt-coverage').textContent       = coverage + '%';
+  el('tgt-active-agents').textContent  = active.length;
+  el('tgt-today-required').textContent = fmt(totalTodayReq);
+  el('tgt-today-calls').textContent    = fmt(totalTodayCalls);
+
+  // Grouped bar chart: Period Target vs Calls Made per agent
+  rcGrouped('tgtAgentChart', active.map(r => r.name), [
+    { label: 'Period Target', data: active.map(r => r.period_target ?? 0), backgroundColor: '#6366f1', borderRadius: 4 },
+    { label: 'Calls Made',    data: active.map(r => r.period_calls  ?? 0), backgroundColor: '#22c55e', borderRadius: 4 },
+  ]);
+
+  // ── Agent cards ────────────────────────────────────────────────────────────
+  function tgtColor(pct) {
+    if (pct >= 100) return '#22c55e';
+    if (pct >= 60)  return '#3b82f6';
+    if (pct >= 30)  return '#fbbf24';
+    return '#f87171';
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    return new Date(d + 'T00:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' });
+  }
+
+  const container = el('tgt-agent-cards');
+  if (!callTargetRows.length) {
+    container.innerHTML = '<p style="color:#94a3b8;text-align:center;padding:24px;grid-column:1/-1">No agents found</p>';
+    return;
+  }
+
+  // Build card HTML first, then draw charts
+  container.innerHTML = callTargetRows.map((row, i) => {
+    const pct     = row.period_target ? Math.min(100, Math.round((row.period_calls ?? 0) / row.period_target * 100)) : 0;
+    const col     = tgtColor(pct);
+    const todayOk = row.today_required != null && row.today_calls >= row.today_required;
+    const badge   = row.expired     ? ['EXPIRED',  '#fee2e2','#dc2626']
+                  : !row.daily_target ? ['NO TARGET','#f1f5f9','#94a3b8']
+                  : pct >= 100      ? ['MET ✓',    '#dcfce7','#16a34a']
+                  : pct >= 60       ? ['ON TRACK',  '#eff6ff','#3b82f6']
+                  : pct >= 30       ? ['BEHIND',    '#fef9c3','#a16207']
+                  :                   ['AT RISK',   '#fee2e2','#dc2626'];
+    const targetDay = row.target_day ? fmtDate(row.target_day) : null;
+    const periodStr = row.start_date
+      ? fmtDate(row.start_date) + ' → ' + (targetDay ?? (row.end_date ? fmtDate(row.end_date) : 'ongoing'))
+      : 'No period set';
+
+    // Today's progress bar values
+    const todayPct = row.today_required ? Math.min(100, Math.round(row.today_calls / row.today_required * 100)) : 0;
+    const todayCol = tgtColor(todayPct);
+
+    return `<div class="glass" style="padding:18px;${row.expired ? 'opacity:0.6' : ''}">
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0f172a">${row.name}</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px">${periodStr}</div>
+          ${targetDay ? `<div style="font-size:10px;color:#6366f1;font-weight:600;margin-top:1px">Day: ${targetDay}</div>` : ''}
+        </div>
+        <span style="font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;background:${badge[1]};color:${badge[2]};white-space:nowrap">${badge[0]}</span>
+      </div>
+
+      <!-- Donut chart -->
+      <div style="position:relative;width:110px;height:110px;margin:0 auto 14px">
+        <canvas id="tgt-donut-${i}"></canvas>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+          <div style="font-size:20px;font-weight:900;color:${col};line-height:1">${pct}%</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px">coverage</div>
+        </div>
+      </div>
+
+      <!-- Period stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:#f8fafc;border-radius:10px;padding:8px 10px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#6366f1">${row.period_target != null ? fmt(row.period_target) : '—'}</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px">${row.period_days ?? '?'} days × ${row.daily_target ?? '—'}/day</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:10px;padding:8px 10px;text-align:center">
+          <div style="font-size:16px;font-weight:800;color:${(row.period_calls ?? 0) >= (row.period_target ?? Infinity) ? '#16a34a' : '#0f172a'}">${row.period_calls != null ? fmt(row.period_calls) : '—'}</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px">calls made</div>
+        </div>
+      </div>
+
+      <!-- Today bar chart -->
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px">
+          <span style="color:#64748b;font-weight:600">Today</span>
+          <span style="color:#94a3b8">${fmt(row.today_calls)} / ${row.today_required != null ? fmt(row.today_required) : '—'} req.</span>
+        </div>
+        <div style="height:80px"><canvas id="tgt-today-${i}"></canvas></div>
+      </div>
+
+      <!-- Carry-forward -->
+      ${row.carry_forward > 0 ? `
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;display:flex;justify-content:space-between;font-size:11px">
+        <span style="color:#92400e;font-weight:600">Carry-forward</span>
+        <span style="color:#f97316;font-weight:800">+${fmt(row.carry_forward)}</span>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Draw charts for each agent card
+  callTargetRows.forEach((row, i) => {
+    const pct   = row.period_target ? Math.min(100, Math.round((row.period_calls ?? 0) / row.period_target * 100)) : 0;
+    const col   = tgtColor(pct);
+    const rem   = Math.max(0, 100 - pct);
+
+    // Donut: coverage
+    rc(`tgt-donut-${i}`, 'doughnut',
+      ['Calls Made', 'Remaining'],
+      [pct, rem],
+      { colors: [col, '#f1f5f9'], legend: false }
+    );
+
+    // Mini bar: today's calls vs today required
+    const todayReq   = row.today_required ?? 0;
+    const todayCalls = row.today_calls    ?? 0;
+    const todayCol   = tgtColor(todayReq ? Math.min(100, Math.round(todayCalls / todayReq * 100)) : 0);
+    rc(`tgt-today-${i}`, 'bar',
+      ['Required', 'Calls Made'],
+      [todayReq, todayCalls],
+      { colors: ['#e2e8f0', todayCol], legend: false }
+    );
+  });
+}
+
 function el(id) { return document.getElementById(id); }
 
 // ── 12-month all-time trend (static, always shown) ────────────────────────────
@@ -1500,6 +1669,7 @@ function setPeriod(section, period, btn) {
 
   const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
   if (fn[section]) fn[section](period);
+  if (section === 'targets') renderTargets();
 }
 
 // ── Section switcher ──────────────────────────────────────────────────────────
@@ -1508,6 +1678,7 @@ function showSection(name, btn) {
   document.querySelectorAll('.sb-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + name).style.display = 'block';
   btn.classList.add('active');
+  if (name === 'targets') { renderTargets(); return; }
   // Re-render the active period for the newly visible section
   const activeBtn = document.querySelector(`#sec-${name} .period-btn.active-period`);
   if (activeBtn) {
@@ -1550,6 +1721,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateCalls(CALL_DEFAULT);
   updateTrends(TICKET_DEFAULT);
   updateSocial(TICKET_DEFAULT);
+  renderTargets();
 });
 </script>
 </body>

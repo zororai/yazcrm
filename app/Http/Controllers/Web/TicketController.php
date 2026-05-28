@@ -50,7 +50,9 @@ class TicketController extends Controller
             'keyPops'             => LookupItem::where('type', 'key_pops')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'modesOfCommunication' => LookupItem::where('type', 'mode_of_communication')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'projects'             => LookupItem::where('type', 'project')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
-            'servicesRequested'    => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'servicesRequested'       => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'secondServicesRequested'  => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'servicesRequestedBefore' => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
         ]);
     }
 
@@ -104,8 +106,9 @@ class TicketController extends Controller
         'location'                 => 'nullable|string|max:255',
         'is_repeat_caller'         => 'nullable|boolean',
         'project'                  => 'nullable|string|max:255',
-        'services_requested'       => 'nullable|string',
-        'second_service_requested' => 'nullable|string|max:255',
+        'services_requested_before' => 'nullable|string',
+        'services_requested'        => 'nullable|string',
+        'second_service_requested'  => 'nullable|string|max:255',
         'number_of_services'       => 'nullable|integer|min:0|max:255',
         'referred_to'              => 'nullable|string|max:255',
         'uptake_confirmed'         => 'nullable|boolean',

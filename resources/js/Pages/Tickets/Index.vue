@@ -7,7 +7,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
-const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array });
+const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const search   = ref(props.filters.search ?? '');
 const status   = ref(props.filters.status ?? '');
@@ -41,8 +41,9 @@ const addForm = useForm({
     district:                 '',
     location:                 '',
     is_repeat_caller:         false,
-    project:                  '',
-    services_requested:       '',
+    project:                   '',
+    services_requested_before: '',
+    services_requested:        '',
     second_service_requested: '',
     number_of_services:       '',
     referred_to:              '',
@@ -352,6 +353,13 @@ const statusColor = {
                         <div class="space-y-3">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
+                                    <label class="label">Services Requested Before</label>
+                                    <select v-model="addForm.services_requested_before" class="input">
+                                        <option value="">— select —</option>
+                                        <option v-for="s in props.servicesRequestedBefore" :key="s" :value="s">{{ s }}</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="label">Services Requested</label>
                                     <select v-model="addForm.services_requested" class="input">
                                         <option value="">— select —</option>
@@ -360,7 +368,10 @@ const statusColor = {
                                 </div>
                                 <div>
                                     <label class="label">Second Service Requested</label>
-                                    <input v-model="addForm.second_service_requested" class="input" />
+                                    <select v-model="addForm.second_service_requested" class="input">
+                                        <option value="">— select —</option>
+                                        <option v-for="s in props.secondServicesRequested" :key="s" :value="s">{{ s }}</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="label">No. of Services</label>

@@ -14,7 +14,7 @@ class Ticket extends Model
         'mode_of_communication', 'call_validity', 'purpose_of_call',
         'immediate_action_required', 'caller_age', 'caller_gender',
         'caller_marital_status', 'key_pops', 'province', 'district',
-        'location', 'is_repeat_caller', 'project', 'services_requested',
+        'location', 'is_repeat_caller', 'project', 'services_requested_before', 'services_requested',
         'second_service_requested', 'number_of_services', 'referred_to',
         'uptake_confirmed',
     ];
