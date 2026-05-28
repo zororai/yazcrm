@@ -134,9 +134,13 @@ function createTicket(uc) {
 }
 
 const statusColor = {
-    open:     'bg-red-100 text-red-700',
-    resolved: 'bg-green-100 text-green-700',
+    open:     'border-red-300 bg-red-50 text-red-700',
+    resolved: 'border-green-300 bg-green-50 text-green-700',
 };
+
+function setStatus(uc, status) {
+    router.patch(`/urgent-cases/${uc.id}`, { status }, { preserveScroll: true });
+}
 
 function fmt(d) {
     return d ? new Date(d).toLocaleString() : '—';
@@ -229,9 +233,17 @@ function fmt(d) {
                         <td class="table-td text-sm text-gray-600">{{ uc.agent?.name ?? '—' }}</td>
                         <td class="table-td text-xs text-gray-500 whitespace-nowrap">{{ fmt(uc.created_at) }}</td>
                         <td class="table-td text-center">
-                            <span :class="['badge', statusColor[uc.status] ?? 'bg-gray-100 text-gray-600']">
-                                {{ uc.status }}
-                            </span>
+                            <select
+                                :value="uc.status"
+                                @change="setStatus(uc, $event.target.value)"
+                                :class="[
+                                    'rounded border px-2 py-1 text-xs font-semibold cursor-pointer focus:outline-none focus:ring-1 focus:ring-offset-0',
+                                    statusColor[uc.status] ?? 'border-gray-300 bg-gray-50 text-gray-600'
+                                ]"
+                            >
+                                <option value="open">open</option>
+                                <option value="resolved">resolved</option>
+                            </select>
                         </td>
                         <td class="table-td text-sm">
                             <Link v-if="uc.source_ticket" :href="`/tickets/${uc.source_ticket.id}`"

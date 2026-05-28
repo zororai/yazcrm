@@ -67,6 +67,25 @@ class UrgentCaseController extends Controller
         return back()->with('success', 'Case marked as resolved.');
     }
 
+    public function updateStatus(Request $request, UrgentCase $urgentCase): RedirectResponse
+    {
+        $data = $request->validate(['status' => 'required|in:open,resolved']);
+
+        $update = ['status' => $data['status']];
+
+        if ($data['status'] === 'resolved' && ! $urgentCase->resolved_at) {
+            $update['resolved_at']    = now();
+            $update['resolved_by_id'] = auth()->id();
+        } elseif ($data['status'] === 'open') {
+            $update['resolved_at']    = null;
+            $update['resolved_by_id'] = null;
+        }
+
+        $urgentCase->update($update);
+
+        return back()->with('success', 'Status updated.');
+    }
+
     /** Create a ticket from an urgent case that has no source ticket yet. */
     public function createTicket(UrgentCase $urgentCase): RedirectResponse
     {

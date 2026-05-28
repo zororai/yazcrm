@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::get('urgent-cases', [Web\UrgentCaseController::class, 'index'])->name('urgent-cases.index');
     Route::post('urgent-cases', [Web\UrgentCaseController::class, 'store'])->name('urgent-cases.store');
     Route::patch('urgent-cases/{urgentCase}/resolve', [Web\UrgentCaseController::class, 'resolve'])->name('urgent-cases.resolve');
+    Route::patch('urgent-cases/{urgentCase}', [Web\UrgentCaseController::class, 'updateStatus'])->name('urgent-cases.update');
     Route::post('urgent-cases/{urgentCase}/ticket', [Web\UrgentCaseController::class, 'createTicket'])->name('urgent-cases.ticket');
 
     // Tickets
