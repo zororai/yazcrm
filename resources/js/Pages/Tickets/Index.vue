@@ -7,7 +7,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
-const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array });
+const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const search   = ref(props.filters.search ?? '');
 const status   = ref(props.filters.status ?? '');
@@ -381,14 +381,7 @@ const statusColor = {
                                     <label class="label">Referred To</label>
                                     <select v-model="addForm.referred_to" class="input">
                                         <option value="">— select —</option>
-                                        <option value="Clinic / Health Facility">Clinic / Health Facility — SRHR, MH referrals</option>
-                                        <option value="Police Station">Police Station — GBV &amp; protection cases</option>
-                                        <option value="CeSHHAR / STI Clinic">CeSHHAR / STI Clinic — SRHR specialist service</option>
-                                        <option value="School Headmaster">School Headmaster — Child protection</option>
-                                        <option value="DSD / Social Welfare">DSD / Social Welfare — Socioeconomic cases</option>
-                                        <option value="Civil Court">Civil Court — Legal justice cases</option>
-                                        <option value="VFU (Victim Support)">VFU (Victim Support) — Violence survivors</option>
-                                        <option value="YALEP Programme">YALEP Programme — Education track</option>
+                                        <option v-for="r in props.referredTo" :key="r" :value="r">{{ r }}</option>
                                     </select>
                                 </div>
                             </div>
