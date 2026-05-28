@@ -93,6 +93,7 @@ class TicketController extends Controller
 
     private array $crmRules = [
         'contact_number'           => 'nullable|string|max:50',
+        'sisters_number'           => 'nullable|string|max:50',
         'follow_up_date'           => 'nullable|date',
         'mode_of_communication'    => 'nullable|string|max:100',
         'call_validity'            => 'nullable|in:valid,invalid',

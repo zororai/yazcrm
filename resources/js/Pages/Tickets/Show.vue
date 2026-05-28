@@ -91,6 +91,15 @@ function label(val) {
                         <h3 class="font-semibold text-gray-800 mb-3 text-sm">Caller Information</h3>
                         <dl class="grid grid-cols-3 gap-x-6 gap-y-2 text-sm">
                             <div>
+                                <dt class="text-gray-400 text-xs">Contact Number</dt>
+                                <dd class="font-medium">{{ label(ticket.contact_number) }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-gray-400 text-xs">Sisters Number</dt>
+                                <dd class="font-medium">{{ label(ticket.sisters_number) }}</dd>
+                            </div>
+                            <div></div>
+                            <div>
                                 <dt class="text-gray-400 text-xs">Age</dt>
                                 <dd class="font-medium">{{ label(ticket.caller_age) }}</dd>
                             </div>
@@ -136,6 +145,10 @@ function label(val) {
                     <div class="card">
                         <h3 class="font-semibold text-gray-800 mb-3 text-sm">Services</h3>
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                            <div class="col-span-2">
+                                <dt class="text-gray-400 text-xs">Services Requested Before</dt>
+                                <dd class="font-medium">{{ label(ticket.services_requested_before) }}</dd>
+                            </div>
                             <div>
                                 <dt class="text-gray-400 text-xs">Services Requested</dt>
                                 <dd class="font-medium">{{ label(ticket.services_requested) }}</dd>

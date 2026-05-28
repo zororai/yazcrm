@@ -27,7 +27,7 @@ function onContactInput() { debouncedContactSearch(addForm.contact_number); }
 function selectContact(num) { addForm.contact_number = num; showContactDrop.value = false; contactResults.value = []; }
 
 const addForm = useForm({
-    subject: '', contact_number: '', description: '', priority: 'medium', follow_up_date: '',
+    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', follow_up_date: '',
     // CRM fields
     mode_of_communication:    'phone',
     call_validity:            'valid',
@@ -200,27 +200,38 @@ const statusColor = {
                                 <input v-model="addForm.subject" class="input" :class="{ 'border-red-500': addForm.errors.subject }" required />
                                 <p v-if="addForm.errors.subject" class="mt-1 text-xs text-red-600">{{ addForm.errors.subject }}</p>
                             </div>
-                            <div class="relative">
-                                <label class="label">Contact / Sisters Number</label>
-                                <input
-                                    v-model="addForm.contact_number"
-                                    @input="onContactInput"
-                                    @focus="showContactDrop = true"
-                                    @blur="() => setTimeout(() => showContactDrop = false, 150)"
-                                    class="input"
-                                    placeholder="Type or search number…"
-                                    autocomplete="off"
-                                />
-                                <ul v-if="showContactDrop && contactResults.length"
-                                    class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                    <li v-for="num in contactResults" :key="num">
-                                        <button type="button"
-                                            @mousedown.prevent="selectContact(num)"
-                                            class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                            {{ num }}
-                                        </button>
-                                    </li>
-                                </ul>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="relative">
+                                    <label class="label">Contact Number</label>
+                                    <input
+                                        v-model="addForm.contact_number"
+                                        @input="onContactInput"
+                                        @focus="showContactDrop = true"
+                                        @blur="() => setTimeout(() => showContactDrop = false, 150)"
+                                        class="input"
+                                        placeholder="Type or search number…"
+                                        autocomplete="off"
+                                    />
+                                    <ul v-if="showContactDrop && contactResults.length"
+                                        class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        <li v-for="num in contactResults" :key="num">
+                                            <button type="button"
+                                                @mousedown.prevent="selectContact(num)"
+                                                class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                                {{ num }}
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <label class="label">Sisters Number</label>
+                                    <input
+                                        v-model="addForm.sisters_number"
+                                        class="input"
+                                        placeholder="Sister's contact number"
+                                    />
+                                    <p v-if="addForm.errors.sisters_number" class="mt-1 text-xs text-red-600">{{ addForm.errors.sisters_number }}</p>
+                                </div>
                             </div>
                             <div>
                                 <label class="label">Priority</label>
@@ -354,10 +365,7 @@ const statusColor = {
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="label">Services Requested Before</label>
-                                    <select v-model="addForm.services_requested_before" class="input">
-                                        <option value="">— select —</option>
-                                        <option v-for="s in props.servicesRequestedBefore" :key="s" :value="s">{{ s }}</option>
-                                    </select>
+                                    <input v-model="addForm.services_requested_before" class="input" placeholder="Describe previous services…" />
                                 </div>
                                 <div>
                                     <label class="label">Services Requested</label>
