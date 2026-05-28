@@ -11,7 +11,7 @@ class CallTarget extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date'   => 'date',
-        'target_day' => 'date',
+        'target_day' => 'integer',
     ];
 
     public function agent()
