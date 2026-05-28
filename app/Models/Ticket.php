@@ -16,7 +16,7 @@ class Ticket extends Model
         'caller_marital_status', 'key_pops', 'province', 'district',
         'location', 'is_repeat_caller', 'project', 'services_requested_before', 'services_requested',
         'second_service_requested', 'number_of_services', 'referred_to',
-        'uptake_confirmed',
+        'uptake_confirmed', 'referral_uptake_date',
     ];
 
     protected $casts = [

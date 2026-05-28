@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\LookupItem;
 use App\Models\Ticket;
 use App\Models\UrgentCase;
 use Illuminate\Http\RedirectResponse;
@@ -14,12 +15,28 @@ class UrgentCaseController extends Controller
 {
     public function index(): Response
     {
-        $cases = UrgentCase::with(['agent', 'resolvedBy', 'sourceTicket', 'createdTicket'])
+        $cases = UrgentCase::with([
+                'agent', 'resolvedBy',
+                'sourceTicket.agent', 'createdTicket.agent',
+            ])
             ->orderByRaw("FIELD(status, 'open', 'resolved')")
             ->orderByDesc('created_at')
             ->paginate(30);
 
-        return Inertia::render('UrgentCases/Index', ['cases' => $cases]);
+        $lookup = fn(string $type) => LookupItem::where('type', $type)
+            ->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('name')
+            ->pluck('name');
+
+        return Inertia::render('UrgentCases/Index', [
+            'cases'                   => $cases,
+            'keyPops'                 => $lookup('key_pops'),
+            'modesOfCommunication'    => $lookup('mode_of_communication'),
+            'projects'                => $lookup('project'),
+            'servicesRequested'       => $lookup('service_requested'),
+            'secondServicesRequested' => $lookup('service_requested'),
+            'referredTo'              => $lookup('referred_to'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse

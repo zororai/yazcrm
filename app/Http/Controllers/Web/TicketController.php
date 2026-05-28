@@ -116,6 +116,7 @@ class TicketController extends Controller
         'number_of_services'       => 'nullable|integer|min:0|max:255',
         'referred_to'              => 'nullable|string|max:255',
         'uptake_confirmed'         => 'nullable|boolean',
+        'referral_uptake_date'    => 'nullable|date',
     ];
 
     public function store(Request $request): RedirectResponse
@@ -147,7 +148,7 @@ class TicketController extends Controller
             ]);
         }
 
-        return redirect()->route('tickets.show', $ticket)->with('success', 'Ticket created.');
+        return redirect()->route('tickets.index')->with('success', 'Ticket created.');
     }
 
     public function update(Request $request, Ticket $ticket): RedirectResponse
