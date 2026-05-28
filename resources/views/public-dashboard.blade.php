@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="refresh" content="60">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -303,7 +302,7 @@ tr:hover td{background:#f8fafc}
     <div class="page-sub">National Youth Helpline &middot; {{ $lastUpdated ? \Carbon\Carbon::parse($lastUpdated)->format('d M Y, H:i') : 'N/A' }}</div>
   </div>
   <div class="hdr-right">
-    <div class="live-pill"><span class="live-dot"></span> Live</div>
+    <div class="live-pill"><span class="live-dot" id="live-dot"></span> Live &mdash; <span id="live-updated">now</span></div>
     <div class="total-pill"><div class="tv">{{ number_format($total) }}</div><div class="tl">All-time Interactions</div></div>
   </div>
 </div>
@@ -990,13 +989,12 @@ tr:hover td{background:#f8fafc}
 </div>
 
 <script>
-// ── PHP data ──────────────────────────────────────────────────────────────────
-const periodData      = @json($periodData);
-const callStats       = @json($callStats);
-const months12        = @json($months);
-const last7           = @json($last7);
-const prevPeriodData  = @json($prevPeriodData);
-const callTargetRows  = @json($callTargetRows);
+// ── PHP data (let — reassigned on each background refresh) ────────────────────
+let periodData     = @json($periodData);
+let callStats      = @json($callStats);
+let months12       = @json($months);
+let prevPeriodData = @json($prevPeriodData);
+let callTargetRows = @json($callTargetRows);
 
 // ── Chart registry ─────────────────────────────────────────────────────────────
 const CC = {};
@@ -1709,11 +1707,52 @@ function labelPeriodBtns() {
   });
 }
 
+// ── Background data refresh (no page reload) ──────────────────────────────────
+function refreshData() {
+  fetch('/screen/data', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => {
+      // Reassign module-level data
+      periodData     = d.periodData;
+      callStats      = d.callStats;
+      months12       = d.months;
+      prevPeriodData = d.prevPeriodData;
+      callTargetRows = d.callTargetRows;
+
+      // Update live indicator
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+      const upd = document.getElementById('live-updated');
+      if (upd) upd.textContent = timeStr;
+      const dot = document.getElementById('live-dot');
+      if (dot) { dot.style.background = '#22c55e'; setTimeout(() => { dot.style.background = ''; }, 800); }
+
+      // Re-render whichever section is currently visible
+      const visibleSec = [...document.querySelectorAll('.section')].find(s => s.style.display !== 'none');
+      if (!visibleSec) return;
+      const name = visibleSec.id.replace('sec-', '');
+      if (name === 'targets') { renderTargets(); return; }
+      const activeBtn = document.querySelector(`#sec-${name} .period-btn.active-period`);
+      if (activeBtn) {
+        const m = activeBtn.getAttribute('onclick').match(/'(day|week|month|year)'/);
+        if (m) setPeriod(name, m[1], activeBtn);
+      }
+      // Always refresh the static 12-month trend chart
+      const mLabels = Object.keys(months12).map(ym => {
+        const [y, mo] = ym.split('-');
+        return new Date(+y, +mo-1).toLocaleString('default', { month:'short', year:'2-digit' });
+      });
+      rc('trendAllChart', 'line', mLabels, Object.values(months12), { accent:'#3b82f6', fill:true, legend:false });
+
+      console.log('[screen] data refreshed at ' + timeStr);
+    })
+    .catch(err => console.warn('[screen] refresh failed:', err));
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof lucide !== 'undefined') lucide.createIcons();
   labelPeriodBtns();
-  console.log('[screen] TICKET_DEFAULT='+TICKET_DEFAULT+' month_total='+periodData['month']?.total+' day_calls='+callStats['day']?.total);
   updateOverview(TICKET_DEFAULT);
   updateGeographic(TICKET_DEFAULT);
   updateDemographics(TICKET_DEFAULT);
@@ -1722,6 +1761,9 @@ window.addEventListener('DOMContentLoaded', () => {
   updateTrends(TICKET_DEFAULT);
   updateSocial(TICKET_DEFAULT);
   renderTargets();
+
+  // Refresh data every 60 seconds without reloading the page
+  setInterval(refreshData, 60_000);
 });
 </script>
 </body>
