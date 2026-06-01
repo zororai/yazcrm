@@ -236,10 +236,36 @@ const qualityColor = computed(() => ({
             </div>
         </template>
 
-        <!-- Agent warnings -->
-        <div v-if="extension" class="mb-5 flex items-center gap-2 p-3 rounded-xl text-xs bg-brand-600/10 border border-brand-500/20 text-brand-300">
-            <span class="font-semibold">Extension {{ extension }}</span>
-            <span class="text-brand-400">— showing your calls only</span>
+        <!-- Agent: personal call summary banner -->
+        <div v-if="extension" class="mb-5 rounded-xl bg-brand-600/10 border border-brand-500/20 p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <PhoneIcon class="h-4 w-4 text-brand-400 flex-shrink-0" />
+                    <span class="text-xs font-semibold text-brand-300">Extension {{ extension }} — your calls this {{ period }}</span>
+                </div>
+                <div class="flex flex-wrap gap-4">
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-white leading-none">{{ stats.total_calls }}</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Total</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-blue-400 leading-none">{{ stats.outbound_calls }}</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Outbound</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-emerald-400 leading-none">{{ stats.inbound_calls }}</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Inbound</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-green-400 leading-none">{{ stats.answered_calls }}</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Answered</p>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-2xl font-bold text-red-400 leading-none">{{ stats.missed_calls }}</p>
+                        <p class="text-[10px] text-gray-400 mt-0.5">Missed</p>
+                    </div>
+                </div>
+            </div>
         </div>
         <div v-else-if="extension === null && page.props.auth.user?.role !== 'admin'" class="mb-5 p-3 rounded-xl text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400">
             No extension assigned to your account — contact your admin.

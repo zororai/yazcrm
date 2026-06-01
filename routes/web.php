@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     // ─── Admin only ───────────────────────────────────────────────────────────
     Route::middleware('admin')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('uchat-contacts', [Web\UchatContactsController::class, 'index'])->name('uchat-contacts.index');
 
         // Distress domains / lookup settings
         Route::get('distress-domains', [Web\DistressDomainController::class, 'index'])->name('distress-domains.index');

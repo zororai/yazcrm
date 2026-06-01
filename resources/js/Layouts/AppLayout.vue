@@ -6,7 +6,7 @@ import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon, FolderOpenIcon,
-    ExclamationTriangleIcon,
+    ExclamationTriangleIcon, ChatBubbleLeftRightIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -98,9 +98,10 @@ const navigation = computed(() => [
         { name: 'Analytics',  href: '/analytics',    icon: ChartBarIcon },
         { name: 'Targets',    href: '/call-targets',                         icon: FlagIcon },
         { name: 'By Project', href: '/distress-domains/section/project',    icon: FolderOpenIcon },
-        { name: 'Domains',    href: '/distress-domains',                     icon: TagIcon },
-        { name: 'Users',      href: '/users',             icon: UserGroupIcon },
-        { name: 'Yeastar',    href: '/yeastar-settings',  icon: Cog6ToothIcon },
+        { name: 'Domains',      href: '/distress-domains',   icon: TagIcon },
+        { name: 'Bot Contacts', href: '/uchat-contacts',    icon: ChatBubbleLeftRightIcon },
+        { name: 'Users',        href: '/users',             icon: UserGroupIcon },
+        { name: 'Yeastar',      href: '/yeastar-settings',  icon: Cog6ToothIcon },
     ] : []),
 ]);
 
