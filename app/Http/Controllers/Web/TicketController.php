@@ -130,6 +130,11 @@ class TicketController extends Controller
             ...$this->crmRules,
         ]);
 
+        // Coerce boolean fields so null from an unselected dropdown becomes false
+        $data['immediate_action_required'] = !empty($data['immediate_action_required']);
+        $data['is_repeat_caller']          = !empty($data['is_repeat_caller']);
+        $data['uptake_confirmed']          = !empty($data['uptake_confirmed']);
+
         $ticket = Ticket::create([
             ...$data,
             'agent_id' => $request->user()->id,
