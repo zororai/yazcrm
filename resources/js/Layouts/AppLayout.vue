@@ -6,7 +6,7 @@ import {
     HomeIcon, PhoneIcon, TicketIcon, ChartBarIcon,
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon, FolderOpenIcon,
-    ExclamationTriangleIcon, ChatBubbleLeftRightIcon,
+    ExclamationTriangleIcon, ChatBubbleLeftRightIcon, ShieldCheckIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -15,6 +15,9 @@ const page  = usePage();
 const user  = computed(() => page.props.auth.user);
 const flash = computed(() => page.props.flash);
 const isAdmin = computed(() => user.value?.role === 'admin');
+
+// nav_permissions: null on admins (full access), array of keys on agents/supervisors
+const can = (key) => isAdmin.value || (user.value?.nav_permissions ?? []).includes(key);
 
 const sidebarOpen     = ref(false);
 const pendingCall     = ref(null);
@@ -88,21 +91,20 @@ onUnmounted(() => {
 });
 
 const navigation = computed(() => [
-    { name: 'Dashboard',  href: '/dashboard', icon: HomeIcon },
-    { name: 'Calls',      href: '/calls',      icon: PhoneIcon },
-    { name: 'Callbacks',  href: '/callbacks',  icon: QueueListIcon },
-    { name: 'Tickets',    href: '/tickets',    icon: TicketIcon },
+    { name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon },
+    { name: 'Calls',      href: '/calls',        icon: PhoneIcon },
+    { name: 'Callbacks',  href: '/callbacks',    icon: QueueListIcon },
+    { name: 'Tickets',    href: '/tickets',      icon: TicketIcon },
     { name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount },
-    ...(isAdmin.value ? [
-        { name: 'Extensions', href: '/extensions',   icon: SignalIcon },
-        { name: 'Analytics',  href: '/analytics',    icon: ChartBarIcon },
-        { name: 'Targets',    href: '/call-targets',                         icon: FlagIcon },
-        { name: 'By Project', href: '/distress-domains/section/project',    icon: FolderOpenIcon },
-        { name: 'Domains',      href: '/distress-domains',   icon: TagIcon },
-        { name: 'Bot Contacts', href: '/uchat-contacts',    icon: ChatBubbleLeftRightIcon },
-        { name: 'Users',        href: '/users',             icon: UserGroupIcon },
-        { name: 'Yeastar',      href: '/yeastar-settings',  icon: Cog6ToothIcon },
-    ] : []),
+    ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
+    ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
+    ...(can('targets')      ? [{ name: 'Targets',     href: '/call-targets',                     icon: FlagIcon }] : []),
+    ...(can('by_project')   ? [{ name: 'By Project',  href: '/distress-domains/section/project', icon: FolderOpenIcon }] : []),
+    ...(can('domains')      ? [{ name: 'Domains',     href: '/distress-domains',                 icon: TagIcon }] : []),
+    ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
+    ...(isAdmin.value       ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
+    ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
+    ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);
 
 function isActive(href) {

@@ -64,6 +64,12 @@ Route::middleware('auth')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('uchat-contacts', [Web\UchatContactsController::class, 'index'])->name('uchat-contacts.index');
 
+        // Roles management
+        Route::get('roles',             [Web\RoleController::class, 'index'])->name('roles.index');
+        Route::post('roles',            [Web\RoleController::class, 'store'])->name('roles.store');
+        Route::put('roles/{role}',      [Web\RoleController::class, 'update'])->name('roles.update');
+        Route::delete('roles/{role}',   [Web\RoleController::class, 'destroy'])->name('roles.destroy');
+
         // Distress domains / lookup settings
         Route::get('distress-domains', [Web\DistressDomainController::class, 'index'])->name('distress-domains.index');
         Route::get('distress-domains/section/{type}', [Web\DistressDomainController::class, 'section'])->name('distress-domains.section');

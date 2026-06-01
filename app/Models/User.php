@@ -12,15 +12,16 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'avatar', 'is_active', 'last_login_at',
+        'name', 'email', 'password', 'role', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
     ];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'last_login_at' => 'datetime',
-        'is_active' => 'boolean',
+        'last_login_at'     => 'datetime',
+        'is_active'         => 'boolean',
+        'nav_permissions'   => 'array',
     ];
 
     public function extension()

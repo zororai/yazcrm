@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,18 +16,25 @@ class UserController extends Controller
     public function index(): Response
     {
         $users = User::with('extension')->latest()->get();
+        $roles = Role::orderBy('is_system', 'desc')->orderBy('display_name')->get(['id','name','display_name','nav_permissions','is_system']);
 
-        return Inertia::render('Users/Index', ['users' => $users]);
+        return Inertia::render('Users/Index', ['users' => $users, 'roles' => $roles]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $roleNames = Role::pluck('name')->implode(',');
+
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
-            'role'     => 'required|in:admin,agent,supervisor',
+            'role'     => "required|in:{$roleNames}",
         ]);
+
+        // Auto-apply the role's nav_permissions
+        $role = Role::where('name', $data['role'])->first();
+        $data['nav_permissions'] = $role?->name === 'admin' ? null : ($role?->nav_permissions ?? []);
 
         User::create([...$data, 'password' => Hash::make($data['password'])]);
 
@@ -35,11 +43,27 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $roleNames = Role::pluck('name')->implode(',');
+        $valid = ['extensions','analytics','targets','by_project','domains','bot_contacts','users','yeastar'];
+
         $data = $request->validate([
-            'name'  => 'sometimes|string|max:255',
-            'email' => "sometimes|email|unique:users,email,{$user->id}",
-            'role'  => 'sometimes|in:admin,agent,supervisor',
+            'name'              => 'sometimes|string|max:255',
+            'email'             => "sometimes|email|unique:users,email,{$user->id}",
+            'role'              => "sometimes|in:{$roleNames}",
+            'nav_permissions'   => 'sometimes|nullable|array',
+            'nav_permissions.*' => 'string|in:' . implode(',', $valid),
         ]);
+
+        // When role changes, auto-apply that role's default permissions
+        if (isset($data['role']) && $data['role'] !== $user->role) {
+            $role = Role::where('name', $data['role'])->first();
+            $data['nav_permissions'] = $role?->name === 'admin' ? null : ($role?->nav_permissions ?? []);
+        }
+
+        // Admin always has full access
+        if (($data['role'] ?? $user->role) === 'admin') {
+            $data['nav_permissions'] = null;
+        }
 
         $user->update($data);
 
