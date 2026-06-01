@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\CallTargetController;
+use App\Models\UchatAnalyticsSnapshot;
+use App\Services\UchatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
@@ -34,9 +36,20 @@ class PublicDashboardController extends Controller
             'callDefaultPeriod'   => $d['callDefaultPeriod'],
             'lastUpdated'         => $d['lastUpdated'],
             'total'               => $d['total'],
+            'uchat'               => $d['uchat'],
         ])->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma'        => 'no-cache',
+        ]);
+    }
+
+    public function uchatHistory(): JsonResponse
+    {
+        $rows = UchatAnalyticsSnapshot::orderBy('date')
+            ->get(['date', 'total_bot_users', 'new_bot_users', 'active_today']);
+
+        return response()->json($rows)->withHeaders([
+            'Cache-Control' => 'no-store',
         ]);
     }
 
@@ -253,6 +266,8 @@ class PublicDashboardController extends Controller
             if (($callStats[$p]['total'] ?? 0) > 0) { $callDefaultPeriod = $p; break; }
         }
 
+        $uchat = app(UchatService::class)->fetchAnalytics();
+
         return compact(
             'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
             'byStatus', 'byProvince', 'byGender', 'byMode', 'byPurpose',
@@ -260,7 +275,8 @@ class PublicDashboardController extends Controller
             'byValidity', 'ageGroups', 'byPriority', 'lastUpdated',
             'callStats', 'periodData',
             'ticketDefaultPeriod', 'callDefaultPeriod',
-            'prevPeriodData', 'recentTickets', 'callTargetRows'
+            'prevPeriodData', 'recentTickets', 'callTargetRows',
+            'uchat'
         );
     }
 }

@@ -290,6 +290,9 @@ tr:hover td{background:#f8fafc}
   <button class="sb-btn" onclick="showSection('targets',this)" title="Call Targets">
     <i data-lucide="target"></i>
   </button>
+  <button class="sb-btn" onclick="showSection('bot',this)" title="Bot Analytics">
+    <i data-lucide="bot"></i>
+  </button>
 </aside>
 
 <!-- ── Main ── -->
@@ -984,12 +987,132 @@ tr:hover td{background:#f8fafc}
   </div>
 </div>
 
+{{-- ══════════════════════════════════ BOT ANALYTICS ══════════════════════════════ --}}
+<div id="sec-bot" class="section" style="display:none">
+  <div class="sec-hdr">
+    <span class="sec-title">Bot Analytics — uChat</span>
+    <span style="font-size:11px;color:#94a3b8">Last 30 days &middot; <span id="bot-fetched">{{ $uchat['fetched_at'] ?? 'N/A' }}</span></span>
+  </div>
+
+  @if(!empty($uchat['error']))
+  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 16px;font-size:12px;color:#b91c1c;margin-bottom:14px">
+    ⚠ uChat API unavailable: {{ $uchat['error'] }}
+  </div>
+  @endif
+
+  <!-- KPI cards -->
+  <div class="kpi-row" style="margin-bottom:16px">
+    <div class="kpi">
+      <div class="kpi-icon">🤖</div>
+      <div class="kpi-val" id="bot-total">{{ number_format($uchat['total_bot_users'] ?? 0) }}</div>
+      <div class="kpi-lbl">Total Bot Users</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">✨</div>
+      <div class="kpi-val" id="bot-new">{{ number_format($uchat['new_bot_users'] ?? 0) }}</div>
+      <div class="kpi-lbl">New Bot Users (30d)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">⚡</div>
+      <div class="kpi-val" id="bot-active">{{ number_format($uchat['active_today'] ?? 0) }}</div>
+      <div class="kpi-lbl">Active (Last 24h)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-val" id="bot-avg">{{ $uchat['new_bot_users'] > 0 ? round(($uchat['new_bot_users'] ?? 0) / 30, 1) : '—' }}</div>
+      <div class="kpi-lbl">Avg New / Day (30d)</div>
+    </div>
+  </div>
+
+  <!-- Channel breakdown -->
+  <div class="s-card" style="margin-bottom:14px">
+    <h3>New Bot Users By Channel (Last 30 Days)</h3>
+    <div id="bot-channels" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">
+      @php
+        $channelIcons = [
+          'whatsapp_cloud' => '💬',
+          'whatsapp'       => '💬',
+          'facebook'       => '📘',
+          'instagram'      => '📷',
+          'telegram'       => '✈️',
+          'tiktok'         => '🎵',
+          'web'            => '🌐',
+          'slack'          => '💼',
+          'wechat'         => '🟢',
+          'unknown'        => '❓',
+        ];
+        $channelTotal = array_sum($uchat['channel_counts'] ?? []);
+      @endphp
+      @forelse($uchat['channel_counts'] ?? [] as $ch => $cnt)
+        @php $pct = $channelTotal > 0 ? round($cnt / $channelTotal * 100) : 0; @endphp
+        <div style="min-width:160px;flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:600;color:#374151;text-transform:capitalize">
+              {{ $channelIcons[$ch] ?? '📡' }} {{ str_replace('_', ' ', $ch) }}
+            </span>
+            <span style="font-size:16px;font-weight:800;color:#0f172a">{{ number_format($cnt) }}</span>
+          </div>
+          <div style="height:4px;background:#e2e8f0;border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:{{ $pct }}%;background:#3b82f6;border-radius:4px"></div>
+          </div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:3px">{{ $pct }}% of new users</div>
+        </div>
+      @empty
+        <p style="color:#94a3b8;font-size:13px">No new subscribers in the last 30 days.</p>
+      @endforelse
+    </div>
+  </div>
+
+  <!-- Historical trend chart -->
+  <div class="s-card" style="margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 style="margin:0">Growth Over Time</h3>
+      <span style="font-size:11px;color:#94a3b8">Daily snapshots stored in database</span>
+    </div>
+    <div style="height:220px"><canvas id="botTrendChart"></canvas></div>
+  </div>
+
+  <!-- Total users bar -->
+  <div class="s-card">
+    <h3>Total Bot Users Overview</h3>
+    <div style="display:flex;align-items:center;gap:20px;margin-top:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        @php $newPct = ($uchat['total_bot_users'] ?? 0) > 0 ? round(($uchat['new_bot_users'] ?? 0) / $uchat['total_bot_users'] * 100) : 0; @endphp
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:4px">
+          <span>New this period</span><span>{{ $newPct }}%</span>
+        </div>
+        <div style="height:8px;background:#e2e8f0;border-radius:8px;overflow:hidden">
+          <div style="height:100%;width:{{ $newPct }}%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:8px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px">
+          <span>{{ number_format($uchat['new_bot_users'] ?? 0) }} new</span>
+          <span>{{ number_format($uchat['total_bot_users'] ?? 0) }} total</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        @php $activePct = ($uchat['total_bot_users'] ?? 0) > 0 ? round(($uchat['active_today'] ?? 0) / $uchat['total_bot_users'] * 100) : 0; @endphp
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:4px">
+          <span>Active last 24h</span><span>{{ $activePct }}%</span>
+        </div>
+        <div style="height:8px;background:#e2e8f0;border-radius:8px;overflow:hidden">
+          <div style="height:100%;width:{{ $activePct }}%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:8px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px">
+          <span>{{ number_format($uchat['active_today'] ?? 0) }} active</span>
+          <span>{{ number_format($uchat['total_bot_users'] ?? 0) }} total</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="footer">Helpline Analytics &middot; Auto-refreshes every minute &middot; {{ now()->format('d M Y') }}</div>
 </main>
 </div>
 
 <script>
 // ── PHP data (let — reassigned on each background refresh) ────────────────────
+let uchatData      = @json($uchat);
 let periodData     = @json($periodData);
 let callStats      = @json($callStats);
 let months12       = @json($months);
@@ -1677,6 +1800,7 @@ function showSection(name, btn) {
   document.getElementById('sec-' + name).style.display = 'block';
   btn.classList.add('active');
   if (name === 'targets') { renderTargets(); return; }
+  if (name === 'bot')     { updateBotStats(); return; }
   // Re-render the active period for the newly visible section
   const activeBtn = document.querySelector(`#sec-${name} .period-btn.active-period`);
   if (activeBtn) {
@@ -1707,6 +1831,93 @@ function labelPeriodBtns() {
   });
 }
 
+// ── Bot Analytics ─────────────────────────────────────────────────────────────
+let botTrendChartInst = null;
+
+function updateBotStats() {
+  const d = uchatData;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('bot-total',   (d.total_bot_users ?? 0).toLocaleString());
+  set('bot-new',     (d.new_bot_users   ?? 0).toLocaleString());
+  set('bot-active',  (d.active_today    ?? 0).toLocaleString());
+  const avgNew = d.new_bot_users > 0 ? (d.new_bot_users / 30).toFixed(1) : '—';
+  set('bot-avg', avgNew);
+  if (d.fetched_at) set('bot-fetched', d.fetched_at);
+  loadBotTrendChart();
+}
+
+function loadBotTrendChart() {
+  fetch('/screen/uchat-history', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(rows => {
+      if (!rows.length) return;
+      const labels = rows.map(r => {
+        const d = new Date(r.date);
+        return d.toLocaleDateString('default', { day:'2-digit', month:'short' });
+      });
+      const total  = rows.map(r => r.total_bot_users);
+      const active = rows.map(r => r.active_today);
+      const newU   = rows.map(r => r.new_bot_users);
+
+      const ctx = document.getElementById('botTrendChart');
+      if (!ctx) return;
+      if (botTrendChartInst) botTrendChartInst.destroy();
+      botTrendChartInst = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Total Users',
+              data: total,
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59,130,246,.08)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: rows.length > 20 ? 2 : 4,
+              borderWidth: 2,
+            },
+            {
+              label: 'Active (24h)',
+              data: active,
+              borderColor: '#22c55e',
+              backgroundColor: 'transparent',
+              fill: false,
+              tension: 0.3,
+              pointRadius: rows.length > 20 ? 2 : 4,
+              borderWidth: 2,
+            },
+            {
+              label: 'New Users (30d)',
+              data: newU,
+              borderColor: '#f59e0b',
+              backgroundColor: 'transparent',
+              fill: false,
+              tension: 0.3,
+              pointRadius: rows.length > 20 ? 2 : 4,
+              borderWidth: 2,
+              borderDash: [4, 3],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}` } },
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+            y: { beginAtZero: false, ticks: { font: { size: 10 } } },
+          },
+        },
+      });
+    })
+    .catch(() => {});
+}
+
 // ── Background data refresh (no page reload) ──────────────────────────────────
 function refreshData() {
   fetch('/screen/data', { cache: 'no-store' })
@@ -1718,6 +1929,7 @@ function refreshData() {
       months12       = d.months;
       prevPeriodData = d.prevPeriodData;
       callTargetRows = d.callTargetRows;
+      if (d.uchat) uchatData = d.uchat;
 
       // Update live indicator
       const now = new Date();
