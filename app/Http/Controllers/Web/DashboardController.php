@@ -7,6 +7,7 @@ use App\Models\Call;
 use App\Models\CallbackQueue;
 use App\Models\Client;
 use App\Models\Ticket;
+use App\Models\UrgentCase;
 use App\Services\YeastarService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,7 @@ class DashboardController extends Controller
             'active_clients'   => Client::where('status', 'active')->count(),
             'open_tickets'     => Ticket::where('status', 'open')->count(),
             'callback_pending' => CallbackQueue::where('status', 'pending')->count(),
+            'urgent_cases'     => UrgentCase::where('status', 'open')->count(),
             'active_calls'     => [],
         ];
 
@@ -69,6 +71,7 @@ class DashboardController extends Controller
             'active_clients'   => $stats['active_clients'],
             'open_tickets'     => $stats['open_tickets'],
             'callback_pending' => $stats['callback_pending'],
+            'urgent_cases'     => $stats['urgent_cases'],
         ];
 
         $trendQuery = Call::select(

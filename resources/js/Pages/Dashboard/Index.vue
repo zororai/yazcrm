@@ -10,8 +10,8 @@ import {
 } from 'chart.js';
 import {
     PhoneIcon, PhoneArrowDownLeftIcon, PhoneArrowUpRightIcon,
-    PhoneXMarkIcon, UserGroupIcon, TicketIcon, QueueListIcon, ClockIcon,
-    CalendarDaysIcon,
+    UserGroupIcon, TicketIcon, QueueListIcon, ClockIcon,
+    CalendarDaysIcon, ExclamationTriangleIcon,
 } from '@heroicons/vue/24/outline';
 
 ChartJS.register(
@@ -108,7 +108,7 @@ const cardDefs = [
     { label: 'Total Calls',       key: 'total_calls',      color: '#6366f1', bg: 'rgba(99,102,241,0.15)',  icon: PhoneIcon,               sparkKey: 'total' },
     { label: 'Inbound',           key: 'inbound_calls',    color: '#10b981', bg: 'rgba(16,185,129,0.15)',  icon: PhoneArrowDownLeftIcon,  sparkKey: 'inbound' },
     { label: 'Outbound',          key: 'outbound_calls',   color: '#3b82f6', bg: 'rgba(59,130,246,0.15)',  icon: PhoneArrowUpRightIcon,   sparkKey: 'outbound' },
-    { label: 'Missed',            key: 'missed_calls',     color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   icon: PhoneXMarkIcon,          sparkKey: 'missed' },
+    { label: 'Urgent Cases',      key: 'urgent_cases',     color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   icon: ExclamationTriangleIcon, sparkKey: null },
     { label: 'Active Clients',    key: 'active_clients',   color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', icon: UserGroupIcon,            sparkKey: null },
     { label: 'Open Tickets',      key: 'open_tickets',     color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', icon: TicketIcon,               sparkKey: null },
     { label: 'Pending Callbacks', key: 'callback_pending', color: '#f97316', bg: 'rgba(249,115,22,0.15)', icon: QueueListIcon,            sparkKey: null },

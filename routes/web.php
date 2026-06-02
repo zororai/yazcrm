@@ -64,6 +64,11 @@ Route::middleware('auth')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('uchat-contacts', [Web\UchatContactsController::class, 'index'])->name('uchat-contacts.index');
 
+        // SBC Signups (Google Sheets → DB)
+        Route::get('sbc',                        [Web\SbcController::class, 'index'])->name('sbc.index');
+        Route::post('sbc/sync',                  [Web\SbcController::class, 'sync'])->name('sbc.sync');
+        Route::get('sbc/{signup}/certificate',   [Web\SbcController::class, 'certificate'])->name('sbc.certificate');
+
         // Roles management
         Route::get('roles',             [Web\RoleController::class, 'index'])->name('roles.index');
         Route::post('roles',            [Web\RoleController::class, 'store'])->name('roles.store');

@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Http\Controllers\Web;
+
+use App\Http\Controllers\Controller;
+use App\Models\SbcSignup;
+use App\Services\CertificateService;
+use App\Services\GoogleSheetsService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class SbcController extends Controller
+{
+    public function __construct(private GoogleSheetsService $sheets) {}
+
+    public function index(Request $request): Response
+    {
+        $search = trim($request->get('search', ''));
+        $sheet  = $request->get('sheet', 'SBC Signups');
+
+        $query = SbcSignup::where('sheet', $sheet)->orderByDesc('date')->orderBy('first_name');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name',   'like', "%{$search}%")
+                  ->orWhere('surname',     'like', "%{$search}%")
+                  ->orWhere('phone_number','like', "%{$search}%")
+                  ->orWhere('location',    'like', "%{$search}%");
+            });
+        }
+
+        $records = $query->paginate(50)->withQueryString();
+
+        // Counts per sheet for tab badges
+        $counts = [
+            'SBC Signups'             => SbcSignup::where('sheet', 'SBC Signups')->count(),
+            'Certificates To Process' => SbcSignup::where('sheet', 'Certificates To Process')->count(),
+        ];
+
+        // Last sync time
+        $lastSync = SbcSignup::where('sheet', $sheet)->max('synced_at');
+
+        return Inertia::render('Sbc/Index', [
+            'records'   => $records,
+            'counts'    => $counts,
+            'sheet'     => $sheet,
+            'filters'   => ['search' => $search],
+            'lastSync'  => $lastSync,
+        ]);
+    }
+
+    public function certificate(SbcSignup $signup): HttpResponse
+    {
+        try {
+            $pdf = app(CertificateService::class)->generate($signup);
+
+            $filename = 'Certificate_' . str_replace(' ', '_', strtoupper(trim($signup->first_name . '_' . $signup->surname))) . '.pdf';
+
+            return response($pdf, 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => "inline; filename=\"{$filename}\"",
+            ]);
+        } catch (\RuntimeException $e) {
+            // Template not uploaded yet — fall back to HTML preview
+            return response()->view('certificates.sbc', ['signup' => $signup]);
+        }
+    }
+
+    public function sync(): RedirectResponse
+    {
+        $id      = config('google.sbc_spreadsheet_id');
+        $results = [];
+
+        foreach (['SBC Signups', 'Certificates To Process'] as $sheetName) {
+            $results[] = $this->sheets->syncSheetToDb($id, $sheetName);
+        }
+
+        $totalInserted = array_sum(array_column($results, 'inserted'));
+        $totalUpdated  = array_sum(array_column($results, 'updated'));
+        $errors        = array_filter(array_column($results, 'error'));
+
+        if ($errors) {
+            return back()->with('error', 'Sync error: ' . implode('; ', $errors));
+        }
+
+        return back()->with('success', "Sync complete — {$totalInserted} new, {$totalUpdated} updated.");
+    }
+}

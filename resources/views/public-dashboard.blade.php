@@ -330,131 +330,244 @@ tr:hover td{background:#f8fafc}
 
 {{-- ══════════════════════════════════ OVERVIEW ══════════════════════════════════ --}}
 <div id="sec-overview" class="section">
-
-  <!-- No-tickets notice (hidden by JS when period has data) -->
-  <div id="ov-no-data-notice" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 16px;font-size:12px;color:#1d4ed8;margin-bottom:12px">
-    No ticket interactions for this period &mdash; <span id="ov-notice-calls"></span> calls recorded.
-    <span style="color:#64748b;margin-left:6px">Switch to <strong>This Month</strong> or <strong>This Year</strong> for ticket data.</span>
-  </div>
-
-  <!-- Period selector -->
-  <div class="sec-hdr">
-    <span class="sec-title">Overview</span>
-    <div class="period-wrap">
-      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('overview','day',this)">Today</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('overview','week',this)">This Week</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('overview','month',this)">This Month</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('overview','year',this)">This Year</button>
-    </div>
-  </div>
-
-  <!-- Top grid -->
-  <div class="top-grid">
-
-    <!-- Activity bar chart (call volume from PBX) -->
-    <div class="glass">
-      <div class="card-hdr">
-        <span class="card-title">Call Activity</span>
-        <span class="card-tag" id="ov-trend-label">Calls by Hour — Today</span>
-      </div>
-      <div class="ch140"><canvas id="ovTrendChart"></canvas></div>
-    </div>
-
-    <!-- Mini stats — always use CALL data so Today is never empty -->
-    <div class="stat-stack">
-      <div class="stat-mini">
-        <div class="sm-icon" style="background:#eff6ff">📞</div>
-        <div><div class="sm-val" id="ov-total">{{ number_format($sc['total']) }}</div><div class="sm-lbl">Total Calls</div></div>
-      </div>
-      <div class="stat-mini">
-        <div class="sm-icon" style="background:#f0fdf4">✅</div>
-        <div><div class="sm-val" id="ov-valid">{{ number_format($sc['answered']) }}</div><div class="sm-lbl">Answered</div></div>
-      </div>
-      <div class="stat-mini">
-        <div class="sm-icon" style="background:#fef2f2">📵</div>
-        <div><div class="sm-val" id="ov-repeat">{{ number_format($sc['missed']) }}</div><div class="sm-lbl">Missed</div></div>
-      </div>
-    </div>
-
-    <!-- Donut overview -->
 @php
-  $scT   = $sc['total'] ?: 1;
-  $ansP  = round($sc['answered'] / $scT * 100);
-  $misP  = round($sc['missed']   / $scT * 100);
-  $inP   = round($sc['inbound']  / $scT * 100);
+  $age35p   = ($ageGroups['35–44'] ?? 0) + ($ageGroups['45+'] ?? 0);
+  $circ     = 2 * 3.14159 * 26; // circumference for r=26
+  function dashOffset(float $pct, float $circ): float { return $circ - ($circ * $pct / 100); }
 @endphp
-    <div class="glass">
-      <div class="card-hdr"><span class="card-title">Calls Overview</span><span class="card-tag" id="ov-donut-label">Call share</span></div>
-      <div class="donut-wrap">
-        <canvas id="ovDonut"></canvas>
-        <div class="donut-center">
-          <div class="donut-pct" id="ov-pct">{{ $ansP }}%</div>
-          <div class="donut-sub" id="ov-donut-sub">Answered</div>
+
+{{-- ── Row 1: 4 KPI cards ── --}}
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+
+  {{-- Card 1: Total Calls --}}
+  <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#0891b2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.07-8.67A2 2 0 013.6 4.11h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 11.9a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 18v3z"/></svg>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:#374151">Total Calls</span>
+    </div>
+    <div style="font-size:34px;font-weight:900;color:#0891b2;line-height:1.1;margin-bottom:8px" id="ov-total-new">{{ number_format($total) }}</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+      <span style="background:#ede9fe;color:#6d28d9;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Males {{ $malePct }}%</span>
+      <span style="background:#fff7ed;color:#c2410c;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Females {{ $femalePct }}%</span>
+    </div>
+    <div style="font-size:10px;color:#9ca3af;margin-bottom:10px">
+      Non-confirming: {{ max(0, round(100 - $malePct - $femalePct, 1)) }}%&nbsp;&nbsp;|&nbsp;&nbsp;Anonymous
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:68px;height:68px;flex-shrink:0"><canvas id="ovAgeDonut"></canvas></div>
+      <div style="flex:1;font-size:10px">
+        <div style="color:#6b7280;font-weight:600;margin-bottom:4px">Calls by Age %</div>
+        @foreach(['0–17'=>($ageGroups['Under 18']??0),'18–24'=>($ageGroups['18–24']??0),'25–34'=>($ageGroups['25–34']??0),'35+'=>$age35p] as $lbl=>$v)
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+          <div style="width:7px;height:7px;border-radius:50%;background:{{ ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'][array_search($lbl,['0–17','18–24','25–34','35+'])] }};flex-shrink:0"></div>
+          <span style="color:#6b7280;width:28px">{{ $lbl }}</span>
+          <span style="font-weight:700;color:#1f2937">{{ number_format($v) }}</span>
+        </div>
+        @endforeach
+      </div>
+    </div>
+  </div>
+
+  {{-- Card 2: Resolved Cases --}}
+  <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#ea580c;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:#374151">Resolved Cases</span>
+    </div>
+    <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1;margin-bottom:10px" id="ov-resolved-new">{{ number_format($resolvedTotal) }}</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#fee2e2" stroke-width="6"/>
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
+          stroke-dasharray="{{ $circ * $pendingPct / 100 }} {{ $circ }}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#ea580c">{{ $pendingPct }}%</text>
+      </svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#374151">Pending Cases</div>
+        <div style="font-size:10px;color:#9ca3af">{{ number_format($pendingTotal) }} open</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#fef3c7" stroke-width="6"/>
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#d97706" stroke-width="6"
+          stroke-dasharray="{{ $total > 0 ? $circ * ($invalidTotal/$total*100) / 100 : 0 }} {{ $circ }}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#d97706">{{ $total > 0 ? round($invalidTotal/$total*100,1) : 0 }}%</text>
+      </svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#374151">❌ Invalid Calls</div>
+        <div style="font-size:16px;font-weight:900;color:#374151">{{ number_format($invalidTotal) }}</div>
+      </div>
+    </div>
+  </div>
+
+  {{-- Card 3: Referred Cases --}}
+  <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:#374151">Referred Cases</span>
+    </div>
+    <div style="font-size:34px;font-weight:900;color:#2563eb;line-height:1.1;margin-bottom:10px" id="ov-referred-new">{{ number_format($referredTotal) }}</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#dbeafe" stroke-width="6"/>
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
+          stroke-dasharray="{{ $circ * min($referralCompPct,100) / 100 }} {{ $circ }}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#ea580c">{{ $referralCompPct }}%</text>
+      </svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#374151">Referral Completion</div>
+        <div style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes</div>
+      </div>
+    </div>
+
+    <div style="background:#f0f9ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">🤝</div>
+      <div>
+        <div style="font-size:10px;color:#6b7280">Case Conference Calls</div>
+        <div style="font-size:18px;font-weight:900;color:#1d4ed8">{{ number_format($immediateAct) }}</div>
+      </div>
+    </div>
+  </div>
+
+  {{-- Card 4: YALeP / SBC --}}
+  <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:#374151">YALeP</span>
+    </div>
+    <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1">{{ number_format($sbcTotal) }}</div>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">Bulk SMSs</div>
+    <div style="font-size:10px;color:#6b7280;margin-bottom:10px">No. of recipients : <strong style="color:#1f2937">{{ number_format($uchat['total_bot_users'] ?? 0) }}</strong></div>
+
+    <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-bottom:8px">
+      <div style="font-size:10px;color:#6b7280;margin-bottom:6px">New Calls Vs Repeats</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;background:#eff6ff;border-radius:8px;padding:6px 10px;text-align:center">
+          <div style="font-size:15px;font-weight:900;color:#2563eb" id="ov-new-callers">{{ number_format($newCallers) }}</div>
+          <div style="font-size:9px;color:#6b7280">New</div>
+        </div>
+        <div style="flex:1;background:#fef3c7;border-radius:8px;padding:6px 10px;text-align:center">
+          <div style="font-size:15px;font-weight:900;color:#d97706" id="ov-repeat-callers">{{ number_format($repeatTotal) }}</div>
+          <div style="font-size:9px;color:#6b7280">Repeats</div>
         </div>
       </div>
-      <div class="ov-rows">
-        <div class="ov-row"><span class="ov-dot" style="background:#3b82f6"></span><span class="ov-lbl">Answered</span><span class="ov-val" id="ov-ov-valid">{{ number_format($sc['answered']) }}</span><span class="ov-chg up" id="ov-ov-vpct">{{ $ansP }}%</span></div>
-        <div class="ov-row"><span class="ov-dot" style="background:#f87171"></span><span class="ov-lbl">Missed</span><span class="ov-val" id="ov-ov-repeat">{{ number_format($sc['missed']) }}</span><span class="ov-chg muted" id="ov-ov-rpct">{{ $misP }}%</span></div>
-        <div class="ov-row"><span class="ov-dot" style="background:#4ade80"></span><span class="ov-lbl">Inbound</span><span class="ov-val" id="ov-ov-imm">{{ number_format($sc['inbound']) }}</span><span class="ov-chg muted" id="ov-ov-ipct">{{ $inP }}%</span></div>
-      </div>
     </div>
-  </div><!-- /top-grid -->
 
-  <!-- Call KPIs row (from Yeastar / calls table) -->
-  <div class="kpi-row">
-    <div class="kpi"><div class="kpi-icon">📞</div><div class="kpi-val" id="ov-c-total">{{ number_format($sc['total']) }}</div><div class="kpi-lbl">Total Calls</div></div>
-    <div class="kpi"><div class="kpi-icon">📥</div><div class="kpi-val" id="ov-c-inbound">{{ number_format($sc['inbound']) }}</div><div class="kpi-lbl">Inbound</div></div>
-    <div class="kpi"><div class="kpi-icon">📤</div><div class="kpi-val" id="ov-c-outbound">{{ number_format($sc['outbound']) }}</div><div class="kpi-lbl">Outbound</div></div>
-    <div class="kpi"><div class="kpi-icon">📵</div><div class="kpi-val" id="ov-c-missed">{{ number_format($sc['missed']) }}</div><div class="kpi-lbl">Missed</div></div>
-    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="ov-c-answered">{{ number_format($sc['answered']) }}</div><div class="kpi-lbl">Answered</div></div>
-    <div class="kpi"><div class="kpi-icon">⏱️</div><div class="kpi-val" id="ov-c-avgdur">{{ $sc['avg_dur'] }}s</div><div class="kpi-lbl">Avg Duration</div></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="50" height="50" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#fce7f3" stroke-width="6"/>
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#db2777" stroke-width="6"
+          stroke-dasharray="{{ $circ * min($femalePct,100) / 100 }} {{ $circ }}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#db2777">{{ $femalePct }}%</text>
+      </svg>
+      <div style="font-size:10px;color:#6b7280">Females</div>
+    </div>
   </div>
 
-  <!-- Bottom grid -->
-  <div class="bot-grid">
+</div>{{-- /row 1 --}}
 
-    <!-- Top purposes -->
-    <div class="glass">
-      <div class="card-title" style="margin-bottom:10px">Top Purposes of Call</div>
-      <div id="ov-purposes"></div>
-
-      <!-- Status breakdown -->
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9">
-        <div class="card-title" style="margin-bottom:8px;font-size:11px">Status Breakdown</div>
-        <div id="ov-status-bars"></div>
+{{-- ── Row 1b: Call Activity (hourly PBX) ── --}}
+<div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb;margin-bottom:12px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <span style="font-size:13px;font-weight:700;color:#374151">📞 Call Activity</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:11px;color:#6b7280" id="ov-trend-label">Calls by Hour — Today</span>
+      <div style="display:flex;gap:4px">
+        <button onclick="setPeriod('overview','day',this)"   class="period-btn {{ $ticketDefaultPeriod==='day'  ?'active-period':'' }}">Today</button>
+        <button onclick="setPeriod('overview','week',this)"  class="period-btn {{ $ticketDefaultPeriod==='week' ?'active-period':'' }}">Week</button>
+        <button onclick="setPeriod('overview','month',this)" class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}">Month</button>
+        <button onclick="setPeriod('overview','year',this)"  class="period-btn {{ $ticketDefaultPeriod==='year' ?'active-period':'' }}">Year</button>
       </div>
     </div>
-
-    <!-- Calendar -->
-    <div class="glass">
-      <div class="cal-nav"><span>{{ $calMonthName }}</span></div>
-      <div class="cal-grid">
-        @foreach(['Su','Mo','Tu','We','Th','Fr','Sa'] as $dn)<div class="cal-dn">{{ $dn }}</div>@endforeach
-        @for($e=0;$e<$calFirstDay;$e++)<div class="cal-d empty">0</div>@endfor
-        @for($d=1;$d<=$calDays;$d++)<div class="cal-d {{ $d===$today?'today':'' }}">{{ $d }}</div>@endfor
-      </div>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9">
-        <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Uptake Confirmed</div>
-        <div style="font-size:20px;font-weight:800;color:#0f172a" id="ov-uptake">{{ number_format($dd['uptake']) }}</div>
-        <div style="font-size:10px;color:#94a3b8;margin-top:2px" id="ov-uptake-sub">{{ $dd['valid'] ? round($dd['uptake']/$dd['valid']*100,1) : 0 }}% of valid</div>
-      </div>
+  </div>
+  <div style="height:160px"><canvas id="ovTrendChart"></canvas></div>
+  <!-- Call KPIs from PBX -->
+  <div style="display:flex;gap:0;border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px">
+    @foreach([['📞','Total',  'ov-c-total',   $sc['total']],   ['📥','Inbound', 'ov-c-inbound', $sc['inbound']],
+              ['📤','Outbound','ov-c-outbound',$sc['outbound']],['🚨','Urgent',  'ov-c-missed',  $urgentOpen],
+              ['✅','Answered','ov-c-answered',$sc['answered']],['⏱️','Avg Dur', 'ov-c-avgdur',  $sc['avg_dur'].'s']] as [$ico,$lbl,$id,$val])
+    <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6;padding:0 8px">
+      <div style="font-size:16px">{{ $ico }}</div>
+      <div style="font-size:16px;font-weight:800;color:#1f2937" id="{{ $id }}">{{ is_numeric($val) ? number_format($val) : $val }}</div>
+      <div style="font-size:10px;color:#9ca3af">{{ $lbl }}</div>
     </div>
-
-    <!-- Output -->
-    <div class="glass" style="position:relative;overflow:hidden">
-      <div class="card-title" style="margin-bottom:10px">Immediate Actions</div>
-      <div class="out-val" id="ov-imm">{{ number_format($dd['imm_act']) }}</div>
-      <div class="out-lbl">Requiring immediate action</div>
-      <span class="out-badge" id="ov-imm-badge">{{ $dd['imm_act'] > 0 ? 'Needs Attention' : 'All Clear' }}</span>
-      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9">
-        <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Valid Rate</div>
-        <div style="font-size:20px;font-weight:800;color:#16a34a" id="ov-vrate">{{ $ddVp }}%</div>
-        <div style="font-size:10px;color:#94a3b8;margin-top:2px">of period interactions</div>
-      </div>
-    </div>
-
-  </div><!-- /bot-grid -->
+    @endforeach
+  </div>
 </div>
+
+{{-- ── Row 2: 4 chart cards ── --}}
+<div style="display:grid;grid-template-columns:1fr 1.4fr 1.8fr 1fr;gap:12px">
+
+  {{-- Case Type Donut --}}
+  <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Calls by Case Type</div>
+    <div style="height:140px"><canvas id="ovCaseTypeDonut"></canvas></div>
+    <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:3px">
+      @foreach($byPurpose->take(6) as $p)
+      <div style="display:flex;align-items:center;gap:4px">
+        <div style="width:8px;height:8px;border-radius:2px;background:#{{ ['f97316','7c3aed','2563eb','16a34a','0891b2','1e293b','e11d48','ca8a04'][($loop->index)%8] }};flex-shrink:0"></div>
+        <span style="font-size:9px;color:#374151;truncate;overflow:hidden;white-space:nowrap;max-width:80px">{{ Str::limit($p->purpose_of_call,14) }}</span>
+      </div>
+      @endforeach
+    </div>
+  </div>
+
+  {{-- Calls Per Month --}}
+  <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px">Calls Per Month</div>
+    <div style="height:180px"><canvas id="ovMonthLine"></canvas></div>
+  </div>
+
+  {{-- Referral By Service --}}
+  <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">Referral By Service</div>
+    <div style="display:flex;gap:12px;margin-bottom:8px">
+      <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#7c3aed;display:inline-block;border-radius:2px"></span>Referred Cases</span>
+      <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#f97316;display:inline-block;border-radius:2px"></span>Confirmed Service Uptake</span>
+    </div>
+    <div style="height:160px"><canvas id="ovServiceBar"></canvas></div>
+  </div>
+
+  {{-- Bot / Program --}}
+  <div style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+    <div style="position:relative;width:100px;height:100px;margin:0 auto 10px">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#f3f4f6" stroke-width="8"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#f97316" stroke-width="8"
+          stroke-dasharray="{{ 2*3.14159*42*0.7 }} {{ 2*3.14159*42 }}"
+          stroke-linecap="round" transform="rotate(-90 50 50)"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#1f2937" id="ov-c-missed">{{ number_format($urgentOpen) }}</div>
+          <div style="font-size:9px;color:#9ca3af">Urgent</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:4px">uChat Bot Analytics</div>
+    <div style="font-size:10px;color:#6b7280">Active Bot Users</div>
+    <div style="font-size:20px;font-weight:900;color:#7c3aed;margin:4px 0">{{ number_format($uchat['total_bot_users'] ?? 0) }}</div>
+    <div style="font-size:10px;color:#6b7280">New (30d): <strong>{{ $uchat['new_bot_users'] ?? 0 }}</strong></div>
+  </div>
+
+</div>{{-- /row 2 --}}
+</div>{{-- /sec-overview --}}
 
 {{-- ══════════════════════════════════ GEOGRAPHIC ══════════════════════════════════ --}}
 <div id="sec-geographic" class="section" style="display:none">
@@ -578,7 +691,7 @@ tr:hover td{background:#f8fafc}
     <div class="kpi"><div class="kpi-icon">📞</div><div class="kpi-val" id="c-total">0</div><div class="kpi-lbl">Total Calls</div></div>
     <div class="kpi"><div class="kpi-icon">📥</div><div class="kpi-val" id="c-inbound">0</div><div class="kpi-lbl">Inbound</div></div>
     <div class="kpi"><div class="kpi-icon">📤</div><div class="kpi-val" id="c-outbound">0</div><div class="kpi-lbl">Outbound</div></div>
-    <div class="kpi"><div class="kpi-icon">📵</div><div class="kpi-val" id="c-missed">0</div><div class="kpi-lbl">Missed</div></div>
+    <div class="kpi"><div class="kpi-icon">🚨</div><div class="kpi-val" id="c-missed">{{ number_format($urgentOpen) }}</div><div class="kpi-lbl">Urgent Cases</div></div>
     <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="c-answered">0</div><div class="kpi-lbl">Answered</div></div>
     <div class="kpi"><div class="kpi-icon">⏱️</div><div class="kpi-val" id="c-avgdur">0s</div><div class="kpi-lbl">Avg Duration</div></div>
   </div>
@@ -1113,6 +1226,7 @@ tr:hover td{background:#f8fafc}
 <script>
 // ── PHP data (let — reassigned on each background refresh) ────────────────────
 let uchatData      = @json($uchat);
+let urgentOpen     = {{ (int)$urgentOpen }};
 let periodData     = @json($periodData);
 let callStats      = @json($callStats);
 let months12       = @json($months);
@@ -1245,13 +1359,13 @@ function updateOverview(p) {
   // Mini stats — CALL data (always populated, even when no tickets)
   document.getElementById('ov-total').textContent  = fmt(s.total);
   document.getElementById('ov-valid').textContent  = fmt(s.answered);
-  document.getElementById('ov-repeat').textContent = fmt(s.missed);
+  document.getElementById('ov-repeat').textContent = fmt(d.urgentOpen ?? 0);
 
   // Call KPI detail row
   document.getElementById('ov-c-total').textContent    = fmt(s.total);
   document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('ov-c-missed').textContent   = fmt(s.missed);
+  document.getElementById('ov-c-missed').textContent   = fmt(d.urgentOpen ?? 0);
   document.getElementById('ov-c-answered').textContent = fmt(s.answered);
   document.getElementById('ov-c-avgdur').textContent   = s.avg_dur + 's';
 
@@ -1287,7 +1401,7 @@ function updateOverview(p) {
   const ctkeys = Object.keys(s.trend);
   const ctvals = Object.values(s.trend);
   document.getElementById('ov-trend-label').textContent = trendTitle(p, 'Calls');
-  rc('ovTrendChart', 'bar', trendLabels(p, ctkeys), ctvals, { accent: '#3b82f6', muted: '#dbeafe' });
+  rc('ovTrendChart', 'bar', trendLabels(p, ctkeys), ctvals, { single: '#f97316' });
 
   // Top purposes
   document.getElementById('ov-purposes').innerHTML = (d.by_purpose.length
@@ -1424,7 +1538,7 @@ function updateCalls(p) {
   document.getElementById('c-total').textContent    = fmt(s.total);
   document.getElementById('c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('c-missed').textContent   = fmt(s.missed);
+  document.getElementById('c-missed').textContent   = fmt(d.urgentOpen ?? 0);
   document.getElementById('c-answered').textContent = fmt(s.answered);
   document.getElementById('c-avgdur').textContent   = s.avg_dur + 's';
 
@@ -1930,6 +2044,7 @@ function refreshData() {
       prevPeriodData = d.prevPeriodData;
       callTargetRows = d.callTargetRows;
       if (d.uchat) uchatData = d.uchat;
+      if (d.urgentOpen !== undefined) urgentOpen = d.urgentOpen;
 
       // Update live indicator
       const now = new Date();
@@ -1961,9 +2076,82 @@ function refreshData() {
     .catch(err => console.warn('[screen] refresh failed:', err));
 }
 
+@php
+  $ageChartData = [
+      (int)($ageGroups['Under 18'] ?? 0),
+      (int)($ageGroups['18–24']    ?? 0),
+      (int)($ageGroups['25–34']    ?? 0),
+      (int)$age35p,
+  ];
+@endphp
+// ── Overview new charts ────────────────────────────────────────────────────
+function initOverviewCharts() {
+  // Age donut
+  const ageCtx = document.getElementById('ovAgeDonut');
+  if (ageCtx) {
+    new Chart(ageCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['0–17','18–24','25–34','35+'],
+        datasets: [{ data: @json($ageChartData),
+          backgroundColor: ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'], borderWidth: 0 }],
+      },
+      options: { cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: true } }, responsive: true, maintainAspectRatio: false },
+    });
+  }
+
+  // Case type donut
+  const ctCtx = document.getElementById('ovCaseTypeDonut');
+  if (ctCtx) {
+    const ctData = @json($byPurpose->take(6)->pluck('cnt')->values());
+    const ctLabels = @json($byPurpose->take(6)->pluck('purpose_of_call')->values());
+    new Chart(ctCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ctLabels,
+        datasets: [{ data: ctData, backgroundColor: ['#f97316','#7c3aed','#2563eb','#16a34a','#0891b2','#1e293b'], borderWidth: 0 }],
+      },
+      options: { cutout: '55%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false },
+    });
+  }
+
+  // Calls per month line
+  const mlCtx = document.getElementById('ovMonthLine');
+  if (mlCtx) {
+    const mlLabels = Object.keys(months12).map(ym => { const [y,m]=ym.split('-'); return new Date(+y,+m-1).toLocaleString('default',{month:'short'}); });
+    new Chart(mlCtx, {
+      type: 'line',
+      data: {
+        labels: mlLabels,
+        datasets: [{ label:'Calls', data: Object.values(months12), borderColor:'#f97316', backgroundColor:'rgba(249,115,22,.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 }],
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
+    });
+  }
+
+  // Referral by service grouped bar
+  const sbCtx = document.getElementById('ovServiceBar');
+  if (sbCtx) {
+    const sbData = @json($serviceUptake);
+    const sbLabels = sbData.map(r => r.services_requested.length > 14 ? r.services_requested.substr(0,14)+'…' : r.services_requested);
+    new Chart(sbCtx, {
+      type: 'bar',
+      data: {
+        labels: sbLabels,
+        datasets: [
+          { label:'Referred', data: sbData.map(r=>r.total), backgroundColor:'#7c3aed', borderRadius:3 },
+          { label:'Uptake',   data: sbData.map(r=>r.uptake), backgroundColor:'#f97316', borderRadius:3 },
+        ],
+      },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:8},maxRotation:45}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
+    });
+  }
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof lucide !== 'undefined') lucide.createIcons();
+  initOverviewCharts();
   labelPeriodBtns();
   updateOverview(TICKET_DEFAULT);
   updateGeographic(TICKET_DEFAULT);

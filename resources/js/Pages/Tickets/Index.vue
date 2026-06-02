@@ -26,6 +26,37 @@ const debouncedContactSearch = debounce(async (q) => {
 function onContactInput() { debouncedContactSearch(addForm.contact_number); }
 function selectContact(num) { addForm.contact_number = num; showContactDrop.value = false; contactResults.value = []; }
 
+// ── Referred To combobox ──────────────────────────────────────────────────────
+const referredToSearch   = ref('');
+const showReferredToDrop = ref(false);
+
+const filteredReferredTo = computed(() => {
+    const q = referredToSearch.value.toLowerCase().trim();
+    if (!q) return props.referredTo ?? [];
+    return (props.referredTo ?? []).filter(r => r.toLowerCase().includes(q));
+});
+
+function onReferredToInput(val) {
+    referredToSearch.value  = val;
+    addForm.referred_to     = val;   // allow free text
+    showReferredToDrop.value = true;
+}
+
+function selectReferredTo(val) {
+    addForm.referred_to      = val;
+    referredToSearch.value   = val;
+    showReferredToDrop.value = false;
+}
+
+function openReferredToDrop() {
+    referredToSearch.value   = addForm.referred_to ?? '';
+    showReferredToDrop.value = true;
+}
+
+function closeReferredToDrop() {
+    setTimeout(() => { showReferredToDrop.value = false; }, 150);
+}
+
 const addForm = useForm({
     subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', follow_up_date: '',
     // CRM fields
@@ -436,12 +467,27 @@ const statusColor = {
                                     <label class="label">No. of Services</label>
                                     <input v-model="addForm.number_of_services" type="number" min="0" class="input" />
                                 </div>
-                                <div>
+                                <div class="relative">
                                     <label class="label">Referred To</label>
-                                    <select v-model="addForm.referred_to" class="input">
-                                        <option value="">— select —</option>
-                                        <option v-for="r in props.referredTo" :key="r" :value="r">{{ r }}</option>
-                                    </select>
+                                    <input
+                                        :value="referredToSearch || addForm.referred_to"
+                                        @input="onReferredToInput($event.target.value)"
+                                        @focus="openReferredToDrop"
+                                        @blur="closeReferredToDrop"
+                                        class="input"
+                                        placeholder="Type or search…"
+                                        autocomplete="off"
+                                    />
+                                    <ul v-if="showReferredToDrop && filteredReferredTo.length"
+                                        class="absolute z-30 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                        <li v-for="r in filteredReferredTo" :key="r">
+                                            <button type="button"
+                                                @mousedown.prevent="selectReferredTo(r)"
+                                                class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700">
+                                                {{ r }}
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
                             <div>

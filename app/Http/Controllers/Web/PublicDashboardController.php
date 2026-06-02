@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\CallTargetController;
 use App\Models\UchatAnalyticsSnapshot;
+use App\Models\UrgentCase;
 use App\Services\UchatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -36,7 +37,16 @@ class PublicDashboardController extends Controller
             'callDefaultPeriod'   => $d['callDefaultPeriod'],
             'lastUpdated'         => $d['lastUpdated'],
             'total'               => $d['total'],
-            'uchat'               => $d['uchat'],
+            'uchat'              => $d['uchat'],
+            'urgentOpen'         => $d['urgentOpen'],
+            'resolvedTotal'      => $d['resolvedTotal'],
+            'invalidTotal'       => $d['invalidTotal'],
+            'pendingPct'         => $d['pendingPct'],
+            'referredTotal'      => $d['referredTotal'],
+            'newCallers'         => $d['newCallers'],
+            'referralCompPct'    => $d['referralCompPct'],
+            'malePct'            => $d['malePct'],
+            'femalePct'          => $d['femalePct'],
         ])->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma'        => 'no-cache',
@@ -266,7 +276,33 @@ class PublicDashboardController extends Controller
             if (($callStats[$p]['total'] ?? 0) > 0) { $callDefaultPeriod = $p; break; }
         }
 
-        $uchat = app(UchatService::class)->fetchAnalytics();
+        $uchat       = app(UchatService::class)->fetchAnalytics();
+        $urgentOpen  = UrgentCase::where('status', 'open')->count();
+
+        // ── New overview card metrics ─────────────────────────────────────────
+        $resolvedTotal   = (int) ($byStatus->get('resolved') ?? 0);
+        $invalidTotal    = (int) ($byValidity->get('invalid') ?? 0);
+        $pendingTotal    = (int) (($byStatus->get('open') ?? 0) + ($byStatus->get('in_progress') ?? 0));
+        $pendingPct      = $total > 0 ? round($pendingTotal / $total * 100, 1) : 0;
+        $referredTotal   = (int) $byReferral->sum('cnt');
+        $newCallers      = $total - $repeatTotal;
+        $referralCompPct = $referredTotal > 0 ? round($uptakeTotal / $referredTotal * 100, 1) : 0;
+
+        $genderSum    = max(1, $byGender->sum('cnt'));
+        $maleTotal    = (int) ($byGender->firstWhere('caller_gender', 'male')?->cnt ?? 0);
+        $femaleTotal  = (int) ($byGender->firstWhere('caller_gender', 'female')?->cnt ?? 0);
+        $malePct      = round($maleTotal  / $genderSum * 100, 1);
+        $femalePct    = round($femaleTotal / $genderSum * 100, 1);
+
+        // Service vs uptake (Referral By Service chart)
+        $serviceUptake = DB::table('tickets')->whereNull('deleted_at')
+            ->whereNotNull('services_requested')->where('services_requested', '!=', '')
+            ->select('services_requested', DB::raw('COUNT(*) as total'), DB::raw('SUM(uptake_confirmed=1) as uptake'))
+            ->groupBy('services_requested')->orderByDesc('total')->limit(8)->get();
+
+        // SBC / YALeP count from signups table (if exists)
+        $sbcTotal = 0;
+        try { $sbcTotal = DB::table('sbc_signups')->count(); } catch (\Exception) {}
 
         return compact(
             'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
@@ -276,7 +312,11 @@ class PublicDashboardController extends Controller
             'callStats', 'periodData',
             'ticketDefaultPeriod', 'callDefaultPeriod',
             'prevPeriodData', 'recentTickets', 'callTargetRows',
-            'uchat'
+            'uchat', 'urgentOpen',
+            'resolvedTotal', 'invalidTotal', 'pendingTotal', 'pendingPct',
+            'referredTotal', 'newCallers', 'referralCompPct',
+            'maleTotal', 'femaleTotal', 'malePct', 'femalePct',
+            'serviceUptake', 'sbcTotal'
         );
     }
 }
