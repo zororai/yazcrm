@@ -58,6 +58,11 @@ class SbcController extends Controller
         try {
             $pdf = app(CertificateService::class)->generate($signup);
 
+            $signup->update([
+                'certificate_status'          => 'downloaded',
+                'certificate_downloaded_at'   => now(),
+            ]);
+
             $filename = 'Certificate_' . str_replace(' ', '_', strtoupper(trim($signup->first_name . '_' . $signup->surname))) . '.pdf';
 
             return response($pdf, 200, [
@@ -65,7 +70,6 @@ class SbcController extends Controller
                 'Content-Disposition' => "inline; filename=\"{$filename}\"",
             ]);
         } catch (\RuntimeException $e) {
-            // Template not uploaded yet — fall back to HTML preview
             return response()->view('certificates.sbc', ['signup' => $signup]);
         }
     }

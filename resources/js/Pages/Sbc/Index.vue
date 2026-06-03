@@ -155,12 +155,14 @@ const genderColor = {
                         <th class="table-th">Age</th>
                         <th class="table-th">Sex</th>
                         <th class="table-th">Location</th>
+                        <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Status</th>
+                        <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Downloaded</th>
                         <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Certificate</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-if="!records.data.length">
-                        <td :colspan="sheet === 'Certificates To Process' ? 8 : 7"
+                        <td :colspan="sheet === 'Certificates To Process' ? 10 : 7"
                             class="py-12 text-center text-sm text-gray-400">No records found.</td>
                     </tr>
                     <tr v-for="row in records.data" :key="row.id" class="hover:bg-gray-50">
@@ -178,6 +180,24 @@ const genderColor = {
                             <span v-else class="text-gray-400">—</span>
                         </td>
                         <td class="table-td text-sm">{{ row.location || '—' }}</td>
+                        <!-- Status -->
+                        <td v-if="sheet === 'Certificates To Process'" class="table-td text-center">
+                            <span v-if="row.certificate_status === 'downloaded'"
+                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                ✓ Downloaded
+                            </span>
+                            <span v-else class="text-xs text-gray-400">—</span>
+                        </td>
+                        <!-- Downloaded date -->
+                        <td v-if="sheet === 'Certificates To Process'" class="table-td text-center text-xs text-gray-500 whitespace-nowrap">
+                            <span v-if="row.certificate_downloaded_at">
+                                {{ new Date(row.certificate_downloaded_at).toLocaleDateString([], { day:'2-digit', month:'short', year:'numeric' }) }}
+                                <span class="text-gray-400">
+                                    {{ new Date(row.certificate_downloaded_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) }}
+                                </span>
+                            </span>
+                            <span v-else class="text-gray-400">—</span>
+                        </td>
                         <!-- Generate Certificate button — Certificates tab only -->
                         <td v-if="sheet === 'Certificates To Process'" class="table-td text-center">
                             <a :href="`/sbc/${row.id}/certificate`" target="_blank"
