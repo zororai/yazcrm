@@ -127,6 +127,7 @@ class TicketController extends Controller
             'client_id'   => 'nullable|exists:clients,id',
             'call_id'     => 'nullable|exists:calls,id',
             'priority'    => 'in:low,medium,high,urgent',
+            'status'      => 'nullable|in:open,closed,resolved,ongoing',
             ...$this->crmRules,
         ]);
 
@@ -139,6 +140,7 @@ class TicketController extends Controller
             ...$data,
             'agent_id' => $request->user()->id,
             'priority' => $data['priority'] ?? 'medium',
+            'status'   => $data['status'] ?? 'open',
         ]);
 
         // Auto-create an urgent case so all agents can follow up
@@ -161,7 +163,7 @@ class TicketController extends Controller
         $data = $request->validate([
             'subject'     => 'sometimes|string|max:255',
             'description' => 'nullable|string',
-            'status'      => 'in:open,in_progress,resolved,closed',
+            'status'      => 'nullable|in:open,in_progress,resolved,closed,ongoing',
             'priority'    => 'in:low,medium,high,urgent',
             'agent_id'    => 'nullable|exists:users,id',
             ...$this->crmRules,

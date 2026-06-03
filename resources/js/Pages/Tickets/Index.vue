@@ -58,7 +58,7 @@ function closeReferredToDrop() {
 }
 
 const addForm = useForm({
-    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', follow_up_date: '',
+    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', status: 'open', follow_up_date: '',
     // CRM fields
     mode_of_communication:    'phone',
     call_validity:            'valid',
@@ -121,6 +121,7 @@ const priorityColor = {
 const statusColor = {
     open:        'bg-yellow-100 text-yellow-800',
     in_progress: 'bg-blue-100 text-blue-800',
+    ongoing:     'bg-purple-100 text-purple-800',
     resolved:    'bg-green-100 text-green-800',
     closed:      'bg-gray-100 text-gray-600',
 };
@@ -292,14 +293,25 @@ const statusColor = {
                                     <p v-if="addForm.errors.sisters_number" class="mt-1 text-xs text-red-600">{{ addForm.errors.sisters_number }}</p>
                                 </div>
                             </div>
-                            <div>
-                                <label class="label">Priority</label>
-                                <select v-model="addForm.priority" class="input w-40">
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="label">Priority</label>
+                                    <select v-model="addForm.priority" class="input">
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label">Case Status</label>
+                                    <select v-model="addForm.status" class="input">
+                                        <option value="open">Open</option>
+                                        <option value="closed">Closed</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="ongoing">Ongoing</option>
+                                    </select>
+                                </div>
                             </div>
                             <div>
                                 <label class="label">Follow-up Date</label>
