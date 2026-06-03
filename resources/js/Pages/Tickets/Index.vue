@@ -307,9 +307,10 @@ const statusColor = {
                                     <label class="label">Case Status</label>
                                     <select v-model="addForm.status" class="input">
                                         <option value="open">Open</option>
-                                        <option value="closed">Closed</option>
-                                        <option value="resolved">Resolved</option>
+                                        <option value="in_progress">In Progress</option>
                                         <option value="ongoing">Ongoing</option>
+                                        <option value="resolved">Resolved</option>
+                                        <option value="closed">Closed</option>
                                     </select>
                                 </div>
                             </div>
