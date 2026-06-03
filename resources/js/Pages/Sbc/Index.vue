@@ -16,6 +16,15 @@ const props = defineProps({
 
 const templateFile  = ref(null);
 const uploadingTpl  = ref(false);
+const sending       = ref(null);
+
+function sendWhatsapp(row) {
+    if (!row.phone_number || sending.value) return;
+    sending.value = row.id;
+    router.post(`/sbc/${row.id}/send-whatsapp`, {}, {
+        onFinish: () => { sending.value = null; },
+    });
+}
 
 function uploadTemplate() {
     if (!templateFile.value) return;
@@ -157,12 +166,13 @@ const genderColor = {
                         <th class="table-th">Location</th>
                         <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Status</th>
                         <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Downloaded</th>
-                        <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Certificate</th>
+                        <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">WhatsApp Sent</th>
+                        <th v-if="sheet === 'Certificates To Process'" class="table-th text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-if="!records.data.length">
-                        <td :colspan="sheet === 'Certificates To Process' ? 10 : 7"
+                        <td :colspan="sheet === 'Certificates To Process' ? 11 : 7"
                             class="py-12 text-center text-sm text-gray-400">No records found.</td>
                     </tr>
                     <tr v-for="row in records.data" :key="row.id" class="hover:bg-gray-50">
@@ -198,13 +208,36 @@ const genderColor = {
                             </span>
                             <span v-else class="text-gray-400">—</span>
                         </td>
-                        <!-- Generate Certificate button — Certificates tab only -->
+                        <!-- WhatsApp sent date -->
+                        <td v-if="sheet === 'Certificates To Process'" class="table-td text-center text-xs whitespace-nowrap">
+                            <span v-if="row.whatsapp_sent_at" class="text-green-700 font-medium">
+                                ✓ {{ new Date(row.whatsapp_sent_at).toLocaleDateString([], { day:'2-digit', month:'short' }) }}
+                                <span class="text-gray-400 block">
+                                    {{ new Date(row.whatsapp_sent_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) }}
+                                </span>
+                            </span>
+                            <span v-else class="text-gray-400">—</span>
+                        </td>
+                        <!-- Actions -->
                         <td v-if="sheet === 'Certificates To Process'" class="table-td text-center">
-                            <a :href="`/sbc/${row.id}/certificate`" target="_blank"
-                                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold
-                                       bg-amber-500 hover:bg-amber-600 text-white transition-colors shadow-sm">
-                                🎓 Generate
-                            </a>
+                            <div class="flex items-center justify-center gap-1.5">
+                                <a :href="`/sbc/${row.id}/certificate`" target="_blank"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold
+                                           bg-amber-500 hover:bg-amber-600 text-white transition-colors shadow-sm"
+                                    title="Generate & download certificate PDF">
+                                    🎓 Generate
+                                </a>
+                                <button
+                                    @click="sendWhatsapp(row)"
+                                    :disabled="sending === row.id || !row.phone_number"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold
+                                           bg-green-600 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed
+                                           text-white transition-colors shadow-sm"
+                                    :title="row.phone_number ? 'Send certificate via WhatsApp' : 'No phone number'">
+                                    <span v-if="sending === row.id">Sending…</span>
+                                    <span v-else>📱 Send</span>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 </tbody>

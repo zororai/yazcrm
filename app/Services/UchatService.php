@@ -104,6 +104,44 @@ class UchatService
         });
     }
 
+    // ── Messaging ─────────────────────────────────────────────────────────────
+
+    /**
+     * Send a file (e.g. PDF certificate) to a WhatsApp user via uChat.
+     * $phone  — phone number as stored (e.g. 263771234567 or +263771234567)
+     * $fileUrl — publicly accessible URL of the file
+     * $caption — optional text message sent alongside the file
+     */
+    public function sendFile(string $phone, string $fileUrl, string $caption = ''): bool
+    {
+        // Normalise to digits-only, then prefix whatsapp:
+        $digits  = preg_replace('/\D/', '', $phone);
+        $userNs  = 'whatsapp:' . $digits;
+
+        $messages = [];
+
+        if ($caption) {
+            $messages[] = ['type' => 'text', 'text' => $caption];
+        }
+
+        $messages[] = [
+            'type' => 'file',
+            'url'  => $fileUrl,
+        ];
+
+        $result = $this->post('/subscriber/send-content', [
+            'user_ns' => $userNs,
+            'data'    => [
+                'version' => 'v1',
+                'content' => [
+                    'messages' => $messages,
+                ],
+            ],
+        ]);
+
+        return $result !== null;
+    }
+
     // ── Contacts ──────────────────────────────────────────────────────────────
 
     public function syncContact(string $phone, array $fields = []): ?string

@@ -68,7 +68,8 @@ Route::middleware('auth')->group(function () {
         Route::get('sbc',                          [Web\SbcController::class, 'index'])->name('sbc.index');
         Route::post('sbc/sync',                    [Web\SbcController::class, 'sync'])->name('sbc.sync');
         Route::post('sbc/upload-template',         [Web\SbcController::class, 'uploadTemplate'])->name('sbc.upload-template');
-        Route::get('sbc/{signup}/certificate',     [Web\SbcController::class, 'certificate'])->name('sbc.certificate');
+        Route::get('sbc/{signup}/certificate',      [Web\SbcController::class, 'certificate'])->name('sbc.certificate');
+        Route::post('sbc/{signup}/send-whatsapp',   [Web\SbcController::class, 'sendWhatsapp'])->name('sbc.send-whatsapp');
 
         // Roles management
         Route::get('roles',             [Web\RoleController::class, 'index'])->name('roles.index');

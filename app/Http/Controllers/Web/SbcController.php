@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\SbcSignup;
 use App\Services\CertificateService;
 use App\Services\GoogleSheetsService;
+use App\Services\UchatService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -72,6 +74,45 @@ class SbcController extends Controller
         } catch (\RuntimeException $e) {
             return response()->view('certificates.sbc', ['signup' => $signup]);
         }
+    }
+
+    public function sendWhatsapp(SbcSignup $signup): RedirectResponse
+    {
+        if (! $signup->phone_number) {
+            return back()->with('error', 'This record has no phone number.');
+        }
+
+        try {
+            $pdf = app(CertificateService::class)->generate($signup);
+        } catch (\RuntimeException $e) {
+            return back()->with('error', 'Certificate template not uploaded yet. Please upload the template first.');
+        }
+
+        // Save PDF to public storage so uChat can fetch it by URL
+        $filename  = 'cert_' . $signup->id . '_' . time() . '.pdf';
+        $storagePath = 'certificates/' . $filename;
+        Storage::disk('public')->put($storagePath, $pdf);
+        $fileUrl = Storage::disk('public')->url($storagePath);
+
+        // Ensure absolute URL
+        if (! str_starts_with($fileUrl, 'http')) {
+            $fileUrl = config('app.url') . $fileUrl;
+        }
+
+        $name    = trim($signup->first_name . ' ' . $signup->surname);
+        $caption = "🎓 Dear {$name}, please find your YALeP Certificate of Completion attached.";
+
+        $sent = app(UchatService::class)->sendFile($signup->phone_number, $fileUrl, $caption);
+
+        if ($sent) {
+            $signup->update([
+                'certificate_status'        => 'sent',
+                'whatsapp_sent_at'          => now(),
+            ]);
+            return back()->with('success', "Certificate sent to {$signup->phone_number} on WhatsApp.");
+        }
+
+        return back()->with('error', 'Failed to send via WhatsApp. Check the uChat API token and that the phone number is subscribed to the bot.');
     }
 
     public function uploadTemplate(Request $request): RedirectResponse
