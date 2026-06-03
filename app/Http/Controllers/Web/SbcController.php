@@ -44,11 +44,12 @@ class SbcController extends Controller
         $lastSync = SbcSignup::where('sheet', $sheet)->max('synced_at');
 
         return Inertia::render('Sbc/Index', [
-            'records'   => $records,
-            'counts'    => $counts,
-            'sheet'     => $sheet,
-            'filters'   => ['search' => $search],
-            'lastSync'  => $lastSync,
+            'records'         => $records,
+            'counts'          => $counts,
+            'sheet'           => $sheet,
+            'filters'         => ['search' => $search],
+            'lastSync'        => $lastSync,
+            'hasTemplate'     => file_exists(storage_path('app/private/certificates/template.pdf')),
         ]);
     }
 
@@ -67,6 +68,18 @@ class SbcController extends Controller
             // Template not uploaded yet — fall back to HTML preview
             return response()->view('certificates.sbc', ['signup' => $signup]);
         }
+    }
+
+    public function uploadTemplate(Request $request): RedirectResponse
+    {
+        $request->validate(['template' => 'required|file|mimes:pdf|max:10240']);
+
+        $dir = storage_path('app/private/certificates');
+        if (! is_dir($dir)) { mkdir($dir, 0755, true); }
+
+        $request->file('template')->move($dir, 'template.pdf');
+
+        return back()->with('success', 'Certificate template uploaded successfully.');
     }
 
     public function sync(): RedirectResponse

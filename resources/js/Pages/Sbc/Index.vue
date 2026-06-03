@@ -1,17 +1,32 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { router, Link } from '@inertiajs/vue3';
+import { router, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowPathIcon, MagnifyingGlassIcon, TableCellsIcon } from '@heroicons/vue/24/outline';
+import { ArrowPathIcon, MagnifyingGlassIcon, TableCellsIcon, DocumentArrowUpIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props = defineProps({
-    records:  Object,
-    counts:   Object,
-    sheet:    String,
-    filters:  Object,
-    lastSync: String,
+    records:     Object,
+    counts:      Object,
+    sheet:       String,
+    filters:     Object,
+    lastSync:    String,
+    hasTemplate: Boolean,
 });
+
+const templateFile  = ref(null);
+const uploadingTpl  = ref(false);
+
+function uploadTemplate() {
+    if (!templateFile.value) return;
+    const form = new FormData();
+    form.append('template', templateFile.value);
+    uploadingTpl.value = true;
+    router.post('/sbc/upload-template', form, {
+        forceFormData: true,
+        onFinish: () => { uploadingTpl.value = false; templateFile.value = null; },
+    });
+}
 
 const search   = ref(props.filters.search ?? '');
 const syncing  = ref(false);
@@ -59,6 +74,14 @@ const genderColor = {
         </template>
         <template #subtitle>Data stored in database · synced from Google Sheets</template>
         <template #header-actions>
+            <!-- Template upload -->
+            <label class="btn-secondary btn-sm cursor-pointer inline-flex items-center gap-1.5" title="Upload certificate PDF template">
+                <DocumentArrowUpIcon class="h-4 w-4" />
+                <span v-if="hasTemplate" class="text-green-700">Template ✓</span>
+                <span v-else class="text-amber-600">Upload Template</span>
+                <input type="file" accept="application/pdf" class="hidden"
+                    @change="e => { templateFile = e.target.files[0]; uploadTemplate(); }" />
+            </label>
             <button @click="sync" :disabled="syncing" class="btn-primary btn-sm">
                 <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': syncing }" />
                 {{ syncing ? 'Syncing…' : 'Sync from Sheets' }}
@@ -95,6 +118,17 @@ const genderColor = {
             <div class="relative max-w-sm">
                 <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                 <input v-model="search" class="input pl-9" placeholder="Search name, phone, location…" />
+            </div>
+        </div>
+
+        <!-- Template missing warning (Certificates tab) -->
+        <div v-if="sheet === 'Certificates To Process' && !hasTemplate"
+            class="mb-4 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+            <span class="text-lg leading-none">⚠️</span>
+            <div>
+                <strong>Certificate template not uploaded.</strong>
+                Click <em>Upload Template</em> in the top-right and select the <strong>SAMPLE.pdf</strong> file.
+                Once uploaded, the 🎓 Generate buttons will produce real PDFs with each person's name.
             </div>
         </div>
 
