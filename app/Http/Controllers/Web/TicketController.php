@@ -67,7 +67,13 @@ class TicketController extends Controller
         $ticket->load(['client', 'agent', 'call']);
 
         return Inertia::render('Tickets/Show', [
-            'ticket' => $ticket,
+            'ticket'                  => $ticket,
+            'keyPops'                 => LookupItem::where('type', 'key_pops')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'modesOfCommunication'    => LookupItem::where('type', 'mode_of_communication')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'projects'                => LookupItem::where('type', 'project')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'servicesRequested'       => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'secondServicesRequested' => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
+            'referredTo'              => LookupItem::where('type', 'referred_to')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
         ]);
     }
 
