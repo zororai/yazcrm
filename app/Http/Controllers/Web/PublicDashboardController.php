@@ -8,13 +8,15 @@ use App\Models\UchatAnalyticsSnapshot;
 use App\Models\UrgentCase;
 use App\Services\UchatService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PublicDashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $d = $this->buildData();
+        $service = trim($request->input('service', ''));
+        $d = $this->buildData($service);
 
         return response()
             ->view('public-dashboard', $d)
@@ -23,9 +25,10 @@ class PublicDashboardController extends Controller
             ->header('Expires', '0');
     }
 
-    public function data(): JsonResponse
+    public function data(Request $request): JsonResponse
     {
-        $d = $this->buildData();
+        $service = trim($request->input('service', ''));
+        $d = $this->buildData($service);
 
         return response()->json([
             'periodData'          => $d['periodData'],
@@ -47,6 +50,10 @@ class PublicDashboardController extends Controller
             'referralCompPct'    => $d['referralCompPct'],
             'malePct'            => $d['malePct'],
             'femalePct'          => $d['femalePct'],
+            'serviceFilter'      => $d['serviceFilter'],
+            'allServices'        => $d['allServices'],
+            'serviceUptake'      => $d['serviceUptake'],
+            'byPurpose'          => $d['byPurpose']->map(fn($r) => ['purpose_of_call' => $r->purpose_of_call, 'cnt' => $r->cnt]),
         ])->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
             'Pragma'        => 'no-cache',
@@ -63,10 +70,17 @@ class PublicDashboardController extends Controller
         ]);
     }
 
-    private function buildData(): array
+    private function buildData(string $serviceFilter = ''): array
     {
         // ── All-time scalars ─────────────────────────────────────────────────
-        $a = DB::table('tickets')->whereNull('deleted_at')->selectRaw('
+        // Always build unfiltered list of services for the dropdown
+        $allServices = DB::table('tickets')->whereNull('deleted_at')
+            ->whereNotNull('services_requested')->where('services_requested', '!=', '')
+            ->distinct()->orderBy('services_requested')->pluck('services_requested');
+
+        $a = DB::table('tickets')->whereNull('deleted_at')
+            ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
+            ->selectRaw('
             COUNT(*) as total,
             SUM(call_validity = "valid")          as valid_total,
             SUM(is_repeat_caller = 1)             as repeat_total,
@@ -93,7 +107,8 @@ class PublicDashboardController extends Controller
         ];
 
         // ── All-time groupby queries ─────────────────────────────────────────
-        $base = DB::table('tickets')->whereNull('deleted_at');
+        $base = DB::table('tickets')->whereNull('deleted_at')
+            ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter));
 
         $byStatus   = (clone $base)->select('status', DB::raw('count(*) as cnt'))->groupBy('status')->pluck('cnt', 'status');
         $byProvince = (clone $base)->whereNotNull('province')->where('province', '!=', '')->select('province', DB::raw('count(*) as cnt'))->groupBy('province')->orderByDesc('cnt')->get();
@@ -129,7 +144,8 @@ class PublicDashboardController extends Controller
 
         $periodData = [];
         foreach ($ticketPeriods as $pKey => [$start, $end]) {
-            $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end]);
+            $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end])
+                ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter));
 
             $ps = (clone $pb)->selectRaw('
                 COUNT(*) as total,
@@ -202,7 +218,8 @@ class PublicDashboardController extends Controller
         ];
         $prevPeriodData = [];
         foreach ($prevBounds as $pKey => [$start, $end]) {
-            $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end]);
+            $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end])
+                ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter));
             $prevPeriodData[$pKey] = [
                 'total'      => (clone $pb)->count(),
                 'by_purpose' => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')
@@ -316,7 +333,8 @@ class PublicDashboardController extends Controller
             'resolvedTotal', 'invalidTotal', 'pendingTotal', 'pendingPct',
             'referredTotal', 'newCallers', 'referralCompPct',
             'maleTotal', 'femaleTotal', 'malePct', 'femalePct',
-            'serviceUptake', 'sbcTotal'
+            'serviceUptake', 'sbcTotal',
+            'serviceFilter', 'allServices'
         );
     }
 }

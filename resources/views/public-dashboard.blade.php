@@ -305,8 +305,20 @@ tr:hover td{background:#f8fafc}
     <div class="page-sub">National Youth Helpline &middot; {{ $lastUpdated ? \Carbon\Carbon::parse($lastUpdated)->format('d M Y, H:i') : 'N/A' }}</div>
   </div>
   <div class="hdr-right">
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Service Filter</label>
+      <select id="service-filter" onchange="applyServiceFilter(this.value)"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:180px">
+        <option value="">All Services</option>
+        @foreach($allServices as $svc)
+          <option value="{{ $svc }}" {{ $serviceFilter === $svc ? 'selected' : '' }}>{{ $svc }}</option>
+        @endforeach
+      </select>
+      <a id="svc-filter-clear" href="#" onclick="applyServiceFilter('');document.getElementById('service-filter').value='';return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $serviceFilter ? '' : 'display:none' }}">✕ Clear</a>
+    </div>
     <div class="live-pill"><span class="live-dot" id="live-dot"></span> Live &mdash; <span id="live-updated">now</span></div>
-    <div class="total-pill"><div class="tv">{{ number_format($total) }}</div><div class="tl">All-time Interactions</div></div>
+    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total) }}</div><div class="tl">{{ $serviceFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
   </div>
 </div>
 
@@ -453,7 +465,7 @@ tr:hover td{background:#f8fafc}
       <span style="font-weight:700;font-size:13px;color:#374151">YALeP</span>
     </div>
     <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1">{{ number_format($sbcTotal) }}</div>
-    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">Bulk SMSs</div>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">Chatbot Users</div>
     <div style="font-size:10px;color:#6b7280;margin-bottom:10px">No. of recipients : <strong style="color:#1f2937">{{ number_format($uchat['total_bot_users'] ?? 0) }}</strong></div>
 
     <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-bottom:8px">
@@ -1226,6 +1238,8 @@ let callStats      = @json($callStats);
 let months12       = @json($months);
 let prevPeriodData = @json($prevPeriodData);
 let callTargetRows = @json($callTargetRows);
+let activeService  = @json($serviceFilter);  // '' means all services
+let allServices    = @json($allServices);
 
 // ── Chart registry ─────────────────────────────────────────────────────────────
 const CC = {};
@@ -2075,9 +2089,23 @@ function loadBotTrendChart() {
     .catch(() => {});
 }
 
+// ── Service filter ────────────────────────────────────────────────────────────
+function applyServiceFilter(value) {
+  activeService = value;
+  const url = new URL(window.location.href);
+  if (value) { url.searchParams.set('service', value); }
+  else        { url.searchParams.delete('service'); }
+  window.history.replaceState({}, '', url.toString());
+  // Update clear link visibility
+  const clearLink = document.getElementById('svc-filter-clear');
+  if (clearLink) clearLink.style.display = value ? 'inline' : 'none';
+  refreshData();
+}
+
 // ── Background data refresh (no page reload) ──────────────────────────────────
 function refreshData() {
-  fetch('/screen/data', { cache: 'no-store' })
+  const params = activeService ? `?service=${encodeURIComponent(activeService)}` : '';
+  fetch('/screen/data' + params, { cache: 'no-store' })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
     .then(d => {
       // Reassign module-level data
@@ -2088,6 +2116,10 @@ function refreshData() {
       callTargetRows = d.callTargetRows;
       if (d.uchat) uchatData = d.uchat;
       if (d.urgentOpen !== undefined) urgentOpen = d.urgentOpen;
+      if (d.total !== undefined) {
+        const hdrTotal = document.getElementById('hdr-total');
+        if (hdrTotal) hdrTotal.textContent = Number(d.total).toLocaleString();
+      }
 
       // Update live indicator
       const now = new Date();
