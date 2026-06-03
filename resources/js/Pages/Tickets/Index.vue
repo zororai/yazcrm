@@ -167,33 +167,139 @@ const statusColor = {
             </button>
         </template>
 
-        <div class="card mb-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-48">
-                <label class="label">Search</label>
-                <div class="relative">
-                    <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                    <input v-model="search" class="input pl-9" placeholder="Subject or description…" />
+        <!-- ── Filter bar ── -->
+        <div class="card mb-4 space-y-3">
+            <!-- Row 1: search + status + priority + toggle -->
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-48">
+                    <label class="label">Search</label>
+                    <div class="relative">
+                        <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <input v-model="search" class="input pl-9" placeholder="Subject, description, phone…" />
+                    </div>
+                </div>
+                <div>
+                    <label class="label">Status</label>
+                    <select v-model="status" class="input w-36">
+                        <option value="">All</option>
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label">Priority</label>
+                    <select v-model="priority" class="input w-32">
+                        <option value="">All</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button @click="showFilters = !showFilters"
+                        class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 4h18M7 8h10M11 12h2"/></svg>
+                        More Filters
+                        <span v-if="activeFilterCount"
+                            class="bg-brand-600 text-white text-xs rounded-full px-1.5 py-0.5 font-bold">
+                            {{ activeFilterCount }}
+                        </span>
+                    </button>
+                    <button v-if="activeFilterCount" @click="clearFilters"
+                        class="btn-secondary btn-sm text-red-500 hover:text-red-700 inline-flex items-center gap-1">
+                        <XMarkIcon class="h-3.5 w-3.5" /> Clear
+                    </button>
                 </div>
             </div>
-            <div>
-                <label class="label">Status</label>
-                <select v-model="status" class="input w-36">
-                    <option value="">All</option>
-                    <option value="open">Open</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                </select>
-            </div>
-            <div>
-                <label class="label">Priority</label>
-                <select v-model="priority" class="input w-32">
-                    <option value="">All</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                </select>
+
+            <!-- Row 2: advanced filters (collapsible) -->
+            <div v-if="showFilters" class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-gray-100">
+                <!-- Agent (admin only) -->
+                <div v-if="isAdmin">
+                    <label class="label">Agent</label>
+                    <select v-model="agentId" class="input">
+                        <option value="">All Agents</option>
+                        <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
+                    </select>
+                </div>
+                <!-- Gender -->
+                <div>
+                    <label class="label">Gender</label>
+                    <select v-model="gender" class="input">
+                        <option value="">All</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer_not_to_say">Prefer not to say</option>
+                    </select>
+                </div>
+                <!-- Age group -->
+                <div>
+                    <label class="label">Age Group</label>
+                    <select v-model="ageGroup" class="input">
+                        <option value="">All Ages</option>
+                        <option value="under_18">Under 18</option>
+                        <option value="18_24">18 – 24</option>
+                        <option value="25_34">25 – 34</option>
+                        <option value="35_44">35 – 44</option>
+                        <option value="45_plus">45+</option>
+                    </select>
+                </div>
+                <!-- Repeat caller -->
+                <div>
+                    <label class="label">Caller Type</label>
+                    <select v-model="repeatCaller" class="input">
+                        <option value="">All</option>
+                        <option value="0">New Callers</option>
+                        <option value="1">Repeat Callers</option>
+                    </select>
+                </div>
+                <!-- Call direction (inbound / outbound via linked call) -->
+                <div>
+                    <label class="label">Call Direction</label>
+                    <select v-model="callDirection" class="input">
+                        <option value="">All</option>
+                        <option value="inbound">Inbound</option>
+                        <option value="outbound">Outbound</option>
+                    </select>
+                </div>
+                <!-- Service requested -->
+                <div>
+                    <label class="label">Service Requested</label>
+                    <select v-model="service" class="input">
+                        <option value="">All Services</option>
+                        <option v-for="s in servicesRequested" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                </div>
+                <!-- Project -->
+                <div>
+                    <label class="label">Project</label>
+                    <select v-model="project" class="input">
+                        <option value="">All Projects</option>
+                        <option v-for="p in projects" :key="p" :value="p">{{ p }}</option>
+                    </select>
+                </div>
+                <!-- Province / Location -->
+                <div>
+                    <label class="label">Province</label>
+                    <select v-model="province" class="input">
+                        <option value="">All Provinces</option>
+                        <option value="Bulawayo">Bulawayo</option>
+                        <option value="Harare">Harare</option>
+                        <option value="Manicaland">Manicaland</option>
+                        <option value="Mashonaland Central">Mashonaland Central</option>
+                        <option value="Mashonaland East">Mashonaland East</option>
+                        <option value="Mashonaland West">Mashonaland West</option>
+                        <option value="Masvingo">Masvingo</option>
+                        <option value="Matabeleland North">Matabeleland North</option>
+                        <option value="Matabeleland South">Matabeleland South</option>
+                        <option value="Midlands">Midlands</option>
+                    </select>
+                </div>
             </div>
         </div>
 
