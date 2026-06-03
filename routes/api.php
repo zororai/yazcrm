@@ -28,9 +28,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('auth/logout', [AuthController::class, 'logout']);
     Route::put('auth/profile', [AuthController::class, 'updateProfile']);
 
-    // Urgent cases count (for sidebar badge polling)
+    // Urgent cases count + latest case (for badge polling and popup)
     Route::get('urgent-cases/open-count', function () {
-        return response()->json(['count' => \App\Models\UrgentCase::where('status', 'open')->count()]);
+        $cases = \App\Models\UrgentCase::where('status', 'open')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'subject', 'contact_number', 'created_at']);
+        return response()->json([
+            'count'  => $cases->count() > 0
+                ? \App\Models\UrgentCase::where('status', 'open')->count()
+                : 0,
+            'latest' => $cases->first()?->only(['id', 'subject', 'contact_number', 'created_at']),
+        ]);
     });
 
     // Active calls (for popup polling)

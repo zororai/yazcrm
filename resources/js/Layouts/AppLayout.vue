@@ -23,7 +23,10 @@ const sidebarOpen     = ref(false);
 const pendingCall     = ref(null);
 const urgentCount     = ref(0);
 const urgentAlert     = ref(false); // banner shown when count increases
+const urgentToast     = ref(null);  // { subject, contact_number, id } for popup toast
 let   prevUrgentCount = 0;
+let   prevLatestId    = null;
+let   toastTimer      = null;
 
 // ── Incoming call popup ──────────────────────────────────────────────────────
 const activeCalls   = ref([]);
@@ -42,12 +45,51 @@ function dismissCall(index) {
     if (call) dismissedIds.value.add(call.id ?? call.caller);
 }
 
+function requestNotifyPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+function fireDesktopNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification(title, {
+            body,
+            icon: '/favicon.ico',
+            tag: 'urgent-case',
+            requireInteraction: true,
+        });
+        n.onclick = () => { window.focus(); router.visit('/urgent-cases'); n.close(); };
+    }
+}
+
 async function pollUrgentCount() {
     try {
         const { data } = await axios.get('/api/urgent-cases/open-count');
-        const n = data.count ?? 0;
-        if (n > prevUrgentCount && prevUrgentCount !== null) urgentAlert.value = true;
+        const n      = data.count  ?? 0;
+        const latest = data.latest ?? null;
+
+        const isNew = latest && latest.id !== prevLatestId && prevLatestId !== null;
+
+        if (isNew || (n > prevUrgentCount && prevUrgentCount !== null && prevUrgentCount >= 0)) {
+            urgentAlert.value = true;
+
+            // Show toast popup with case details
+            if (latest) {
+                urgentToast.value = latest;
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => { urgentToast.value = null; }, 10000);
+
+                // Browser desktop notification
+                fireDesktopNotification(
+                    '🚨 New Urgent Case',
+                    latest.subject + (latest.contact_number ? ' · ' + latest.contact_number : '')
+                );
+            }
+        }
+
         prevUrgentCount = n;
+        if (latest) prevLatestId = latest.id;
         urgentCount.value = n;
     } catch { /* ignore */ }
 }
@@ -80,9 +122,12 @@ onMounted(() => {
     pollActiveCalls();
     pollTimer = setInterval(pollActiveCalls, 8000);
 
-    // Poll urgent cases count every 30 seconds
+    // Request browser notification permission
+    requestNotifyPermission();
+
+    // Poll urgent cases count every 10 seconds
     pollUrgentCount();
-    setInterval(pollUrgentCount, 30000);
+    setInterval(pollUrgentCount, 10000);
 });
 
 onUnmounted(() => {
@@ -226,10 +271,18 @@ function logout() {
                 </div>
                 <slot name="header-actions" />
                 <!-- Notification bell -->
-                <button class="relative p-2 rounded-lg text-gray-400 hover:bg-gray-800 transition-colors flex-shrink-0">
-                    <BellIcon class="h-5 w-5" />
-                    <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#0f1117]"></span>
-                </button>
+                <Link href="/urgent-cases"
+                    :class="['relative p-2 rounded-lg transition-colors flex-shrink-0',
+                             urgentCount > 0 ? 'text-red-400 hover:bg-red-900/30 animate-flicker' : 'text-gray-400 hover:bg-gray-800']">
+                    <BellIcon class="h-6 w-6" />
+                    <span v-if="urgentCount > 0"
+                        class="absolute -top-0.5 -right-0.5 min-w-[1.2rem] h-[1.2rem] px-0.5 rounded-full
+                               bg-red-500 text-white text-[10px] font-bold flex items-center justify-center
+                               ring-2 ring-[#0f1117]">
+                        {{ urgentCount > 99 ? '99+' : urgentCount }}
+                    </span>
+                    <span v-else class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-gray-600 ring-2 ring-[#0f1117]"></span>
+                </Link>
                 <!-- User profile -->
                 <div class="flex items-center gap-3 pl-3 border-l border-gray-700 flex-shrink-0">
                     <div class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
@@ -291,6 +344,42 @@ function logout() {
             </main>
         </div>
     </div>
+
+    <!-- ── Urgent case toast popup ── -->
+    <Transition
+        enter-active-class="transition duration-300 ease-out"
+        enter-from-class="translate-x-full opacity-0"
+        enter-to-class="translate-x-0 opacity-100"
+        leave-active-class="transition duration-200 ease-in"
+        leave-from-class="translate-x-0 opacity-100"
+        leave-to-class="translate-x-full opacity-0"
+    >
+        <div v-if="urgentToast"
+            class="fixed top-5 right-5 z-[999] w-80 bg-red-600 text-white rounded-xl shadow-2xl overflow-hidden">
+            <div class="flex items-start gap-3 p-4">
+                <ExclamationTriangleIcon class="h-6 w-6 flex-shrink-0 mt-0.5 animate-pulse" />
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold uppercase tracking-wider opacity-80 mb-0.5">🚨 New Urgent Case</p>
+                    <p class="font-semibold text-sm leading-snug truncate">{{ urgentToast.subject }}</p>
+                    <p v-if="urgentToast.contact_number" class="text-xs opacity-75 mt-0.5">
+                        📞 {{ urgentToast.contact_number }}
+                    </p>
+                </div>
+                <button @click="urgentToast = null; clearTimeout(toastTimer)"
+                    class="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity mt-0.5">
+                    <XMarkIcon class="h-4 w-4" />
+                </button>
+            </div>
+            <Link href="/urgent-cases" @click="urgentToast = null"
+                class="block bg-red-700 hover:bg-red-800 text-center text-xs font-semibold py-2 transition-colors">
+                View Urgent Cases →
+            </Link>
+            <!-- Progress bar auto-dismiss (10 s) -->
+            <div class="h-1 bg-red-800">
+                <div class="h-1 bg-white/50 animate-[shrink_10s_linear_forwards]"></div>
+            </div>
+        </div>
+    </Transition>
 
     <!-- Auto ticket modal: fires when an answered call ≥ 30 s ends -->
     <CallTicketModal

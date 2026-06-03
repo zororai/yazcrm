@@ -18,6 +18,13 @@ const templateFile  = ref(null);
 const uploadingTpl  = ref(false);
 const sending       = ref(null);
 
+// Track locally generated certs so status updates instantly on click
+const localGenerated = ref({}); // { [id]: ISO timestamp }
+
+function onGenerate(row) {
+    localGenerated.value[row.id] = new Date().toISOString();
+}
+
 function sendWhatsapp(row) {
     if (!row.phone_number || sending.value) return;
     sending.value = row.id;
@@ -192,18 +199,19 @@ const genderColor = {
                         <td class="table-td text-sm">{{ row.location || '—' }}</td>
                         <!-- Status -->
                         <td v-if="sheet === 'Certificates To Process'" class="table-td text-center">
-                            <span v-if="row.certificate_status === 'downloaded'"
-                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                ✓ Downloaded
+                            <span v-if="localGenerated[row.id] || row.certificate_status === 'downloaded' || row.certificate_status === 'sent'"
+                                :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold',
+                                         row.certificate_status === 'sent' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700']">
+                                {{ row.certificate_status === 'sent' ? '📱 Sent' : '✓ Downloaded' }}
                             </span>
                             <span v-else class="text-xs text-gray-400">—</span>
                         </td>
                         <!-- Downloaded date -->
                         <td v-if="sheet === 'Certificates To Process'" class="table-td text-center text-xs text-gray-500 whitespace-nowrap">
-                            <span v-if="row.certificate_downloaded_at">
-                                {{ new Date(row.certificate_downloaded_at).toLocaleDateString([], { day:'2-digit', month:'short', year:'numeric' }) }}
-                                <span class="text-gray-400">
-                                    {{ new Date(row.certificate_downloaded_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) }}
+                            <span v-if="localGenerated[row.id] || row.certificate_downloaded_at">
+                                {{ new Date(localGenerated[row.id] ?? row.certificate_downloaded_at).toLocaleDateString([], { day:'2-digit', month:'short', year:'numeric' }) }}
+                                <span class="text-gray-400 block">
+                                    {{ new Date(localGenerated[row.id] ?? row.certificate_downloaded_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) }}
                                 </span>
                             </span>
                             <span v-else class="text-gray-400">—</span>
@@ -222,6 +230,7 @@ const genderColor = {
                         <td v-if="sheet === 'Certificates To Process'" class="table-td text-center">
                             <div class="flex items-center justify-center gap-1.5">
                                 <a :href="`/sbc/${row.id}/certificate`" target="_blank"
+                                    @click="onGenerate(row)"
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold
                                            bg-amber-500 hover:bg-amber-600 text-white transition-colors shadow-sm"
                                     title="Generate & download certificate PDF">

@@ -8,6 +8,22 @@ export default {
     ],
     theme: {
         extend: {
+            keyframes: {
+                shrink: {
+                    '0%':   { width: '100%' },
+                    '100%': { width: '0%' },
+                },
+                flicker: {
+                    '0%, 100%': { opacity: '1',    transform: 'scale(1)' },
+                    '25%':      { opacity: '0.1',  transform: 'scale(1.15)' },
+                    '50%':      { opacity: '1',    transform: 'scale(1)' },
+                    '75%':      { opacity: '0.1',  transform: 'scale(1.15)' },
+                },
+            },
+            animation: {
+                'shrink':  'shrink 10s linear forwards',
+                'flicker': 'flicker 0.8s ease-in-out infinite',
+            },
             colors: {
                 brand: {
                     50:  '#eef2ff',
