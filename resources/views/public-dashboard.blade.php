@@ -310,14 +310,6 @@ tr:hover td{background:#f8fafc}
   </div>
 </div>
 
-{{-- ── Debug banner (remove once confirmed working) ──────────────────────── --}}
-<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:11px;color:#92400e;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">
-  <span>📊 Server default: <strong>{{ $ticketDefaultPeriod }}</strong></span>
-  <span>📅 Month tickets: <strong>{{ number_format($periodData['month']['total']) }}</strong></span>
-  <span>📅 Year tickets: <strong>{{ number_format($periodData['year']['total']) }}</strong></span>
-  <span>📞 Month calls: <strong>{{ number_format($callStats['month']['total']) }}</strong></span>
-  <span>🕐 Today calls: <strong>{{ number_format($callStats['day']['total']) }}</strong></span>
-</div>
 
 @php
   $dd   = $periodData[$ticketDefaultPeriod];
@@ -1341,99 +1333,21 @@ function progressBars(data, total, fillColor, emptyMsg) {
 // ── OVERVIEW ───────────────────────────────────────────────────────────────────
 function updateOverview(p) {
   const d = periodData[p];
-  const t = d.total || 1;
-  const s = callStats[p]; // call stats from Yeastar/calls table
+  const s = callStats[p];
 
-  // No-data notice
-  const notice = document.getElementById('ov-no-data-notice');
-  if (notice) {
-    if (d.total === 0 && s.total > 0) {
-      notice.style.display = 'block';
-      const nc = document.getElementById('ov-notice-calls');
-      if (nc) nc.textContent = fmt(s.total);
-    } else {
-      notice.style.display = 'none';
-    }
-  }
-
-  // Mini stats — CALL data (always populated, even when no tickets)
-  document.getElementById('ov-total').textContent  = fmt(s.total);
-  document.getElementById('ov-valid').textContent  = fmt(s.answered);
-  document.getElementById('ov-repeat').textContent = fmt(d.urgentOpen ?? 0);
-
-  // Call KPI detail row
+  // Call KPI detail row (under the Call Activity card)
   document.getElementById('ov-c-total').textContent    = fmt(s.total);
   document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('ov-c-missed').textContent   = fmt(d.urgentOpen ?? 0);
+  document.getElementById('ov-c-missed').textContent   = fmt(urgentOpen);
   document.getElementById('ov-c-answered').textContent = fmt(s.answered);
   document.getElementById('ov-c-avgdur').textContent   = s.avg_dur + 's';
 
-  // Donut — call breakdown (Answered / Missed / Inbound)
-  const st = s.total || 1;
-  const ansP = Math.round(s.answered / st * 100);
-  const misP = Math.round(s.missed   / st * 100);
-  const inP  = Math.round(s.inbound  / st * 100);
-  document.getElementById('ov-pct').textContent      = ansP + '%';
-  document.getElementById('ov-ov-valid').textContent  = fmt(s.answered);
-  document.getElementById('ov-ov-vpct').textContent   = ansP + '%';
-  document.getElementById('ov-ov-repeat').textContent = fmt(s.missed);
-  document.getElementById('ov-ov-rpct').textContent   = misP + '%';
-  document.getElementById('ov-ov-imm').textContent    = fmt(s.inbound);
-  document.getElementById('ov-ov-ipct').textContent   = inP + '%';
-
-  // Ticket stats (uptake / immediate action / valid rate)
-  const vp = t ? Math.round(d.valid/t*100) : 0;
-  document.getElementById('ov-uptake').textContent     = fmt(d.uptake);
-  document.getElementById('ov-uptake-sub').textContent = (d.valid ? ((d.uptake/d.valid)*100).toFixed(1) : 0) + '% of valid';
-  document.getElementById('ov-imm').textContent        = fmt(d.imm_act);
-  document.getElementById('ov-vrate').textContent      = vp + '%';
-  document.getElementById('ov-imm-badge').textContent  = d.imm_act > 0 ? 'Needs Attention' : 'All Clear';
-
-  // Donut chart
-  rc('ovDonut', 'doughnut',
-    ['Answered','Missed','Inbound'],
-    [ansP, misP, inP],
-    { colors: ['#3b82f6','#f87171','#4ade80'], legend: false }
-  );
-
-  // Activity chart: use call trend (Yeastar data — has data even when no tickets)
+  // Call activity trend chart
   const ctkeys = Object.keys(s.trend);
   const ctvals = Object.values(s.trend);
   document.getElementById('ov-trend-label').textContent = trendTitle(p, 'Calls');
   rc('ovTrendChart', 'bar', trendLabels(p, ctkeys), ctvals, { single: '#f97316' });
-
-  // Top purposes
-  document.getElementById('ov-purposes').innerHTML = (d.by_purpose.length
-    ? d.by_purpose.slice(0, 3).map(([name, val], i) => {
-        const badges = ['badge-go','badge-done','badge-alert'];
-        const labs   = ['Active','Common','Flagged'];
-        const ring   = i === 1 ? 'done' : '';
-        return `<div class="ch-item">
-          <div class="ch-ring ${ring}">${i===1?'✓':'○'}</div>
-          <div class="ch-body">
-            <div class="ch-name">${name}</div>
-            <div class="ch-prog">${fmt(val)} / ${fmt(d.total)} interactions</div>
-          </div>
-          <span class="ch-badge ${badges[i]}">${labs[i]}</span>
-        </div>`;
-      }).join('')
-    : '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:12px 0">No data for this period</p>'
-  );
-
-  // Status bars
-  const statusColors2 = { open:'#60a5fa', in_progress:'#fbbf24', closed:'#4ade80', resolved:'#34d399' };
-  document.getElementById('ov-status-bars').innerHTML = d.by_status.length
-    ? d.by_status.map(([k, v]) => {
-        const pct = d.total ? ((v/d.total)*100).toFixed(1) : 0;
-        const bar = d.total ? Math.round(v/d.total*100) : 0;
-        const col = statusColors2[k] ?? '#94a3b8';
-        return `<div class="pb">
-          <div class="pb-hdr"><span class="pb-lbl">${k.replace('_',' ')}</span><span class="pb-val">${fmt(v)} (${pct}%)</span></div>
-          <div class="pb-track"><div class="pb-fill" style="width:${bar}%;background:${col}"></div></div>
-        </div>`;
-      }).join('')
-    : '<p style="font-size:11px;color:#94a3b8;text-align:center;padding:8px 0">No data</p>';
 }
 
 // ── GEOGRAPHIC ─────────────────────────────────────────────────────────────────
@@ -1538,7 +1452,7 @@ function updateCalls(p) {
   document.getElementById('c-total').textContent    = fmt(s.total);
   document.getElementById('c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('c-missed').textContent   = fmt(d.urgentOpen ?? 0);
+  document.getElementById('c-missed').textContent   = fmt(urgentOpen);
   document.getElementById('c-answered').textContent = fmt(s.answered);
   document.getElementById('c-avgdur').textContent   = s.avg_dur + 's';
 
