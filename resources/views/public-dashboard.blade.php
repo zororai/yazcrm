@@ -325,8 +325,18 @@ tr:hover td{background:#f8fafc}
 @php
   $age35p   = ($ageGroups['35–44'] ?? 0) + ($ageGroups['45+'] ?? 0);
   $circ     = 2 * 3.14159 * 26; // circumference for r=26
-  function dashOffset(float $pct, float $circ): float { return $circ - ($circ * $pct / 100); }
 @endphp
+
+{{-- ── Period filter ── --}}
+<div class="sec-hdr" style="margin-bottom:12px">
+  <span class="sec-title">Overview</span>
+  <div class="period-wrap">
+    <button class="period-btn {{ $ticketDefaultPeriod==='day'  ?'active-period':'' }}" onclick="setPeriod('overview','day',this)">Today</button>
+    <button class="period-btn {{ $ticketDefaultPeriod==='week' ?'active-period':'' }}" onclick="setPeriod('overview','week',this)">This Week</button>
+    <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('overview','month',this)">This Month</button>
+    <button class="period-btn {{ $ticketDefaultPeriod==='year' ?'active-period':'' }}" onclick="setPeriod('overview','year',this)">This Year</button>
+  </div>
+</div>
 
 {{-- ── Row 1: 4 KPI cards ── --}}
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
@@ -337,14 +347,14 @@ tr:hover td{background:#f8fafc}
       <div style="width:36px;height:36px;border-radius:50%;background:#0891b2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.07-8.67A2 2 0 013.6 4.11h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 11.9a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 18v3z"/></svg>
       </div>
-      <span style="font-weight:700;font-size:13px;color:#374151">Total Calls</span>
+      <span style="font-weight:700;font-size:13px;color:#374151">Total Cases</span>
     </div>
     <div style="font-size:34px;font-weight:900;color:#0891b2;line-height:1.1;margin-bottom:8px" id="ov-total-new">{{ number_format($total) }}</div>
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
-      <span style="background:#ede9fe;color:#6d28d9;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Males {{ $malePct }}%</span>
-      <span style="background:#fff7ed;color:#c2410c;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Females {{ $femalePct }}%</span>
+      <span id="ov-male-pill" style="background:#ede9fe;color:#6d28d9;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Males {{ $malePct }}%</span>
+      <span id="ov-female-pill" style="background:#fff7ed;color:#c2410c;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Females {{ $femalePct }}%</span>
     </div>
-    <div style="font-size:10px;color:#9ca3af;margin-bottom:10px">
+    <div style="font-size:10px;color:#9ca3af;margin-bottom:10px" id="ov-nonconf-txt">
       Non-confirming: {{ max(0, round(100 - $malePct - $femalePct, 1)) }}%&nbsp;&nbsp;|&nbsp;&nbsp;Anonymous
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -355,7 +365,7 @@ tr:hover td{background:#f8fafc}
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
           <div style="width:7px;height:7px;border-radius:50%;background:{{ ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'][array_search($lbl,['0–17','18–24','25–34','35+'])] }};flex-shrink:0"></div>
           <span style="color:#6b7280;width:28px">{{ $lbl }}</span>
-          <span style="font-weight:700;color:#1f2937">{{ number_format($v) }}</span>
+          <span id="ov-age-val-{{ $loop->index }}" style="font-weight:700;color:#1f2937">{{ number_format($v) }}</span>
         </div>
         @endforeach
       </div>
@@ -375,14 +385,14 @@ tr:hover td{background:#f8fafc}
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <svg width="60" height="60" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="26" fill="none" stroke="#fee2e2" stroke-width="6"/>
-        <circle cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
+        <circle id="ov-pending-arc" cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
           stroke-dasharray="{{ $circ * $pendingPct / 100 }} {{ $circ }}"
           stroke-linecap="round" transform="rotate(-90 30 30)"/>
-        <text x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#ea580c">{{ $pendingPct }}%</text>
+        <text id="ov-pending-txt" x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#ea580c">{{ $pendingPct }}%</text>
       </svg>
       <div>
         <div style="font-size:11px;font-weight:700;color:#374151">Pending Cases</div>
-        <div style="font-size:10px;color:#9ca3af">{{ number_format($pendingTotal) }} open</div>
+        <div id="ov-pending-open" style="font-size:10px;color:#9ca3af">{{ number_format($pendingTotal) }} open</div>
       </div>
     </div>
 
@@ -414,14 +424,14 @@ tr:hover td{background:#f8fafc}
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <svg width="60" height="60" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="26" fill="none" stroke="#dbeafe" stroke-width="6"/>
-        <circle cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
+        <circle id="ov-ref-comp-arc" cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
           stroke-dasharray="{{ $circ * min($referralCompPct,100) / 100 }} {{ $circ }}"
           stroke-linecap="round" transform="rotate(-90 30 30)"/>
-        <text x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#ea580c">{{ $referralCompPct }}%</text>
+        <text id="ov-ref-comp-txt" x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#ea580c">{{ $referralCompPct }}%</text>
       </svg>
       <div>
         <div style="font-size:11px;font-weight:700;color:#374151">Referral Completion</div>
-        <div style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes</div>
+        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes</div>
       </div>
     </div>
 
@@ -429,7 +439,7 @@ tr:hover td{background:#f8fafc}
       <div style="font-size:20px">🤝</div>
       <div>
         <div style="font-size:10px;color:#6b7280">Case Conference Calls</div>
-        <div style="font-size:18px;font-weight:900;color:#1d4ed8">{{ number_format($immediateAct) }}</div>
+        <div id="ov-imm-cnt" style="font-size:18px;font-weight:900;color:#1d4ed8">{{ number_format($immediateAct) }}</div>
       </div>
     </div>
   </div>
@@ -463,10 +473,10 @@ tr:hover td{background:#f8fafc}
     <div style="display:flex;align-items:center;gap:10px">
       <svg width="50" height="50" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="26" fill="none" stroke="#fce7f3" stroke-width="6"/>
-        <circle cx="30" cy="30" r="26" fill="none" stroke="#db2777" stroke-width="6"
+        <circle id="ov-female-arc" cx="30" cy="30" r="26" fill="none" stroke="#db2777" stroke-width="6"
           stroke-dasharray="{{ $circ * min($femalePct,100) / 100 }} {{ $circ }}"
           stroke-linecap="round" transform="rotate(-90 30 30)"/>
-        <text x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#db2777">{{ $femalePct }}%</text>
+        <text id="ov-female-txt" x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#db2777">{{ $femalePct }}%</text>
       </svg>
       <div style="font-size:10px;color:#6b7280">Females</div>
     </div>
@@ -474,25 +484,17 @@ tr:hover td{background:#f8fafc}
 
 </div>{{-- /row 1 --}}
 
-{{-- ── Row 1b: Call Activity (hourly PBX) ── --}}
+{{-- ── Row 1b: Call Activity ── --}}
 <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb;margin-bottom:12px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
     <span style="font-size:13px;font-weight:700;color:#374151">📞 Call Activity</span>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span style="font-size:11px;color:#6b7280" id="ov-trend-label">Calls by Hour — Today</span>
-      <div style="display:flex;gap:4px">
-        <button onclick="setPeriod('overview','day',this)"   class="period-btn {{ $ticketDefaultPeriod==='day'  ?'active-period':'' }}">Today</button>
-        <button onclick="setPeriod('overview','week',this)"  class="period-btn {{ $ticketDefaultPeriod==='week' ?'active-period':'' }}">Week</button>
-        <button onclick="setPeriod('overview','month',this)" class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}">Month</button>
-        <button onclick="setPeriod('overview','year',this)"  class="period-btn {{ $ticketDefaultPeriod==='year' ?'active-period':'' }}">Year</button>
-      </div>
-    </div>
+    <span style="font-size:11px;color:#6b7280" id="ov-trend-label">Calls by Hour — Today</span>
   </div>
   <div style="height:160px"><canvas id="ovTrendChart"></canvas></div>
   <!-- Call KPIs from PBX -->
   <div style="display:flex;gap:0;border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px">
     @foreach([['📞','Total',  'ov-c-total',   $sc['total']],   ['📥','Inbound', 'ov-c-inbound', $sc['inbound']],
-              ['📤','Outbound','ov-c-outbound',$sc['outbound']],['🚨','Urgent',  'ov-c-missed',  $urgentOpen],
+              ['📤','Outbound','ov-c-outbound',$sc['outbound']],['🚨','Urgent',  'ov-c-urgent',  $urgentOpen],
               ['✅','Answered','ov-c-answered',$sc['answered']],['⏱️','Avg Dur', 'ov-c-avgdur',  $sc['avg_dur'].'s']] as [$ico,$lbl,$id,$val])
     <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6;padding:0 8px">
       <div style="font-size:16px">{{ $ico }}</div>
@@ -547,7 +549,7 @@ tr:hover td{background:#f8fafc}
       </svg>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
         <div>
-          <div style="font-size:22px;font-weight:900;color:#1f2937" id="ov-c-missed">{{ number_format($urgentOpen) }}</div>
+          <div style="font-size:22px;font-weight:900;color:#1f2937" id="ov-urgent-badge">{{ number_format($urgentOpen) }}</div>
           <div style="font-size:9px;color:#9ca3af">Urgent</div>
         </div>
       </div>
@@ -1331,23 +1333,150 @@ function progressBars(data, total, fillColor, emptyMsg) {
 }
 
 // ── OVERVIEW ───────────────────────────────────────────────────────────────────
+const OV_CIRC = 2 * Math.PI * 26; // r=26 SVG circles
+
 function updateOverview(p) {
   const d = periodData[p];
   const s = callStats[p];
+  const t = d.total || 1;
 
-  // Call KPI detail row (under the Call Activity card)
+  // ── Card 1: Total Calls ───────────────────────────────────────────────────
+  document.getElementById('ov-total-new').textContent = fmt(d.total);
+
+  // Gender breakdown
+  const gArr  = d.by_gender ?? [];
+  const gSum  = Math.max(1, gArr.reduce((a, r) => a + r[1], 0));
+  const maleR = gArr.find(r => r[0] === 'male');
+  const femR  = gArr.find(r => r[0] === 'female');
+  const mPct  = maleR ? Math.round(maleR[1] / gSum * 100) : 0;
+  const fPct  = femR  ? Math.round(femR[1]  / gSum * 100) : 0;
+  const ncPct = Math.max(0, 100 - mPct - fPct);
+  document.getElementById('ov-male-pill').textContent   = 'Males ' + mPct + '%';
+  document.getElementById('ov-female-pill').textContent = 'Females ' + fPct + '%';
+  document.getElementById('ov-nonconf-txt').textContent = 'Non-confirming: ' + ncPct + '%  |  Anonymous';
+
+  // Age donut + legend
+  const ag     = d.age_groups ?? [];
+  const age35p = (ag[3]?.[1] ?? 0) + (ag[4]?.[1] ?? 0);
+  const ageData = [ag[0]?.[1] ?? 0, ag[1]?.[1] ?? 0, ag[2]?.[1] ?? 0, age35p];
+  if (CC['ovAgeDonut']) { CC['ovAgeDonut'].destroy(); delete CC['ovAgeDonut']; }
+  const ageCtx = document.getElementById('ovAgeDonut');
+  if (ageCtx) {
+    CC['ovAgeDonut'] = new Chart(ageCtx, {
+      type: 'doughnut',
+      data: { labels: ['0–17','18–24','25–34','35+'], datasets: [{ data: ageData, backgroundColor: ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'], borderWidth: 0 }] },
+      options: { cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: true } }, responsive: true, maintainAspectRatio: false },
+    });
+  }
+  ageData.forEach((v, i) => {
+    const el = document.getElementById('ov-age-val-' + i);
+    if (el) el.textContent = fmt(v);
+  });
+
+  // ── Card 2: Resolved / Pending ────────────────────────────────────────────
+  const statusMap = {};
+  (d.by_status ?? []).forEach(([k, v]) => { statusMap[k] = v; });
+  const resolvedCnt = statusMap['resolved'] ?? 0;
+  const pendingCnt  = (statusMap['open'] ?? 0) + (statusMap['in_progress'] ?? 0);
+  const pendingPct  = d.total > 0 ? +(pendingCnt / d.total * 100).toFixed(1) : 0;
+  document.getElementById('ov-resolved-new').textContent = fmt(resolvedCnt);
+  const pendArc  = document.getElementById('ov-pending-arc');
+  const pendTxt  = document.getElementById('ov-pending-txt');
+  const pendOpen = document.getElementById('ov-pending-open');
+  if (pendArc)  pendArc.setAttribute('stroke-dasharray', `${OV_CIRC * pendingPct / 100} ${OV_CIRC}`);
+  if (pendTxt)  pendTxt.textContent  = pendingPct + '%';
+  if (pendOpen) pendOpen.textContent = fmt(pendingCnt) + ' open';
+
+  // ── Card 3: Referred / Referral Completion ────────────────────────────────
+  const refCnt     = d.referral_count ?? 0;
+  const uptakeCnt  = d.uptake ?? 0;
+  const refCompPct = refCnt > 0 ? Math.min(100, +(uptakeCnt / refCnt * 100).toFixed(1)) : 0;
+  const immCnt     = d.imm_act ?? 0;
+  document.getElementById('ov-referred-new').textContent = fmt(refCnt);
+  const refArc    = document.getElementById('ov-ref-comp-arc');
+  const refTxt    = document.getElementById('ov-ref-comp-txt');
+  const uptakeEl  = document.getElementById('ov-uptake-cnt');
+  const immEl     = document.getElementById('ov-imm-cnt');
+  if (refArc)   refArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(refCompPct, 100) / 100} ${OV_CIRC}`);
+  if (refTxt)   refTxt.textContent  = refCompPct + '%';
+  if (uptakeEl) uptakeEl.textContent = fmt(uptakeCnt) + ' uptakes';
+  if (immEl)    immEl.textContent    = fmt(immCnt);
+
+  // ── Card 4: New vs Repeat callers + Female donut ──────────────────────────
+  const newCnt    = Math.max(0, d.total - (d.repeat ?? 0));
+  const repeatCnt = d.repeat ?? 0;
+  document.getElementById('ov-new-callers').textContent    = fmt(newCnt);
+  document.getElementById('ov-repeat-callers').textContent = fmt(repeatCnt);
+  const femArc = document.getElementById('ov-female-arc');
+  const femTxt = document.getElementById('ov-female-txt');
+  if (femArc) femArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(fPct, 100) / 100} ${OV_CIRC}`);
+  if (femTxt) femTxt.textContent = fPct + '%';
+
+  // ── Call Activity strip ───────────────────────────────────────────────────
   document.getElementById('ov-c-total').textContent    = fmt(s.total);
   document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('ov-c-missed').textContent   = fmt(urgentOpen);
+  document.getElementById('ov-c-urgent').textContent   = fmt(urgentOpen);
   document.getElementById('ov-c-answered').textContent = fmt(s.answered);
   document.getElementById('ov-c-avgdur').textContent   = s.avg_dur + 's';
 
-  // Call activity trend chart
+  // ── Trend chart ───────────────────────────────────────────────────────────
   const ctkeys = Object.keys(s.trend);
   const ctvals = Object.values(s.trend);
   document.getElementById('ov-trend-label').textContent = trendTitle(p, 'Calls');
   rc('ovTrendChart', 'bar', trendLabels(p, ctkeys), ctvals, { single: '#f97316' });
+
+  // ── Row 2 charts ──────────────────────────────────────────────────────────
+
+  // Calls by Case Type donut
+  const caseLabels = d.by_purpose.map(r => r[0]);
+  const caseData   = d.by_purpose.map(r => r[1]);
+  if (CC['ovCaseTypeDonut']) { CC['ovCaseTypeDonut'].destroy(); delete CC['ovCaseTypeDonut']; }
+  const ctCtx = document.getElementById('ovCaseTypeDonut');
+  if (ctCtx) {
+    CC['ovCaseTypeDonut'] = new Chart(ctCtx, {
+      type: 'doughnut',
+      data: { labels: caseLabels, datasets: [{ data: caseData, backgroundColor: ['#f97316','#7c3aed','#2563eb','#16a34a','#0891b2','#1e293b','#e11d48','#ca8a04'], borderWidth: 0 }] },
+      options: { cutout: '55%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false },
+    });
+  }
+  // Update legend labels
+  const caseLegend = document.getElementById('ov-case-legend');
+  if (caseLegend) {
+    const spans = caseLegend.querySelectorAll('span[data-case-lbl]');
+    caseLabels.slice(0, 6).forEach((lbl, i) => { if (spans[i]) spans[i].textContent = lbl.length > 14 ? lbl.slice(0,14)+'…' : lbl; });
+  }
+
+  // Calls Per Month — show period trend (ticket interactions)
+  const ptkeys = Object.keys(d.trend);
+  const ptvals = Object.values(d.trend);
+  if (CC['ovMonthLine']) { CC['ovMonthLine'].destroy(); delete CC['ovMonthLine']; }
+  const mlCtx = document.getElementById('ovMonthLine');
+  if (mlCtx) {
+    CC['ovMonthLine'] = new Chart(mlCtx, {
+      type: 'line',
+      data: { labels: trendLabels(p, ptkeys), datasets: [{ label:'Cases', data: ptvals, borderColor:'#f97316', backgroundColor:'rgba(249,115,22,.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
+    });
+  }
+
+  // Referral By Service grouped bar
+  const sbLabels  = d.by_service.map(r => r[0].length > 14 ? r[0].slice(0,14)+'…' : r[0]);
+  const sbReferred = d.by_service.map(r => r[1]);
+  const sbUptakeMap = d.by_service_uptake ?? {};
+  const sbUptake  = d.by_service.map(r => sbUptakeMap[r[0]] ?? 0);
+  if (CC['ovServiceBar']) { CC['ovServiceBar'].destroy(); delete CC['ovServiceBar']; }
+  const sbCtx = document.getElementById('ovServiceBar');
+  if (sbCtx) {
+    CC['ovServiceBar'] = new Chart(sbCtx, {
+      type: 'bar',
+      data: { labels: sbLabels, datasets: [
+        { label:'Referred Cases',           data: sbReferred, backgroundColor:'#7c3aed', borderRadius:3 },
+        { label:'Confirmed Service Uptake', data: sbUptake,   backgroundColor:'#f97316', borderRadius:3 },
+      ]},
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:8},maxRotation:45}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
+    });
+  }
 }
 
 // ── GEOGRAPHIC ─────────────────────────────────────────────────────────────────
@@ -1452,7 +1581,7 @@ function updateCalls(p) {
   document.getElementById('c-total').textContent    = fmt(s.total);
   document.getElementById('c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('c-missed').textContent   = fmt(urgentOpen);
+  document.getElementById('c-missed').textContent = fmt(urgentOpen);
   document.getElementById('c-answered').textContent = fmt(s.answered);
   document.getElementById('c-avgdur').textContent   = s.avg_dur + 's';
 
@@ -2000,10 +2129,10 @@ function refreshData() {
 @endphp
 // ── Overview new charts ────────────────────────────────────────────────────
 function initOverviewCharts() {
-  // Age donut
+  // Age donut — stored in CC so updateOverview can destroy/recreate on period change
   const ageCtx = document.getElementById('ovAgeDonut');
   if (ageCtx) {
-    new Chart(ageCtx, {
+    CC['ovAgeDonut'] = new Chart(ageCtx, {
       type: 'doughnut',
       data: {
         labels: ['0–17','18–24','25–34','35+'],
@@ -2014,52 +2143,7 @@ function initOverviewCharts() {
     });
   }
 
-  // Case type donut
-  const ctCtx = document.getElementById('ovCaseTypeDonut');
-  if (ctCtx) {
-    const ctData = @json($byPurpose->take(6)->pluck('cnt')->values());
-    const ctLabels = @json($byPurpose->take(6)->pluck('purpose_of_call')->values());
-    new Chart(ctCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ctLabels,
-        datasets: [{ data: ctData, backgroundColor: ['#f97316','#7c3aed','#2563eb','#16a34a','#0891b2','#1e293b'], borderWidth: 0 }],
-      },
-      options: { cutout: '55%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false },
-    });
-  }
-
-  // Calls per month line
-  const mlCtx = document.getElementById('ovMonthLine');
-  if (mlCtx) {
-    const mlLabels = Object.keys(months12).map(ym => { const [y,m]=ym.split('-'); return new Date(+y,+m-1).toLocaleString('default',{month:'short'}); });
-    new Chart(mlCtx, {
-      type: 'line',
-      data: {
-        labels: mlLabels,
-        datasets: [{ label:'Calls', data: Object.values(months12), borderColor:'#f97316', backgroundColor:'rgba(249,115,22,.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 }],
-      },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
-    });
-  }
-
-  // Referral by service grouped bar
-  const sbCtx = document.getElementById('ovServiceBar');
-  if (sbCtx) {
-    const sbData = @json($serviceUptake);
-    const sbLabels = sbData.map(r => r.services_requested.length > 14 ? r.services_requested.substr(0,14)+'…' : r.services_requested);
-    new Chart(sbCtx, {
-      type: 'bar',
-      data: {
-        labels: sbLabels,
-        datasets: [
-          { label:'Referred', data: sbData.map(r=>r.total), backgroundColor:'#7c3aed', borderRadius:3 },
-          { label:'Uptake',   data: sbData.map(r=>r.uptake), backgroundColor:'#f97316', borderRadius:3 },
-        ],
-      },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:8},maxRotation:45}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
-    });
-  }
+  // ovCaseTypeDonut, ovMonthLine, ovServiceBar are owned by updateOverview — no init needed here
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────
