@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -76,6 +77,43 @@ class SbcController extends Controller
         }
     }
 
+    public function downloadCert(string $token): HttpResponse
+    {
+        $signup = SbcSignup::where('cert_token', $token)->first();
+
+        if (! $signup) {
+            abort(404);
+        }
+
+        if ($signup->cert_download_count >= 2) {
+            abort(403, 'This certificate link has expired after 2 downloads.');
+        }
+
+        $storagePath = 'certificates/cert_' . $signup->id . '.pdf';
+
+        if (! Storage::disk('local')->exists($storagePath)) {
+            abort(404, 'Certificate file not found.');
+        }
+
+        // Increment counter — delete file and nullify token after 2nd download
+        $newCount = $signup->cert_download_count + 1;
+        $signup->update(['cert_download_count' => $newCount]);
+
+        if ($newCount >= 2) {
+            Storage::disk('local')->delete($storagePath);
+            $signup->update(['cert_token' => null]);
+        }
+
+        $pdf      = Storage::disk('local')->get($storagePath);
+        $filename = 'Certificate_' . str_replace(' ', '_', strtoupper(trim($signup->first_name . '_' . $signup->surname))) . '.pdf';
+
+        return response($pdf, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control'       => 'no-store, no-cache',
+        ]);
+    }
+
     public function sendWhatsapp(SbcSignup $signup): RedirectResponse
     {
         if (! $signup->phone_number) {
@@ -88,16 +126,19 @@ class SbcController extends Controller
             return back()->with('error', 'Certificate template not uploaded yet. Please upload the template first.');
         }
 
-        // Save PDF to public storage so uChat can fetch it by URL
-        $filename  = 'cert_' . $signup->id . '_' . time() . '.pdf';
-        $storagePath = 'certificates/' . $filename;
-        Storage::disk('public')->put($storagePath, $pdf);
-        $fileUrl = Storage::disk('public')->url($storagePath);
+        // Generate a new token and reset download count for this send
+        $token = Str::random(48);
+        $storagePath = 'certificates/cert_' . $signup->id . '.pdf';
 
-        // Ensure absolute URL
-        if (! str_starts_with($fileUrl, 'http')) {
-            $fileUrl = config('app.url') . $fileUrl;
-        }
+        // Save to PRIVATE local storage (not public) — only accessible via our token route
+        Storage::disk('local')->put($storagePath, $pdf);
+
+        $signup->update([
+            'cert_token'           => $token,
+            'cert_download_count'  => 0,
+        ]);
+
+        $fileUrl = url('/cert/' . $token);
 
         $name    = trim($signup->first_name . ' ' . $signup->surname);
         $caption = "🎓 Dear {$name}, please find your YALeP Certificate of Completion attached.";
@@ -106,13 +147,17 @@ class SbcController extends Controller
 
         if ($sent) {
             $signup->update([
-                'certificate_status'        => 'sent',
-                'whatsapp_sent_at'          => now(),
+                'certificate_status' => 'sent',
+                'whatsapp_sent_at'   => now(),
             ]);
             return back()->with('success', "Certificate sent to {$signup->phone_number} on WhatsApp.");
         }
 
-        return back()->with('error', 'Failed to send via WhatsApp. Check the uChat API token and that the phone number is subscribed to the bot.');
+        // Clean up if send failed
+        Storage::disk('local')->delete($storagePath);
+        $signup->update(['cert_token' => null, 'cert_download_count' => 0]);
+
+        return back()->with('error', "Could not send to {$signup->phone_number}. The number may not be subscribed to the WhatsApp bot yet.");
     }
 
     public function uploadTemplate(Request $request): RedirectResponse

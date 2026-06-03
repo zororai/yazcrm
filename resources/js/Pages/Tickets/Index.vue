@@ -9,9 +9,18 @@ import { debounce } from 'lodash-es';
 
 const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
-const search   = ref(props.filters.search ?? '');
-const status   = ref(props.filters.status ?? '');
-const priority = ref(props.filters.priority ?? '');
+const search         = ref(props.filters.search         ?? '');
+const status         = ref(props.filters.status         ?? '');
+const priority       = ref(props.filters.priority       ?? '');
+const agentId        = ref(props.filters.agent_id       ?? '');
+const gender         = ref(props.filters.gender         ?? '');
+const service        = ref(props.filters.service        ?? '');
+const project        = ref(props.filters.project        ?? '');
+const province       = ref(props.filters.province       ?? '');
+const repeatCaller   = ref(props.filters.repeat_caller  ?? '');
+const callDirection  = ref(props.filters.call_direction ?? '');
+const ageGroup       = ref(props.filters.age_group      ?? '');
+const showFilters    = ref(false);
 const showAdd  = ref(false);
 
 const showContactDrop = ref(false);
@@ -83,17 +92,36 @@ const addForm = useForm({
     referral_uptake_date:     '',
 });
 
+const activeFilterCount = computed(() =>
+    [agentId, gender, service, project, province, repeatCaller, callDirection, ageGroup]
+        .filter(r => r.value).length
+);
+
 function apply() {
     router.get('/tickets', {
-        search:   search.value || undefined,
-        status:   status.value || undefined,
-        priority: priority.value || undefined,
+        search:          search.value         || undefined,
+        status:          status.value         || undefined,
+        priority:        priority.value       || undefined,
+        agent_id:        agentId.value        || undefined,
+        gender:          gender.value         || undefined,
+        service:         service.value        || undefined,
+        project:         project.value        || undefined,
+        province:        province.value       || undefined,
+        repeat_caller:   repeatCaller.value   || undefined,
+        call_direction:  callDirection.value  || undefined,
+        age_group:       ageGroup.value       || undefined,
     }, { preserveState: true, replace: true });
+}
+
+function clearFilters() {
+    agentId.value = gender.value = service.value = project.value =
+    province.value = repeatCaller.value = callDirection.value = ageGroup.value = '';
+    apply();
 }
 
 const debouncedApply = debounce(apply, 350);
 watch(search, debouncedApply);
-watch([status, priority], apply);
+watch([status, priority, agentId, gender, service, project, province, repeatCaller, callDirection, ageGroup], apply);
 
 function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });

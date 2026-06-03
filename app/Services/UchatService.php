@@ -112,11 +112,29 @@ class UchatService
      * $fileUrl — publicly accessible URL of the file
      * $caption — optional text message sent alongside the file
      */
+    /**
+     * Look up a subscriber by phone number and return their uChat user_ns.
+     * uChat requires the internal user_ns (e.g. "f71403u765891021"), not a phone number.
+     */
+    public function findUserNsByPhone(string $phone): ?string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+        $resp   = $this->get('/subscribers', ['user_id' => $digits, 'limit' => 1]);
+        return $resp['data'][0]['user_ns'] ?? null;
+    }
+
+    /**
+     * Send a file (e.g. PDF certificate) to a WhatsApp user via uChat.
+     * Looks up the subscriber by phone to get their user_ns first.
+     */
     public function sendFile(string $phone, string $fileUrl, string $caption = ''): bool
     {
-        // Normalise to digits-only, then prefix whatsapp:
-        $digits  = preg_replace('/\D/', '', $phone);
-        $userNs  = 'whatsapp:' . $digits;
+        $userNs = $this->findUserNsByPhone($phone);
+
+        if (! $userNs) {
+            Log::warning('UchatService::sendFile: subscriber not found for phone', ['phone' => $phone]);
+            return false;
+        }
 
         $messages = [];
 

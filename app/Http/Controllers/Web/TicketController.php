@@ -26,16 +26,37 @@ class TicketController extends Controller
             $query->where('agent_id', $request->user()->id);
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if ($request->filled('status'))         { $query->where('status',            $request->status); }
+        if ($request->filled('priority'))        { $query->where('priority',           $request->priority); }
+        if ($request->filled('agent_id'))        { $query->where('agent_id',           $request->agent_id); }
+        if ($request->filled('gender'))          { $query->where('caller_gender',      $request->gender); }
+        if ($request->filled('service'))         { $query->where('services_requested', $request->service); }
+        if ($request->filled('project'))         { $query->where('project',            $request->project); }
+        if ($request->filled('province'))        { $query->where('province',           $request->province); }
+        if ($request->filled('repeat_caller'))   { $query->where('is_repeat_caller',   $request->repeat_caller); }
+        if ($request->filled('call_direction'))  {
+            // inbound/outbound mapped via mode_of_communication or joined calls table
+            if ($request->call_direction === 'inbound') {
+                $query->whereHas('call', fn ($q) => $q->where('direction', 'inbound'));
+            } elseif ($request->call_direction === 'outbound') {
+                $query->whereHas('call', fn ($q) => $q->where('direction', 'outbound'));
+            }
         }
-        if ($request->filled('priority')) {
-            $query->where('priority', $request->priority);
+        if ($request->filled('age_group')) {
+            match ($request->age_group) {
+                'under_18'  => $query->whereBetween('caller_age', [1,  17]),
+                '18_24'     => $query->whereBetween('caller_age', [18, 24]),
+                '25_34'     => $query->whereBetween('caller_age', [25, 34]),
+                '35_44'     => $query->whereBetween('caller_age', [35, 44]),
+                '45_plus'   => $query->where('caller_age', '>=', 45),
+                default     => null,
+            };
         }
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('subject', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%");
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('contact_number', 'like', "%{$request->search}%");
             });
         }
 
@@ -47,7 +68,11 @@ class TicketController extends Controller
             'tickets' => $tickets,
             'clients' => $clients,
             'agents'  => $agents,
-            'filters' => $request->only(['status', 'priority', 'search']),
+            'filters' => $request->only([
+                'status', 'priority', 'search',
+                'agent_id', 'gender', 'service', 'project',
+                'province', 'repeat_caller', 'call_direction', 'age_group',
+            ]),
             'keyPops'             => LookupItem::where('type', 'key_pops')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'modesOfCommunication' => LookupItem::where('type', 'mode_of_communication')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'projects'             => LookupItem::where('type', 'project')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),

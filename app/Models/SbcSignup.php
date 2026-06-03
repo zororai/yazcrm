@@ -10,6 +10,7 @@ class SbcSignup extends Model
         'sheet', 'date', 'phone_number', 'first_name', 'surname',
         'age', 'sex', 'location', 'synced_at',
         'certificate_status', 'certificate_downloaded_at', 'whatsapp_sent_at',
+        'cert_token', 'cert_download_count',
     ];
 
     protected $casts = [
