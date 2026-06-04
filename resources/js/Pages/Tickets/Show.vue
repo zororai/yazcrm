@@ -13,6 +13,7 @@ const props = defineProps({
     servicesRequested:     Array,
     secondServicesRequested: Array,
     referredTo:            Array,
+    serviceCategories:     Object,
 });
 
 const editing = ref(false);
@@ -425,6 +426,7 @@ function label(val) {
                         <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Classification</h4>
                         <ClassificationPanel
                             :service="editForm.services_requested"
+                            :service-categories="serviceCategories"
                             v-model="editForm.classification"
                         />
                     </div>

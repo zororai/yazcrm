@@ -548,6 +548,8 @@ tr:hover td{background:#f8fafc}
       <span style="font-size:10px;display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;background:#f97316;display:inline-block;border-radius:2px"></span>Confirmed Service Uptake</span>
     </div>
     <div style="height:160px"><canvas id="ovServiceBar"></canvas></div>
+    <!-- Category breakdown -->
+    <div id="ov-service-cats" style="margin-top:10px;display:flex;flex-direction:column;gap:4px"></div>
   </div>
 
   {{-- Bot / Program --}}
@@ -635,6 +637,22 @@ tr:hover td{background:#f8fafc}
   <div class="s-card" style="margin-bottom:14px">
     <h3 style="text-align:center;font-size:15px;font-weight:700;margin-bottom:12px">Referral By Service</h3>
     <div style="height:280px"><canvas id="svcReferralByServiceChart"></canvas></div>
+    <!-- Classification category breakdown table -->
+    <div style="margin-top:16px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #f1f5f9;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Service</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #f1f5f9;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Classification Category</th>
+            <th style="text-align:center;padding:6px 8px;border-bottom:2px solid #f1f5f9;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Cases</th>
+            <th style="text-align:center;padding:6px 8px;border-bottom:2px solid #f1f5f9;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Uptake</th>
+          </tr>
+        </thead>
+        <tbody id="svc-cat-tbody">
+          <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
   <div class="svc-kpi-row">
     <div class="svc-kpi-card">
@@ -679,6 +697,37 @@ tr:hover td{background:#f8fafc}
   <div class="s-card">
     <h3>Services Detail</h3>
     <div id="svc-bars"></div>
+  </div>
+
+  {{-- ── Psycho-social Support Breakdown ── --}}
+  <div class="s-card" style="margin-top:14px" id="psychosocial-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0">Psycho-social Support Breakdown</h3>
+      <span style="font-size:11px;color:#94a3b8">Cases under "Psycho-social support" service</span>
+    </div>
+    <!-- KPI pills -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px" id="psychosocial-kpis">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#3b82f6;text-transform:uppercase;margin-bottom:6px">Awareness Raising</div>
+        <div style="font-size:28px;font-weight:900;color:#1d4ed8;line-height:1" id="psycho-awareness-total">—</div>
+        <div style="font-size:10px;color:#64748b;margin-top:4px">Uptake: <span id="psycho-awareness-uptake" style="font-weight:700">—</span></div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;margin-bottom:6px">Helpline Marketing</div>
+        <div style="font-size:28px;font-weight:900;color:#b45309;line-height:1" id="psycho-marketing-total">—</div>
+        <div style="font-size:10px;color:#64748b;margin-top:4px">Uptake: <span id="psycho-marketing-uptake" style="font-weight:700">—</span></div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;margin-bottom:6px">Counselling</div>
+        <div style="font-size:28px;font-weight:900;color:#15803d;line-height:1" id="psycho-counselling-total">—</div>
+        <div style="font-size:10px;color:#64748b;margin-top:4px">Uptake: <span id="psycho-counselling-uptake" style="font-weight:700">—</span></div>
+      </div>
+    </div>
+    <!-- Bar chart -->
+    <div style="height:140px"><canvas id="psychosocialChart"></canvas></div>
+    <div id="psychosocial-empty" style="display:none;text-align:center;padding:20px;font-size:12px;color:#94a3b8">
+      No Psycho-social support data for this period
+    </div>
   </div>
 </div>
 
@@ -1265,6 +1314,34 @@ let callTargetRows = @json($callTargetRows);
 let activeService  = @json($serviceFilter);  // '' means all services
 let allServices    = @json($allServices);
 
+const CAT_LABELS = {
+  household_social:     'Household & Social',
+  hiv:                  'HIV Services',
+  pep:                  'PEP',
+  prep:                 'PrEP',
+  srhr:                 'Sexual & Reproductive Health',
+  general_health:       'General Health',
+  mental_health:        'Mental Health & MHPSS',
+  substance_use:        'Substance Use',
+  family_relationships: 'Family & Relationships',
+  gbv:                  'GBV',
+  child_protection:     'Child Protection',
+  legal:                'Legal & Protection',
+  education:            'Education',
+  livelihood:           'Livelihoods',
+  youth_empowerment:    'Youth Empowerment',
+  case_resolution:      'Case Resolution',
+};
+
+// Colour per category for badges
+const CAT_COLORS = {
+  household_social:'#0ea5e9', hiv:'#dc2626', pep:'#b91c1c', prep:'#f97316',
+  srhr:'#db2777', general_health:'#0d9488', mental_health:'#7c3aed',
+  substance_use:'#92400e', family_relationships:'#2563eb', gbv:'#dc2626',
+  child_protection:'#16a34a', legal:'#374151', education:'#ca8a04',
+  livelihood:'#059669', youth_empowerment:'#6366f1', case_resolution:'#64748b',
+};
+
 // ── Chart registry ─────────────────────────────────────────────────────────────
 const CC = {};
 
@@ -1499,10 +1576,10 @@ function updateOverview(p) {
   }
 
   // Referral By Service grouped bar
-  const sbLabels  = d.by_service.map(r => r[0].length > 14 ? r[0].slice(0,14)+'…' : r[0]);
+  const sbLabels   = d.by_service.map(r => r[0].length > 14 ? r[0].slice(0,14)+'…' : r[0]);
   const sbReferred = d.by_service.map(r => r[1]);
   const sbUptakeMap = d.by_service_uptake ?? {};
-  const sbUptake  = d.by_service.map(r => sbUptakeMap[r[0]] ?? 0);
+  const sbUptake   = d.by_service.map(r => sbUptakeMap[r[0]] ?? 0);
   if (CC['ovServiceBar']) { CC['ovServiceBar'].destroy(); delete CC['ovServiceBar']; }
   const sbCtx = document.getElementById('ovServiceBar');
   if (sbCtx) {
@@ -1514,6 +1591,19 @@ function updateOverview(p) {
       ]},
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:8},maxRotation:45}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
     });
+  }
+
+  // Category badges below chart
+  const ovCats = document.getElementById('ov-service-cats');
+  if (ovCats) {
+    ovCats.innerHTML = d.by_service.slice(0, 6).map(r => {
+      const cats = r[2] ?? [];
+      const badges = cats.map(k => `<span style="background:${CAT_COLORS[k]??'#6b7280'}22;color:${CAT_COLORS[k]??'#6b7280'};border-radius:4px;padding:1px 7px;font-size:9px;font-weight:700;border:1px solid ${CAT_COLORS[k]??'#6b7280'}44">${CAT_LABELS[k]??k}</span>`).join(' ');
+      return cats.length ? `<div style="display:flex;align-items:center;gap:6px;font-size:10px">
+        <span style="color:#374151;font-weight:600;min-width:80px;flex-shrink:0">${r[0].length>18?r[0].slice(0,18)+'…':r[0]}</span>
+        <span style="display:flex;gap:3px;flex-wrap:wrap">${badges}</span>
+      </div>` : '';
+    }).filter(Boolean).join('');
   }
 }
 
@@ -1604,12 +1694,96 @@ function updateServices(p) {
     { label: 'Confirmed Service Uptake', data: svcUptake,   backgroundColor: '#f97316', borderRadius: 4 },
   ]);
 
+  // Services × Classification Category table
+  const catTbody = document.getElementById('svc-cat-tbody');
+  if (catTbody) {
+    if (!d.by_service.length) {
+      catTbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:14px">No data for this period</td></tr>';
+    } else {
+      catTbody.innerHTML = d.by_service.map(r => {
+        const cats = r[2] ?? [];
+        const catHtml = cats.length
+          ? cats.map(k => `<span style="display:inline-block;margin:1px 2px;background:${CAT_COLORS[k]??'#6b7280'}22;color:${CAT_COLORS[k]??'#6b7280'};border-radius:4px;padding:1px 7px;font-size:9px;font-weight:700;border:1px solid ${CAT_COLORS[k]??'#6b7280'}44">${CAT_LABELS[k]??k}</span>`).join('')
+          : '<span style="color:#cbd5e1;font-size:10px;font-style:italic">Not assigned</span>';
+        const uptake = uptakeMap[r[0]] ?? 0;
+        const uptakePct = r[1] > 0 ? Math.round(uptake/r[1]*100) : 0;
+        return `<tr style="border-bottom:1px solid #f8fafc">
+          <td style="padding:7px 8px;font-weight:600;color:#0f172a;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r[0]}</td>
+          <td style="padding:7px 8px">${catHtml}</td>
+          <td style="padding:7px 8px;text-align:center;font-weight:700;color:#0f172a">${fmt(r[1])}</td>
+          <td style="padding:7px 8px;text-align:center">
+            <span style="background:#f0fdf4;color:#16a34a;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700">${fmt(uptake)} (${uptakePct}%)</span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
   rc('svcServiceChart',  'bar', d.by_service.map(r  => r[0]), d.by_service.map(r  => r[1]), { single:'#0d9488', legend:false, indexAxis:'y' });
   rc('svcReferralChart', 'bar', d.by_referral.map(r => r[0]), d.by_referral.map(r => r[1]), { single:'#fbbf24', legend:false, indexAxis:'y' });
   rc('svcKeyPopsChart',  'doughnut', d.by_key_pops.map(r => r[0]), d.by_key_pops.map(r => r[1]), {});
 
   document.getElementById('svc-bars').innerHTML =
     progressBars(d.by_service, d.total, '#0d9488', 'No services data for this period');
+
+  // ── Psycho-social Support Breakdown ──────────────────────────────────────
+  const psData = d.psychosocial_breakdown ?? [];
+  const emptyEl = document.getElementById('psychosocial-empty');
+  const chartEl = document.getElementById('psychosocialChart');
+
+  const psMap = {};
+  psData.forEach(r => { psMap[r.type] = r; });
+
+  const types = ['Awareness Raising', 'Helpline Marketing', 'Counselling'];
+  const ids   = { 'Awareness Raising': 'awareness', 'Helpline Marketing': 'marketing', 'Counselling': 'counselling' };
+
+  types.forEach(t => {
+    const row   = psMap[t] ?? { total: 0, uptake: 0 };
+    const id    = ids[t];
+    const elT   = document.getElementById(`psycho-${id}-total`);
+    const elU   = document.getElementById(`psycho-${id}-uptake`);
+    if (elT) elT.textContent = fmt(row.total);
+    if (elU) elU.textContent = row.total > 0 ? fmt(row.uptake) + ' (' + Math.round(row.uptake/row.total*100) + '%)' : '0';
+  });
+
+  if (psData.length === 0) {
+    if (emptyEl)  emptyEl.style.display  = 'block';
+    if (chartEl)  chartEl.style.display  = 'none';
+  } else {
+    if (emptyEl)  emptyEl.style.display  = 'none';
+    if (chartEl)  chartEl.style.display  = 'block';
+
+    const psColors = { 'Awareness Raising':'#3b82f6', 'Helpline Marketing':'#f59e0b', 'Counselling':'#22c55e' };
+    const psLabels = types;
+    const psTotals = types.map(t => psMap[t]?.total ?? 0);
+    const psUptake = types.map(t => psMap[t]?.uptake ?? 0);
+
+    if (CC['psychosocialChart']) { CC['psychosocialChart'].destroy(); delete CC['psychosocialChart']; }
+    const ctx = document.getElementById('psychosocialChart');
+    if (ctx) {
+      CC['psychosocialChart'] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: psLabels,
+          datasets: [
+            { label: 'Cases', data: psTotals, backgroundColor: types.map(t => psColors[t]), borderRadius: 6 },
+            { label: 'Uptake', data: psUptake, backgroundColor: types.map(t => psColors[t] + '55'), borderRadius: 6 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+            tooltip: { mode: 'index', intersect: false },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#374151' } },
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } },
+          },
+        },
+      });
+    }
+  }
 }
 
 // ── CALLS ──────────────────────────────────────────────────────────────────────

@@ -3,8 +3,10 @@ import { computed, ref } from 'vue';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    service:  { type: String, default: '' },
-    modelValue: { type: Object, default: () => ({}) },
+    service:            { type: String, default: '' },
+    modelValue:         { type: Object, default: () => ({}) },
+    // Map of service name → array of category keys (from lookup_items.classification_categories)
+    serviceCategories:  { type: Object, default: () => ({}) },
 });
 const emit = defineEmits(['update:modelValue']);
 
@@ -22,8 +24,9 @@ function get(key) { return data.value?.[key] ?? ''; }
 const CATEGORIES = [
   {
     key: 'household_social', label: 'Household & Social Determinants',
-    keywords: ['household', 'social', 'food', 'poverty', 'shelter', 'cash transfer', 'displacement', 'disaster', 'climate', 'living', 'community'],
+    keywords: ['household', 'social', 'food', 'poverty', 'shelter', 'cash transfer', 'displacement', 'disaster', 'climate', 'living', 'community', 'psycho', 'psychosocial'],
     fields: [
+      { key: 'psychosocial_type', label: 'Psycho-social Support Type', type: 'select', options: ['Awareness Raising', 'Helpline Marketing', 'Counselling'] },
       { key: 'financial_dependence_level', label: 'Financial Dependence Level', type: 'select', options: ['Low', 'Medium', 'High', 'Very High'] },
       { key: 'food_insecurity', label: 'Food Insecurity', type: 'yesno' },
       { key: 'household_food_security_score', label: 'Household Food Security Score', type: 'number' },
@@ -259,9 +262,17 @@ const CATEGORIES = [
   },
 ];
 
-// Auto-detect category from service name
+// Use stored categories from lookup item, fall back to keyword detection
 const detectedCategories = computed(() => {
     if (!props.service) return [];
+
+    // Check if we have stored categories for this service
+    const stored = props.serviceCategories?.[props.service];
+    if (stored && stored.length > 0) {
+        return CATEGORIES.filter(cat => stored.includes(cat.key));
+    }
+
+    // Fallback: keyword matching
     const svc = props.service.toLowerCase();
     return CATEGORIES.filter(cat =>
         cat.keywords.some(kw => svc.includes(kw))

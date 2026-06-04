@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class LookupItem extends Model
 {
-    protected $fillable = ['type', 'name', 'sort_order', 'is_active'];
+    protected $fillable = ['type', 'name', 'sort_order', 'is_active', 'classification_categories'];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = [
+        'is_active'                 => 'boolean',
+        'classification_categories' => 'array',
+    ];
 
     public const TYPES = [
         'purpose_of_call'          => 'Purpose of Call',

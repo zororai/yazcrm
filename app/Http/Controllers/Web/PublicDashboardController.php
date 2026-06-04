@@ -202,8 +202,32 @@ class PublicDashboardController extends Controller
                 'by_key_pops'        => (clone $pb)->whereNotNull('key_pops')->where('key_pops', '!=', '')->select('key_pops', DB::raw('count(*) as cnt'))->groupBy('key_pops')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->key_pops, $r->cnt]),
                 'referral_count'     => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->count(),
                 'service_count'      => (clone $pb)->whereNotNull('services_requested')->where('services_requested', '!=', '')->count(),
-                'by_service'         => (clone $pb)->whereNotNull('services_requested')->where('services_requested', '!=', '')->select('services_requested', DB::raw('count(*) as cnt'))->groupBy('services_requested')->orderByDesc('cnt')->limit(12)->get()->map(fn ($r) => [$r->services_requested, $r->cnt]),
+                'by_service'         => DB::table('tickets as t2')
+                    ->whereNull('t2.deleted_at')
+                    ->whereBetween('t2.created_at', [$start, $end])
+                    ->when($serviceFilter, fn ($q) => $q->where('t2.services_requested', $serviceFilter))
+                    ->whereNotNull('t2.services_requested')->where('t2.services_requested', '!=', '')
+                    ->leftJoin('lookup_items as li', fn ($j) => $j->on('li.name', '=', 't2.services_requested')->where('li.type', 'service_requested'))
+                    ->select('t2.services_requested', DB::raw('count(*) as cnt'), 'li.classification_categories')
+                    ->groupBy('t2.services_requested', 'li.classification_categories')
+                    ->orderByDesc('cnt')->limit(12)->get()
+                    ->map(fn ($r) => [
+                        $r->services_requested,
+                        $r->cnt,
+                        json_decode($r->classification_categories ?? '[]', true) ?? [],
+                    ]),
                 'by_service_uptake'  => (clone $pb)->where('uptake_confirmed', 1)->whereNotNull('services_requested')->where('services_requested', '!=', '')->select('services_requested', DB::raw('count(*) as cnt'))->groupBy('services_requested')->pluck('cnt', 'services_requested'),
+                'psychosocial_breakdown' => DB::table('tickets')
+                    ->whereNull('deleted_at')
+                    ->whereBetween('created_at', [$start, $end])
+                    ->where('services_requested', 'Psycho-social support')
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type')) IS NOT NULL")
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type')) != ''")
+                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type')) as ptype, COUNT(*) as cnt, SUM(uptake_confirmed=1) as uptake")
+                    ->groupBy('ptype')
+                    ->orderByDesc('cnt')
+                    ->get()
+                    ->map(fn ($r) => ['type' => $r->ptype, 'total' => (int)$r->cnt, 'uptake' => (int)$r->uptake]),
                 'by_referral'        => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->referred_to, $r->cnt]),
                 'by_purpose'         => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get()->map(fn ($r) => [$r->purpose_of_call, $r->cnt]),
                 'by_agent'           => DB::table('users')
@@ -343,11 +367,32 @@ class PublicDashboardController extends Controller
         $malePct      = round($maleTotal  / $genderSum * 100, 1);
         $femalePct    = round($femaleTotal / $genderSum * 100, 1);
 
-        // Service vs uptake (Referral By Service chart)
+        // Service vs uptake (Referral By Service chart) — joined with lookup for classification categories
         $serviceUptake = DB::table('tickets')->whereNull('deleted_at')
-            ->whereNotNull('services_requested')->where('services_requested', '!=', '')
-            ->select('services_requested', DB::raw('COUNT(*) as total'), DB::raw('SUM(uptake_confirmed=1) as uptake'))
-            ->groupBy('services_requested')->orderByDesc('total')->limit(8)->get();
+            ->whereNotNull('tickets.services_requested')->where('tickets.services_requested', '!=', '')
+            ->leftJoin('lookup_items', function ($join) {
+                $join->on('lookup_items.name', '=', 'tickets.services_requested')
+                     ->where('lookup_items.type', '=', 'service_requested');
+            })
+            ->select(
+                'tickets.services_requested',
+                DB::raw('COUNT(*) as total'),
+                DB::raw('SUM(uptake_confirmed=1) as uptake'),
+                'lookup_items.classification_categories'
+            )
+            ->groupBy('tickets.services_requested', 'lookup_items.classification_categories')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->get()
+            ->map(function ($r) {
+                $cats = json_decode($r->classification_categories ?? '[]', true) ?? [];
+                return [
+                    'services_requested'          => $r->services_requested,
+                    'total'                       => (int) $r->total,
+                    'uptake'                      => (int) $r->uptake,
+                    'classification_categories'   => $cats,
+                ];
+            });
 
         // SBC / YALeP count from signups table (if exists)
         $sbcTotal = 0;

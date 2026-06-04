@@ -8,7 +8,7 @@ import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
-const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array });
+const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const search         = ref(props.filters.search         ?? '');
 const status         = ref(props.filters.status         ?? '');
@@ -668,6 +668,7 @@ const statusColor = {
                         <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Classification</h4>
                         <ClassificationPanel
                             :service="addForm.services_requested"
+                            :service-categories="serviceCategories"
                             v-model="addForm.classification"
                         />
                     </div>

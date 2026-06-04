@@ -13,16 +13,18 @@ class LookupItemController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'type'       => ['required', Rule::in(array_keys(LookupItem::TYPES))],
-            'name'       => ['required', 'string', 'max:255', Rule::unique('lookup_items')->where('type', $request->type)],
-            'sort_order' => 'nullable|integer|min:0',
+            'type'                      => ['required', Rule::in(array_keys(LookupItem::TYPES))],
+            'name'                      => ['required', 'string', 'max:255', Rule::unique('lookup_items')->where('type', $request->type)],
+            'sort_order'                => 'nullable|integer|min:0',
+            'classification_categories' => 'nullable|array',
         ]);
 
         LookupItem::create([
-            'type'       => $data['type'],
-            'name'       => $data['name'],
-            'sort_order' => $data['sort_order'] ?? 0,
-            'is_active'  => true,
+            'type'                      => $data['type'],
+            'name'                      => $data['name'],
+            'sort_order'                => $data['sort_order'] ?? 0,
+            'is_active'                 => true,
+            'classification_categories' => $data['classification_categories'] ?? null,
         ]);
 
         return back()->with('success', 'Item added.');
@@ -35,12 +37,14 @@ class LookupItemController extends Controller
                 Rule::unique('lookup_items')->where('type', $lookupItem->type)->ignore($lookupItem->id)],
             'sort_order' => 'nullable|integer|min:0',
             'is_active'  => 'boolean',
+            'classification_categories' => 'nullable|array',
         ]);
 
         $lookupItem->update([
-            'name'       => $data['name'],
-            'sort_order' => $data['sort_order'] ?? $lookupItem->sort_order,
-            'is_active'  => $data['is_active']  ?? $lookupItem->is_active,
+            'name'                      => $data['name'],
+            'sort_order'                => $data['sort_order'] ?? $lookupItem->sort_order,
+            'is_active'                 => $data['is_active']  ?? $lookupItem->is_active,
+            'classification_categories' => $data['classification_categories'] ?? $lookupItem->classification_categories,
         ]);
 
         return back()->with('success', 'Item updated.');

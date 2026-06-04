@@ -45,11 +45,31 @@ class DistressDomainController extends Controller
 
         abort_unless(array_key_exists($type, LookupItem::TYPES), 404);
 
+        $classificationCategories = $type === 'service_requested' ? [
+            'household_social'    => 'Household & Social Determinants',
+            'hiv'                 => 'HIV Services',
+            'pep'                 => 'PEP',
+            'prep'                => 'PrEP',
+            'srhr'                => 'Sexual & Reproductive Health',
+            'general_health'      => 'General Health',
+            'mental_health'       => 'Mental Health & Psychosocial Support',
+            'substance_use'       => 'Substance Use',
+            'family_relationships'=> 'Family & Relationships',
+            'gbv'                 => 'GBV',
+            'child_protection'    => 'Child Protection',
+            'legal'               => 'Legal & Protection Services',
+            'education'           => 'Education',
+            'livelihood'          => 'Education & Livelihoods',
+            'youth_empowerment'   => 'Youth Empowerment & Coaching',
+            'case_resolution'     => 'Case Resolution & Referral',
+        ] : null;
+
         return Inertia::render('DistressDomains/Section', [
-            'type'     => $type,
-            'label'    => LookupItem::TYPES[$type],
-            'items'    => LookupItem::where('type', $type)->orderBy('sort_order')->orderBy('name')->get(),
-            'isLookup' => true,
+            'type'                    => $type,
+            'label'                   => LookupItem::TYPES[$type],
+            'items'                   => LookupItem::where('type', $type)->orderBy('sort_order')->orderBy('name')->get(),
+            'isLookup'                => true,
+            'classificationCategories'=> $classificationCategories,
         ]);
     }
 
