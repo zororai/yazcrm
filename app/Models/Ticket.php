@@ -16,10 +16,11 @@ class Ticket extends Model
         'caller_marital_status', 'key_pops', 'province', 'district',
         'location', 'is_repeat_caller', 'project', 'services_requested_before', 'services_requested',
         'second_service_requested', 'number_of_services', 'referred_to',
-        'uptake_confirmed', 'referral_uptake_date',
+        'uptake_confirmed', 'referral_uptake_date', 'classification',
     ];
 
     protected $casts = [
+        'classification'            => 'array',
         'resolved_at'              => 'datetime',
         'immediate_action_required' => 'boolean',
         'is_repeat_caller'         => 'boolean',

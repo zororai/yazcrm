@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { ArrowLeftIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -48,6 +49,7 @@ const editForm = useForm({
     referred_to:               props.ticket.referred_to ?? '',
     uptake_confirmed:          props.ticket.uptake_confirmed ? true : false,
     referral_uptake_date:      props.ticket.referral_uptake_date ?? '',
+    classification:            props.ticket.classification ?? {},
 });
 
 function save() {
@@ -416,6 +418,15 @@ function label(val) {
                                 Uptake Confirmed
                             </label>
                         </div>
+                    </div>
+
+                    <!-- Classification -->
+                    <div v-if="editForm.services_requested" class="mt-4 pt-4 border-t border-gray-100">
+                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Classification</h4>
+                        <ClassificationPanel
+                            :service="editForm.services_requested"
+                            v-model="editForm.classification"
+                        />
                     </div>
                 </div>
 

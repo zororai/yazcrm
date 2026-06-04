@@ -153,12 +153,13 @@ class TicketController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'subject'     => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'client_id'   => 'nullable|exists:clients,id',
-            'call_id'     => 'nullable|exists:calls,id',
-            'priority'    => 'in:low,medium,high,urgent',
-            'status'      => 'nullable|in:open,closed,resolved,ongoing',
+            'subject'        => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'client_id'      => 'nullable|exists:clients,id',
+            'call_id'        => 'nullable|exists:calls,id',
+            'priority'       => 'in:low,medium,high,urgent',
+            'status'         => 'nullable|in:open,closed,resolved,ongoing',
+            'classification' => 'nullable|array',
             ...$this->crmRules,
         ]);
 
@@ -192,11 +193,12 @@ class TicketController extends Controller
     public function update(Request $request, Ticket $ticket): RedirectResponse
     {
         $data = $request->validate([
-            'subject'     => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'status'      => 'nullable|in:open,in_progress,resolved,closed,ongoing',
-            'priority'    => 'in:low,medium,high,urgent',
-            'agent_id'    => 'nullable|exists:users,id',
+            'subject'        => 'sometimes|string|max:255',
+            'description'    => 'nullable|string',
+            'status'         => 'nullable|in:open,in_progress,resolved,closed,ongoing',
+            'priority'       => 'in:low,medium,high,urgent',
+            'agent_id'       => 'nullable|exists:users,id',
+            'classification' => 'nullable|array',
             ...$this->crmRules,
         ]);
 

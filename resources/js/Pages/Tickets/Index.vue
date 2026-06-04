@@ -4,6 +4,7 @@ import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 
 const distressDomains = computed(() => usePage().props.distressDomains ?? []);
 import AppLayout from '@/Layouts/AppLayout.vue';
+import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
@@ -90,6 +91,7 @@ const addForm = useForm({
     referred_to:              '',
     uptake_confirmed:         false,
     referral_uptake_date:     '',
+    classification:           {},
 });
 
 const activeFilterCount = computed(() =>
@@ -659,6 +661,15 @@ const statusColor = {
                                 </label>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- ── Classification ── -->
+                    <div v-if="addForm.services_requested">
+                        <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Classification</h4>
+                        <ClassificationPanel
+                            :service="addForm.services_requested"
+                            v-model="addForm.classification"
+                        />
                     </div>
 
                     <!-- ── Notes ── -->
