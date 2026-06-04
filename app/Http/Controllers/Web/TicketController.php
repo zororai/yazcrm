@@ -126,6 +126,7 @@ class TicketController extends Controller
     }
 
     private array $crmRules = [
+        'psychosocial_type'        => 'nullable|in:Awareness Raising,Helpline Marketing,Counselling',
         'contact_number'           => 'nullable|string|max:50',
         'sisters_number'           => 'nullable|string|max:50',
         'follow_up_date'           => 'nullable|date',

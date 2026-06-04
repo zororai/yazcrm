@@ -12,7 +12,8 @@
       "Read(//c/Users/Mazarura/Downloads/**)",
       "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\storage\\\\app\\\\certificates\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://yazcrm.test/sbc)",
-      "Bash(ping -n 2 192.168.10.149)"
+      "Bash(ping -n 2 192.168.10.149)",
+      "Bash(curl -s -o /dev/null -w \" tickets:%{http_code}\" http://yazcrm.test/tickets)"
     ]
   }
 }

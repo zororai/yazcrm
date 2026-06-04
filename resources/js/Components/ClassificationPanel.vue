@@ -3,12 +3,12 @@ import { computed, ref } from 'vue';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    service:            { type: String, default: '' },
-    modelValue:         { type: Object, default: () => ({}) },
-    // Map of service name → array of category keys (from lookup_items.classification_categories)
-    serviceCategories:  { type: Object, default: () => ({}) },
+    service:              { type: String, default: '' },
+    modelValue:           { type: Object, default: () => ({}) },
+    serviceCategories:    { type: Object, default: () => ({}) },
+    psychosocialType:     { type: String, default: '' },  // bound to ticket.psychosocial_type
 });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'update:psychosocialType']);
 
 const data = computed({
     get: () => props.modelValue ?? {},
@@ -26,7 +26,7 @@ const CATEGORIES = [
     key: 'household_social', label: 'Household & Social Determinants',
     keywords: ['household', 'social', 'food', 'poverty', 'shelter', 'cash transfer', 'displacement', 'disaster', 'climate', 'living', 'community', 'psycho', 'psychosocial'],
     fields: [
-      { key: 'psychosocial_type', label: 'Psycho-social Support Type', type: 'select', options: ['Awareness Raising', 'Helpline Marketing', 'Counselling'] },
+      { key: 'psychosocial_type', label: 'Psycho-social Support Type', type: 'psychosocial', options: ['Awareness Raising', 'Helpline Marketing', 'Counselling'] },
       { key: 'financial_dependence_level', label: 'Financial Dependence Level', type: 'select', options: ['Low', 'Medium', 'High', 'Very High'] },
       { key: 'food_insecurity', label: 'Food Insecurity', type: 'yesno' },
       { key: 'household_food_security_score', label: 'Household Food Security Score', type: 'number' },
@@ -350,8 +350,20 @@ const yesNoOptions = ['Yes', 'No', 'Unknown'];
                     :class="field.type === 'text' && !field.options ? 'col-span-2' : ''">
                     <label class="label text-xs">{{ field.label }}</label>
 
+                    <!-- Psychosocial type — writes to both JSON and dedicated DB column -->
+                    <select v-if="field.type === 'psychosocial'"
+                        :value="psychosocialType || get(field.key)"
+                        @change="e => {
+                            set(field.key, e.target.value);
+                            emit('update:psychosocialType', e.target.value);
+                        }"
+                        class="input text-sm col-span-2">
+                        <option value="">— select —</option>
+                        <option v-for="o in field.options" :key="o" :value="o">{{ o }}</option>
+                    </select>
+
                     <!-- Yes/No -->
-                    <select v-if="field.type === 'yesno'"
+                    <select v-else-if="field.type === 'yesno'"
                         :value="get(field.key)"
                         @change="set(field.key, $event.target.value)"
                         class="input text-sm">

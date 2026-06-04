@@ -92,6 +92,7 @@ const addForm = useForm({
     uptake_confirmed:         false,
     referral_uptake_date:     '',
     classification:           {},
+    psychosocial_type:        '',
 });
 
 const activeFilterCount = computed(() =>
@@ -670,6 +671,8 @@ const statusColor = {
                             :service="addForm.services_requested"
                             :service-categories="serviceCategories"
                             v-model="addForm.classification"
+                            :psychosocial-type="addForm.psychosocial_type"
+                            @update:psychosocial-type="v => addForm.psychosocial_type = v"
                         />
                     </div>
 

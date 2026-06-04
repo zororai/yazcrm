@@ -51,6 +51,7 @@ const editForm = useForm({
     uptake_confirmed:          props.ticket.uptake_confirmed ? true : false,
     referral_uptake_date:      props.ticket.referral_uptake_date ?? '',
     classification:            props.ticket.classification ?? {},
+    psychosocial_type:         props.ticket.psychosocial_type ?? '',
 });
 
 function save() {
@@ -428,6 +429,8 @@ function label(val) {
                             :service="editForm.services_requested"
                             :service-categories="serviceCategories"
                             v-model="editForm.classification"
+                            :psychosocial-type="editForm.psychosocial_type"
+                            @update:psychosocial-type="v => editForm.psychosocial_type = v"
                         />
                     </div>
                 </div>

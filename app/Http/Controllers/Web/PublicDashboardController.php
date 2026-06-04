@@ -217,17 +217,15 @@ class PublicDashboardController extends Controller
                         json_decode($r->classification_categories ?? '[]', true) ?? [],
                     ]),
                 'by_service_uptake'  => (clone $pb)->where('uptake_confirmed', 1)->whereNotNull('services_requested')->where('services_requested', '!=', '')->select('services_requested', DB::raw('count(*) as cnt'))->groupBy('services_requested')->pluck('cnt', 'services_requested'),
-                'psychosocial_breakdown' => DB::table('tickets')
-                    ->whereNull('deleted_at')
-                    ->whereBetween('created_at', [$start, $end])
+                'psychosocial_breakdown' => (clone $pb)
                     ->where('services_requested', 'Psycho-social support')
-                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type')) IS NOT NULL")
-                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type')) != ''")
-                    ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type')) as ptype, COUNT(*) as cnt, SUM(uptake_confirmed=1) as uptake")
-                    ->groupBy('ptype')
+                    ->whereNotNull('psychosocial_type')
+                    ->where('psychosocial_type', '!=', '')
+                    ->select('psychosocial_type', DB::raw('COUNT(*) as cnt'), DB::raw('SUM(uptake_confirmed=1) as uptake'))
+                    ->groupBy('psychosocial_type')
                     ->orderByDesc('cnt')
                     ->get()
-                    ->map(fn ($r) => ['type' => $r->ptype, 'total' => (int)$r->cnt, 'uptake' => (int)$r->uptake]),
+                    ->map(fn ($r) => ['type' => $r->psychosocial_type, 'total' => (int)$r->cnt, 'uptake' => (int)$r->uptake]),
                 'by_referral'        => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->referred_to, $r->cnt]),
                 'by_purpose'         => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get()->map(fn ($r) => [$r->purpose_of_call, $r->cnt]),
                 'by_agent'           => DB::table('users')
@@ -357,9 +355,10 @@ class PublicDashboardController extends Controller
         $invalidTotal    = (int) ($byValidity->get('invalid') ?? 0);
         $pendingTotal    = (int) (($byStatus->get('open') ?? 0) + ($byStatus->get('in_progress') ?? 0));
         $pendingPct      = $total > 0 ? round($pendingTotal / $total * 100, 1) : 0;
-        $referredTotal   = (int) $byReferral->sum('cnt');
+        // Count all tickets with a referred_to value (not capped to top 8 groups)
+        $referredTotal   = (int) (clone $base)->whereNotNull('referred_to')->where('referred_to', '!=', '')->count();
         $newCallers      = $total - $repeatTotal;
-        $referralCompPct = $referredTotal > 0 ? round($uptakeTotal / $referredTotal * 100, 1) : 0;
+        $referralCompPct = $referredTotal > 0 ? min(100, round($uptakeTotal / $referredTotal * 100, 1)) : 0;
 
         $genderSum    = max(1, $byGender->sum('cnt'));
         $maleTotal    = (int) ($byGender->firstWhere('caller_gender', 'male')?->cnt ?? 0);
