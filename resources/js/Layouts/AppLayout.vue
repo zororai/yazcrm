@@ -24,7 +24,7 @@ const pendingCall     = ref(null);
 const urgentCount     = ref(0);
 const urgentAlert     = ref(false); // banner shown when count increases
 const urgentToast     = ref(null);  // { subject, contact_number, id } for popup toast
-let   prevUrgentCount = 0;
+let   prevUrgentCount = -1;         // -1 = first poll not done yet — no alert on initial load
 let   prevLatestId    = null;
 let   toastTimer      = null;
 
@@ -69,9 +69,10 @@ async function pollUrgentCount() {
         const n      = data.count  ?? 0;
         const latest = data.latest ?? null;
 
-        const isNew = latest && latest.id !== prevLatestId && prevLatestId !== null;
+        const isFirstPoll = prevUrgentCount === -1;
+        const isNew = !isFirstPoll && latest && latest.id !== prevLatestId && prevLatestId !== null;
 
-        if (isNew || (n > prevUrgentCount && prevUrgentCount !== null && prevUrgentCount >= 0)) {
+        if (!isFirstPoll && (isNew || n > prevUrgentCount)) {
             urgentAlert.value = true;
 
             // Show toast popup with case details
@@ -148,6 +149,7 @@ const navigation = computed(() => [
     ...(can('domains')      ? [{ name: 'Domains',     href: '/distress-domains',                 icon: TagIcon }] : []),
     ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
     ...(isAdmin.value       ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
+    { name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon },
     ...(isAdmin.value       ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
     ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
@@ -273,15 +275,20 @@ function logout() {
                 <!-- Notification bell -->
                 <Link href="/urgent-cases"
                     :class="['relative p-2 rounded-lg transition-colors flex-shrink-0',
-                             urgentCount > 0 ? 'text-red-400 hover:bg-red-900/30 animate-flicker' : 'text-gray-400 hover:bg-gray-800']">
+                             urgentCount > 0 ? 'text-red-400 hover:bg-red-900/30 animate-flicker' : 'text-gray-400 hover:bg-gray-800']"
+                    :title="urgentCount > 0 ? `${urgentCount} open urgent case${urgentCount > 1 ? 's' : ''}` : 'No urgent cases'">
                     <BellIcon class="h-6 w-6" />
+                    <!-- Red count badge -->
                     <span v-if="urgentCount > 0"
-                        class="absolute -top-0.5 -right-0.5 min-w-[1.2rem] h-[1.2rem] px-0.5 rounded-full
-                               bg-red-500 text-white text-[10px] font-bold flex items-center justify-center
-                               ring-2 ring-[#0f1117]">
+                        class="absolute -top-1 -right-1 min-w-[1.35rem] h-[1.35rem] px-1 rounded-full
+                               bg-red-600 text-white text-[11px] font-extrabold
+                               flex items-center justify-center
+                               ring-2 ring-[#0f1117] shadow-lg">
                         {{ urgentCount > 99 ? '99+' : urgentCount }}
                     </span>
-                    <span v-else class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-gray-600 ring-2 ring-[#0f1117]"></span>
+                    <span v-else
+                        class="absolute top-2 right-2 h-2 w-2 rounded-full bg-gray-600 ring-2 ring-[#0f1117]">
+                    </span>
                 </Link>
                 <!-- User profile -->
                 <div class="flex items-center gap-3 pl-3 border-l border-gray-700 flex-shrink-0">

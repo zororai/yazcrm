@@ -62,17 +62,21 @@ Route::middleware('auth')->group(function () {
     Route::put('tickets/{ticket}', [Web\TicketController::class, 'update'])->name('tickets.update');
     Route::delete('tickets/{ticket}', [Web\TicketController::class, 'destroy'])->name('tickets.destroy');
 
+    // ─── SBC / YALeP — all authenticated users ───────────────────────────────
+    Route::get('sbc',                         [Web\SbcController::class, 'index'])->name('sbc.index');
+    Route::post('sbc/import',                 [Web\SbcController::class, 'import'])->name('sbc.import');
+    Route::get('sbc/import-template',         [Web\SbcController::class, 'importTemplate'])->name('sbc.import-template');
+    Route::get('sbc/{signup}/certificate',    [Web\SbcController::class, 'certificate'])->name('sbc.certificate');
+
     // ─── Admin only ───────────────────────────────────────────────────────────
     Route::middleware('admin')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('uchat-contacts', [Web\UchatContactsController::class, 'index'])->name('uchat-contacts.index');
 
-        // SBC Signups (Google Sheets → DB)
-        Route::get('sbc',                          [Web\SbcController::class, 'index'])->name('sbc.index');
-        Route::post('sbc/sync',                    [Web\SbcController::class, 'sync'])->name('sbc.sync');
-        Route::post('sbc/upload-template',         [Web\SbcController::class, 'uploadTemplate'])->name('sbc.upload-template');
-        Route::get('sbc/{signup}/certificate',      [Web\SbcController::class, 'certificate'])->name('sbc.certificate');
-        Route::post('sbc/{signup}/send-whatsapp',   [Web\SbcController::class, 'sendWhatsapp'])->name('sbc.send-whatsapp');
+        // SBC — admin-only actions (sync, template upload, WhatsApp send)
+        Route::post('sbc/sync',                   [Web\SbcController::class, 'sync'])->name('sbc.sync');
+        Route::post('sbc/upload-template',        [Web\SbcController::class, 'uploadTemplate'])->name('sbc.upload-template');
+        Route::post('sbc/{signup}/send-whatsapp', [Web\SbcController::class, 'sendWhatsapp'])->name('sbc.send-whatsapp');
 
         // Roles management
         Route::get('roles',             [Web\RoleController::class, 'index'])->name('roles.index');

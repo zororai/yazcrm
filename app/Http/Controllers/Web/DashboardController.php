@@ -37,18 +37,40 @@ class DashboardController extends Controller
             }
         }
 
+        // Ticket stats — scoped to the agent for agents, all for admins
+        $ticketBase = Ticket::whereNull('deleted_at')
+            ->whereBetween('created_at', [$start, $end]);
+        if ($user->role !== 'admin') {
+            $ticketBase->where('agent_id', $user->id);
+        }
+
+        $ticketsByStatus = (clone $ticketBase)->select('status', DB::raw('count(*) as cnt'))
+            ->groupBy('status')->pluck('cnt', 'status');
+
+        $recentTickets = (clone $ticketBase)
+            ->with('client')
+            ->select('id', 'subject', 'status', 'priority', 'created_at', 'client_id')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+
         $stats = [
-            'total_calls'      => (clone $base)->count(),
-            'inbound_calls'    => (clone $base)->where('direction', 'inbound')->count(),
-            'outbound_calls'   => (clone $base)->where('direction', 'outbound')->count(),
-            'missed_calls'     => (clone $base)->where('status', 'missed')->count(),
-            'answered_calls'   => (clone $base)->where('status', 'answered')->count(),
-            'avg_duration'     => (int)(clone $base)->where('status', 'answered')->avg('duration'),
-            'active_clients'   => Client::where('status', 'active')->count(),
-            'open_tickets'     => Ticket::where('status', 'open')->count(),
-            'callback_pending' => CallbackQueue::where('status', 'pending')->count(),
-            'urgent_cases'     => UrgentCase::where('status', 'open')->count(),
-            'active_calls'     => [],
+            'total_calls'       => (clone $base)->count(),
+            'inbound_calls'     => (clone $base)->where('direction', 'inbound')->count(),
+            'outbound_calls'    => (clone $base)->where('direction', 'outbound')->count(),
+            'missed_calls'      => (clone $base)->where('status', 'missed')->count(),
+            'answered_calls'    => (clone $base)->where('status', 'answered')->count(),
+            'avg_duration'      => (int)(clone $base)->where('status', 'answered')->avg('duration'),
+            'active_clients'    => Client::where('status', 'active')->count(),
+            'open_tickets'      => Ticket::whereNull('deleted_at')->where('status', 'open')->count(),
+            'callback_pending'  => CallbackQueue::where('status', 'pending')->count(),
+            'urgent_cases'      => UrgentCase::where('status', 'open')->count(),
+            'active_calls'      => [],
+            // Agent-scoped ticket stats for the selected period
+            'tickets_created'   => (clone $ticketBase)->count(),
+            'tickets_open'      => $ticketsByStatus->get('open', 0),
+            'tickets_resolved'  => ($ticketsByStatus->get('resolved', 0) + $ticketsByStatus->get('closed', 0)),
+            'tickets_by_status' => $ticketsByStatus,
         ];
 
         try {
@@ -112,14 +134,15 @@ class DashboardController extends Controller
         $recentCalls = $recentQuery->get();
 
         return Inertia::render('Dashboard/Index', [
-            'stats'         => $stats,
-            'prevStats'     => $prevStats,
-            'callTrend'     => $callTrend,
-            'topExtensions' => $topExtensions,
-            'period'        => $period,
-            'targetSummary' => $targetSummary,
-            'extension'     => $extNumber,
-            'recentCalls'   => $recentCalls,
+            'stats'          => $stats,
+            'prevStats'      => $prevStats,
+            'callTrend'      => $callTrend,
+            'topExtensions'  => $topExtensions,
+            'period'         => $period,
+            'targetSummary'  => $targetSummary,
+            'extension'      => $extNumber,
+            'recentCalls'    => $recentCalls,
+            'recentTickets'  => $recentTickets,
         ]);
     }
 

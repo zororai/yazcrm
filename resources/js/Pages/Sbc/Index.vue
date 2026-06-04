@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { router, Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowPathIcon, MagnifyingGlassIcon, TableCellsIcon, DocumentArrowUpIcon } from '@heroicons/vue/24/outline';
+import { ArrowPathIcon, MagnifyingGlassIcon, TableCellsIcon, DocumentArrowUpIcon, ArrowUpTrayIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props = defineProps({
@@ -12,17 +12,33 @@ const props = defineProps({
     filters:     Object,
     lastSync:    String,
     hasTemplate: Boolean,
+    isAdmin:     Boolean,
 });
 
 const templateFile  = ref(null);
 const uploadingTpl  = ref(false);
 const sending       = ref(null);
+const showImport    = ref(false);
+const importFile    = ref(null);
+const importing     = ref(false);
 
 // Track locally generated certs so status updates instantly on click
 const localGenerated = ref({}); // { [id]: ISO timestamp }
 
 function onGenerate(row) {
     localGenerated.value[row.id] = new Date().toISOString();
+}
+
+function submitImport() {
+    if (!importFile.value) return;
+    const form = new FormData();
+    form.append('file', importFile.value);
+    importing.value = true;
+    router.post('/sbc/import', form, {
+        forceFormData: true,
+        onSuccess: () => { showImport.value = false; importFile.value = null; },
+        onFinish:  () => { importing.value = false; },
+    });
 }
 
 function sendWhatsapp(row) {
@@ -85,27 +101,36 @@ const genderColor = {
         <template #title>
             <span class="flex items-center gap-2">
                 <TableCellsIcon class="h-5 w-5 text-brand-400" />
-                SBC Signups
+                {{ isAdmin ? 'SBC Signups' : 'YALeP Students' }}
             </span>
         </template>
-        <template #subtitle>Data stored in database · synced from Google Sheets</template>
+        <template #subtitle>{{ isAdmin ? 'Data synced from Google Sheets' : 'Generate certificates for YALeP programme participants' }}</template>
         <template #header-actions>
-            <!-- Template upload -->
-            <label class="btn-secondary btn-sm cursor-pointer inline-flex items-center gap-1.5" title="Upload certificate PDF template">
+            <!-- Import names button (Certificates tab) -->
+            <button v-if="sheet === 'Certificates To Process'"
+                @click="showImport = true"
+                class="btn-primary btn-sm inline-flex items-center gap-1.5">
+                <ArrowUpTrayIcon class="h-4 w-4" /> Import Names
+            </button>
+
+            <!-- Template upload (admin only) -->
+            <label v-if="isAdmin" class="btn-secondary btn-sm cursor-pointer inline-flex items-center gap-1.5" title="Upload certificate PDF template">
                 <DocumentArrowUpIcon class="h-4 w-4" />
                 <span v-if="hasTemplate" class="text-green-700">Template ✓</span>
                 <span v-else class="text-amber-600">Upload Template</span>
                 <input type="file" accept="application/pdf" class="hidden"
                     @change="e => { templateFile = e.target.files[0]; uploadTemplate(); }" />
             </label>
-            <button @click="sync" :disabled="syncing" class="btn-primary btn-sm">
+
+            <!-- Sync button (admin only) -->
+            <button v-if="isAdmin" @click="sync" :disabled="syncing" class="btn-secondary btn-sm">
                 <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': syncing }" />
                 {{ syncing ? 'Syncing…' : 'Sync from Sheets' }}
             </button>
         </template>
 
-        <!-- Tabs -->
-        <div class="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit border border-gray-200">
+        <!-- Tabs — admins see both tabs; agents only see Certificates To Process -->
+        <div v-if="isAdmin" class="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit border border-gray-200">
             <button
                 v-for="s in SHEETS" :key="s"
                 @click="switchTab(s)"
@@ -119,9 +144,16 @@ const genderColor = {
                 </span>
             </button>
         </div>
+        <!-- Agent: just show count badge -->
+        <div v-else class="mb-4 flex items-center gap-2">
+            <span class="text-sm font-semibold text-gray-700">YALeP Students</span>
+            <span class="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                {{ counts['Certificates To Process'] ?? 0 }}
+            </span>
+        </div>
 
-        <!-- Last sync info -->
-        <div class="mb-4 flex items-center gap-2 text-xs text-gray-400">
+        <!-- Last sync info (admin only) -->
+        <div v-if="isAdmin" class="mb-4 flex items-center gap-2 text-xs text-gray-400">
             <ArrowPathIcon class="h-3.5 w-3.5" />
             Last synced: <span class="text-gray-600 font-medium">{{ fmt(lastSync) }}</span>
             <span v-if="!lastSync" class="text-amber-500 font-medium">
@@ -236,7 +268,7 @@ const genderColor = {
                                     title="Generate & download certificate PDF">
                                     🎓 Generate
                                 </a>
-                                <button
+                                <button v-if="isAdmin"
                                     @click="sendWhatsapp(row)"
                                     :disabled="sending === row.id || !row.phone_number"
                                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold
@@ -272,5 +304,79 @@ const genderColor = {
                 {{ records.total }} total records in database
             </div>
         </div>
+        <!-- ── Import Names Modal ── -->
+        <Transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div v-if="showImport"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+                @click.self="showImport = false">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                        <h3 class="text-base font-semibold text-gray-900">Import Names — Certificates To Process</h3>
+                        <button @click="showImport = false" class="text-gray-400 hover:text-gray-600">
+                            <XMarkIcon class="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="px-6 py-5 space-y-4">
+                        <!-- Instructions -->
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+                            <p class="font-semibold mb-1">Excel / CSV format</p>
+                            <p class="text-xs text-amber-700">Your file must have these column headers (case-insensitive):</p>
+                            <ul class="text-xs text-amber-700 mt-1 space-y-0.5 list-disc list-inside">
+                                <li><strong>First Name</strong> — required</li>
+                                <li><strong>Surname</strong> — required</li>
+                                <li>Phone Number — optional</li>
+                                <li>Age — optional</li>
+                                <li>Sex — optional</li>
+                                <li>Location — optional</li>
+                            </ul>
+                        </div>
+
+                        <!-- Download template link -->
+                        <a href="/sbc/import-template"
+                            class="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium">
+                            <ArrowUpTrayIcon class="h-3.5 w-3.5 rotate-180" />
+                            Download blank template
+                        </a>
+
+                        <!-- File input -->
+                        <div>
+                            <label class="label">Select Excel / CSV file</label>
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls,.csv"
+                                @change="e => importFile = e.target.files[0]"
+                                class="block w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3
+                                       file:rounded-lg file:border-0 file:text-xs file:font-semibold
+                                       file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
+                            />
+                            <p v-if="importFile" class="text-xs text-gray-400 mt-1">{{ importFile.name }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+                        <button @click="showImport = false" class="btn-secondary">Cancel</button>
+                        <button
+                            @click="submitImport"
+                            :disabled="!importFile || importing"
+                            class="btn-primary disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+                            <ArrowUpTrayIcon class="h-4 w-4" :class="{ 'animate-bounce': importing }" />
+                            {{ importing ? 'Importing…' : 'Import' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
     </AppLayout>
 </template>

@@ -11,7 +11,8 @@ import {
 import {
     PhoneIcon, PhoneArrowDownLeftIcon, PhoneArrowUpRightIcon,
     UserGroupIcon, TicketIcon, QueueListIcon, ClockIcon,
-    CalendarDaysIcon, ExclamationTriangleIcon,
+    CalendarDaysIcon, ExclamationTriangleIcon, DocumentTextIcon,
+    CheckCircleIcon, ArrowTopRightOnSquareIcon,
 } from '@heroicons/vue/24/outline';
 
 ChartJS.register(
@@ -21,14 +22,15 @@ ChartJS.register(
 
 const page  = usePage();
 const props = defineProps({
-    stats:         Object,
-    prevStats:     Object,
-    callTrend:     Array,
-    topExtensions: Array,
-    period:        String,
-    targetSummary: Object,
-    extension:     String,
-    recentCalls:   Array,
+    stats:          Object,
+    prevStats:      Object,
+    callTrend:      Array,
+    topExtensions:  Array,
+    period:         String,
+    targetSummary:  Object,
+    extension:      String,
+    recentCalls:    Array,
+    recentTickets:  Array,
 });
 
 const period = ref(props.period);
@@ -41,7 +43,7 @@ function changePeriod(p) {
 let refreshTimer = null;
 onMounted(() => {
     refreshTimer = setInterval(() => {
-        router.reload({ only: ['stats', 'prevStats', 'callTrend', 'topExtensions', 'targetSummary', 'recentCalls'] });
+        router.reload({ only: ['stats', 'prevStats', 'callTrend', 'topExtensions', 'targetSummary', 'recentCalls', 'recentTickets'] });
     }, 30000);
 });
 onUnmounted(() => clearInterval(refreshTimer));
@@ -320,6 +322,67 @@ const qualityColor = computed(() => ({
                     </svg>
                 </div>
             </div>
+        </div>
+
+        <!-- ── My Tickets (period-scoped, agent or all for admin) ─────────── -->
+        <div class="db-card mb-5">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <DocumentTextIcon class="h-4 w-4 text-amber-400" />
+                    <h3 class="text-sm font-semibold text-white">
+                        {{ extension ? 'My Tickets' : 'Tickets' }}
+                        <span class="ml-1 text-xs text-gray-500 capitalize">({{ period }})</span>
+                    </h3>
+                </div>
+                <a href="/tickets" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
+            </div>
+
+            <!-- 3 KPI pills -->
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-center">
+                    <p class="text-2xl font-bold text-amber-400 leading-none">{{ stats.tickets_created ?? 0 }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">Created</p>
+                </div>
+                <div class="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-center">
+                    <p class="text-2xl font-bold text-blue-400 leading-none">{{ stats.tickets_open ?? 0 }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">Open</p>
+                </div>
+                <div class="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-center">
+                    <p class="text-2xl font-bold text-green-400 leading-none">{{ stats.tickets_resolved ?? 0 }}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">Resolved</p>
+                </div>
+            </div>
+
+            <!-- Recent tickets list -->
+            <div v-if="recentTickets?.length" class="space-y-2">
+                <div v-for="t in recentTickets" :key="t.id"
+                    class="flex items-center gap-3 py-2 border-t border-gray-700/40 first:border-0">
+                    <div class="flex-shrink-0 p-1.5 rounded-lg"
+                        :style="{ background: { open:'rgba(245,158,11,0.12)', in_progress:'rgba(59,130,246,0.12)', resolved:'rgba(16,185,129,0.12)', closed:'rgba(107,114,128,0.12)', ongoing:'rgba(139,92,246,0.12)' }[t.status] ?? 'rgba(107,114,128,0.12)' }">
+                        <TicketIcon class="h-3.5 w-3.5"
+                            :style="{ color: { open:'#f59e0b', in_progress:'#3b82f6', resolved:'#10b981', closed:'#6b7280', ongoing:'#8b5cf6' }[t.status] ?? '#6b7280' }" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-medium text-gray-200 truncate">{{ t.subject }}</p>
+                        <p class="text-[10px] text-gray-500">
+                            {{ t.client?.name ?? 'No client' }} · {{ new Date(t.created_at).toLocaleDateString([], { day:'2-digit', month:'short' }) }}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize"
+                            :style="{
+                                background: { open:'rgba(245,158,11,0.15)', in_progress:'rgba(59,130,246,0.15)', resolved:'rgba(16,185,129,0.15)', closed:'rgba(107,114,128,0.15)', ongoing:'rgba(139,92,246,0.15)' }[t.status] ?? 'rgba(107,114,128,0.15)',
+                                color: { open:'#f59e0b', in_progress:'#60a5fa', resolved:'#34d399', closed:'#9ca3af', ongoing:'#a78bfa' }[t.status] ?? '#9ca3af',
+                            }">
+                            {{ t.status.replace('_', ' ') }}
+                        </span>
+                        <a :href="`/tickets/${t.id}`" class="text-gray-600 hover:text-brand-400 transition-colors">
+                            <ArrowTopRightOnSquareIcon class="h-3.5 w-3.5" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-xs text-gray-600 text-center py-4">No tickets created this {{ period }}</div>
         </div>
 
         <!-- ── Agent target card ───────────────────────────────────────────── -->

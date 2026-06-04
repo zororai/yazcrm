@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,6 +54,7 @@ class SbcController extends Controller
             'filters'         => ['search' => $search],
             'lastSync'        => $lastSync,
             'hasTemplate'     => file_exists(storage_path('app/private/certificates/template.pdf')),
+            'isAdmin'         => $request->user()->role === 'admin',
         ]);
     }
 
@@ -158,6 +160,90 @@ class SbcController extends Controller
         $signup->update(['cert_token' => null, 'cert_download_count' => 0]);
 
         return back()->with('error', "Could not send to {$signup->phone_number}. The number may not be subscribed to the WhatsApp bot yet.");
+    }
+
+    public function importTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $headers = "First Name,Surname,Phone Number,Age,Sex,Location\n";
+        $example = "Jane,Doe,263771234567,22,Female,Harare\n";
+
+        return response()->streamDownload(
+            fn() => print($headers . $example),
+            'certificates_import_template.csv',
+            ['Content-Type' => 'text/csv']
+        );
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+        ]);
+
+        ini_set('memory_limit', '256M');
+
+        $path     = $request->file('file')->store('imports', 'local');
+        $fullPath = Storage::disk('local')->path($path);
+
+        try {
+            $reader = IOFactory::createReaderForFile($fullPath);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($fullPath);
+        } catch (\Exception $e) {
+            Storage::disk('local')->delete($path);
+            return back()->with('error', 'Could not read file: ' . $e->getMessage());
+        }
+
+        $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
+        unset($spreadsheet);
+        Storage::disk('local')->delete($path);
+
+        if (count($rows) < 2) {
+            return back()->with('error', 'The file has no data rows.');
+        }
+
+        // Normalise header row — case-insensitive key mapping
+        $header = array_map(fn($h) => strtolower(trim((string)$h)), $rows[0]);
+        $col    = fn(string ...$names) => collect($names)
+            ->map(fn($n) => array_search($n, $header))
+            ->first(fn($i) => $i !== false);
+
+        $firstNameCol  = $col('first name', 'firstname', 'first_name', 'name');
+        $surnameCol    = $col('surname', 'last name', 'lastname', 'last_name');
+        $phoneCol      = $col('phone', 'phone number', 'phone_number', 'mobile', 'contact');
+        $ageCol        = $col('age');
+        $sexCol        = $col('sex', 'gender');
+        $locationCol   = $col('location', 'address', 'area');
+        $dateCol       = $col('date');
+
+        if ($firstNameCol === false && $surnameCol === false) {
+            return back()->with('error', 'Could not find "First Name" or "Surname" columns. Please check your file headers.');
+        }
+
+        $now     = now();
+        $inserted = 0;
+
+        foreach (array_slice($rows, 1) as $row) {
+            $firstName = trim((string)($row[$firstNameCol] ?? ''));
+            $surname   = trim((string)($row[$surnameCol]   ?? ''));
+
+            if ($firstName === '' && $surname === '') continue;
+
+            SbcSignup::create([
+                'sheet'        => 'Certificates To Process',
+                'first_name'   => $firstName,
+                'surname'      => $surname,
+                'phone_number' => $phoneCol !== false ? trim((string)($row[$phoneCol] ?? '')) : null,
+                'age'          => $ageCol   !== false ? (int)($row[$ageCol] ?? 0) ?: null : null,
+                'sex'          => $sexCol   !== false ? trim((string)($row[$sexCol] ?? '')) : null,
+                'location'     => $locationCol !== false ? trim((string)($row[$locationCol] ?? '')) : null,
+                'date'         => $dateCol  !== false && $row[$dateCol] ? now()->toDateString() : $now->toDateString(),
+                'synced_at'    => $now,
+            ]);
+            $inserted++;
+        }
+
+        return back()->with('success', "{$inserted} record(s) imported to Certificates To Process.");
     }
 
     public function uploadTemplate(Request $request): RedirectResponse

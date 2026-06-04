@@ -10,7 +10,9 @@
       "PowerShell(cd C:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm; \\(Invoke-WebRequest -Uri \"http://yazcrm.test/login\" -UseBasicParsing\\).Content | Select-Object -First 100)",
       "PowerShell(Test-NetConnection -ComputerName 192.168.10.150 -Port 3306)",
       "Read(//c/Users/Mazarura/Downloads/**)",
-      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\storage\\\\app\\\\certificates\")"
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\storage\\\\app\\\\certificates\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://yazcrm.test/sbc)",
+      "Bash(ping -n 2 192.168.10.149)"
     ]
   }
 }
