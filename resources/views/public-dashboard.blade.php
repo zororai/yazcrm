@@ -719,6 +719,30 @@ tr:hover td{background:#f8fafc}
     @endforeach
     @if($byPurpose->isEmpty())<p style="font-size:12px;color:#94a3b8;text-align:center;padding:14px 0">No purpose data yet</p>@endif
   </div>
+
+  {{-- ── Tickets by Agent (period-filtered) ── --}}
+  <div class="s-card" style="margin-top:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h3 style="margin:0" id="agent-tickets-lbl">Tickets by Agent — Today</h3>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent</th>
+            <th style="text-align:center">Total</th>
+            <th style="text-align:center">Open</th>
+            <th style="text-align:center">In Progress</th>
+            <th style="text-align:center">Resolved</th>
+            <th style="min-width:120px">Volume</th>
+          </tr>
+        </thead>
+        <tbody id="agent-tickets-tbody">
+          <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 {{-- ══════════════════════════════════ TRENDS ══════════════════════════════════ --}}
@@ -1591,11 +1615,12 @@ function updateServices(p) {
 // ── CALLS ──────────────────────────────────────────────────────────────────────
 function updateCalls(p) {
   const s = callStats[p];
+  const d = periodData[p];
 
   document.getElementById('c-total').textContent    = fmt(s.total);
   document.getElementById('c-inbound').textContent  = fmt(s.inbound);
   document.getElementById('c-outbound').textContent = fmt(s.outbound);
-  document.getElementById('c-missed').textContent = fmt(urgentOpen);
+  document.getElementById('c-missed').textContent   = fmt(urgentOpen);
   document.getElementById('c-answered').textContent = fmt(s.answered);
   document.getElementById('c-avgdur').textContent   = s.avg_dur + 's';
 
@@ -1603,6 +1628,42 @@ function updateCalls(p) {
   const tvals = Object.values(s.trend);
   document.getElementById('calls-trend-lbl').textContent = trendTitle(p, 'Calls');
   rc('callTrendChart', 'bar', trendLabels(p, tkeys), tvals, { accent:'#3b82f6', muted:'#dbeafe' });
+
+  // ── Agent tickets table ────────────────────────────────────────────────────
+  const lbl = document.getElementById('agent-tickets-lbl');
+  if (lbl) lbl.textContent = 'Tickets by Agent — ' + ({
+    day: 'Today', week: 'This Week', month: 'This Month', year: 'This Year',
+  }[p] ?? p);
+
+  const agents = d.by_agent ?? [];
+  const maxTotal = Math.max(...agents.map(a => a.total), 1);
+  const tbody = document.getElementById('agent-tickets-tbody');
+  if (!tbody) return;
+
+  if (!agents.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px">No ticket data for this period</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = agents.map(a => {
+    const bar = Math.round(a.total / maxTotal * 100);
+    return `<tr>
+      <td><strong style="color:#0f172a">${a.agent}</strong></td>
+      <td style="text-align:center;font-weight:700;color:#0f172a">${fmt(a.total)}</td>
+      <td style="text-align:center">
+        <span style="display:inline-block;background:#fef9c3;color:#a16207;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700">${fmt(a.open)}</span>
+      </td>
+      <td style="text-align:center">
+        <span style="display:inline-block;background:#eff6ff;color:#3b82f6;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700">${fmt(a.in_progress)}</span>
+      </td>
+      <td style="text-align:center">
+        <span style="display:inline-block;background:#f0fdf4;color:#16a34a;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700">${fmt(a.resolved)}</span>
+      </td>
+      <td style="min-width:120px">
+        <div class="pb-track"><div class="pb-fill" style="width:${bar}%;background:#6366f1"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // ── TRENDS ─────────────────────────────────────────────────────────────────────

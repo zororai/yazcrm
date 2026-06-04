@@ -127,6 +127,11 @@ function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
 }
 
+function deleteTicket(ticket) {
+    if (!confirm(`Delete ticket #${ticket.id} "${ticket.subject}"? This cannot be undone.`)) return;
+    router.delete(`/tickets/${ticket.id}`, { preserveScroll: true });
+}
+
 function setReferralDate(ticket, date) {
     router.put(`/tickets/${ticket.id}`,
         { referral_uptake_date: date || null },
@@ -353,7 +358,17 @@ const statusColor = {
                         <td class="table-td">{{ t.agent?.name ?? '—' }}</td>
                         <td class="table-td text-xs">{{ new Date(t.created_at).toLocaleDateString() }}</td>
                         <td class="table-td">
-                            <Link :href="`/tickets/${t.id}`" class="btn-secondary btn-sm">View</Link>
+                            <div class="flex items-center gap-1.5">
+                                <Link :href="`/tickets/${t.id}`" class="btn-secondary btn-sm">View</Link>
+                                <button v-if="isAdmin"
+                                    @click="deleteTicket(t)"
+                                    class="btn-sm inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
+                                           text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-400 transition-colors">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 </tbody>

@@ -209,8 +209,12 @@ class TicketController extends Controller
         return back()->with('success', 'Ticket updated.');
     }
 
-    public function destroy(Ticket $ticket): RedirectResponse
+    public function destroy(Request $request, Ticket $ticket): RedirectResponse
     {
+        if ($request->user()->role !== 'admin') {
+            abort(403, 'Only administrators can delete tickets.');
+        }
+
         $ticket->delete();
 
         return redirect()->route('tickets.index')->with('success', 'Ticket deleted.');

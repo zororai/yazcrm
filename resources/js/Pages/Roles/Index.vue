@@ -18,6 +18,7 @@ const PERM_LABELS = {
     bot_contacts:'Bot Contacts',
     users:       'Users Management',
     yeastar:     'Yeastar Settings',
+    yalep:       'YALeP Students',
 };
 
 // ── Create ────────────────────────────────────────────────────────────────────

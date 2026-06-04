@@ -149,7 +149,7 @@ const navigation = computed(() => [
     ...(can('domains')      ? [{ name: 'Domains',     href: '/distress-domains',                 icon: TagIcon }] : []),
     ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
     ...(isAdmin.value       ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
-    { name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon },
+    ...(can('yalep') ? [{ name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon }] : []),
     ...(isAdmin.value       ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
     ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
