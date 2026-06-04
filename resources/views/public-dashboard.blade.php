@@ -729,7 +729,7 @@ tr:hover td{background:#f8fafc}
       <table>
         <thead>
           <tr>
-            <th>Agent</th>
+            <th>Agent / Extension</th>
             <th style="text-align:center">Total</th>
             <th style="text-align:center">Open</th>
             <th style="text-align:center">In Progress</th>
@@ -1646,9 +1646,14 @@ function updateCalls(p) {
   }
 
   tbody.innerHTML = agents.map(a => {
-    const bar = Math.round(a.total / maxTotal * 100);
+    const bar = maxTotal > 0 ? Math.round(a.total / maxTotal * 100) : 0;
+    const extBadge = a.extension
+      ? `<span style="margin-left:5px;background:#f1f5f9;color:#64748b;border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600">Ext ${a.extension}</span>`
+      : '';
     return `<tr>
-      <td><strong style="color:#0f172a">${a.agent}</strong></td>
+      <td>
+        <strong style="color:#0f172a">${a.agent}</strong>${extBadge}
+      </td>
       <td style="text-align:center;font-weight:700;color:#0f172a">${fmt(a.total)}</td>
       <td style="text-align:center">
         <span style="display:inline-block;background:#fef9c3;color:#a16207;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700">${fmt(a.open)}</span>

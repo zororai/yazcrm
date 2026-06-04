@@ -206,21 +206,33 @@ class PublicDashboardController extends Controller
                 'by_service_uptake'  => (clone $pb)->where('uptake_confirmed', 1)->whereNotNull('services_requested')->where('services_requested', '!=', '')->select('services_requested', DB::raw('count(*) as cnt'))->groupBy('services_requested')->pluck('cnt', 'services_requested'),
                 'by_referral'        => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->referred_to, $r->cnt]),
                 'by_purpose'         => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get()->map(fn ($r) => [$r->purpose_of_call, $r->cnt]),
-                'by_agent'           => DB::table('tickets')
-                    ->join('users', 'tickets.agent_id', '=', 'users.id')
-                    ->whereNull('tickets.deleted_at')
-                    ->whereBetween('tickets.created_at', [$start, $end])
-                    ->when($serviceFilter, fn ($q) => $q->where('tickets.services_requested', $serviceFilter))
-                    ->selectRaw('users.name as agent_name,
-                        COUNT(*) as total,
+                'by_agent'           => DB::table('users')
+                    ->where('users.is_active', true)
+                    ->leftJoin('extensions', 'extensions.user_id', '=', 'users.id')
+                    ->leftJoin('tickets', function ($join) use ($start, $end, $serviceFilter) {
+                        $join->on('tickets.agent_id', '=', 'users.id')
+                             ->whereNull('tickets.deleted_at')
+                             ->whereBetween('tickets.created_at', [$start, $end]);
+                        if ($serviceFilter) {
+                            $join->where('tickets.services_requested', $serviceFilter);
+                        }
+                    })
+                    ->selectRaw('
+                        users.id as user_id,
+                        users.name as agent_name,
+                        extensions.extension_number,
+                        COUNT(tickets.id) as total,
                         SUM(tickets.status = "open") as open_count,
                         SUM(tickets.status IN ("in_progress","ongoing")) as in_progress_count,
-                        SUM(tickets.status IN ("resolved","closed")) as resolved_count')
-                    ->groupBy('users.id', 'users.name')
+                        SUM(tickets.status IN ("resolved","closed")) as resolved_count
+                    ')
+                    ->groupBy('users.id', 'users.name', 'extensions.extension_number')
                     ->orderByDesc('total')
+                    ->orderBy('users.name')
                     ->get()
                     ->map(fn ($r) => [
                         'agent'      => $r->agent_name,
+                        'extension'  => $r->extension_number,
                         'total'      => (int) $r->total,
                         'open'       => (int) $r->open_count,
                         'in_progress'=> (int) $r->in_progress_count,
