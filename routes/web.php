@@ -62,6 +62,12 @@ Route::middleware('auth')->group(function () {
     Route::put('tickets/{ticket}', [Web\TicketController::class, 'update'])->name('tickets.update');
     Route::delete('tickets/{ticket}', [Web\TicketController::class, 'destroy'])->name('tickets.destroy');
 
+    // ─── Blocked Numbers (all authenticated users) ────────────────────────────
+    Route::get('blocked-numbers',           [Web\BlockedNumberController::class, 'index'])->name('blocked-numbers.index');
+    Route::post('blocked-numbers',          [Web\BlockedNumberController::class, 'store'])->name('blocked-numbers.store');
+    Route::put('blocked-numbers/{id}',      [Web\BlockedNumberController::class, 'update'])->name('blocked-numbers.update');
+    Route::delete('blocked-numbers/{id}',   [Web\BlockedNumberController::class, 'destroy'])->name('blocked-numbers.destroy');
+
     // ─── SBC / YALeP — all authenticated users ───────────────────────────────
     Route::get('sbc',                         [Web\SbcController::class, 'index'])->name('sbc.index');
     Route::post('sbc/import',                 [Web\SbcController::class, 'import'])->name('sbc.import');

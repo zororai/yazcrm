@@ -13,7 +13,10 @@
       "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\storage\\\\app\\\\certificates\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://yazcrm.test/sbc)",
       "Bash(ping -n 2 192.168.10.149)",
-      "Bash(curl -s -o /dev/null -w \" tickets:%{http_code}\" http://yazcrm.test/tickets)"
+      "Bash(curl -s -o /dev/null -w \" tickets:%{http_code}\" http://yazcrm.test/tickets)",
+      "WebFetch(domain:help.yeastar.com)",
+      "WebSearch",
+      "PowerShell(npm run build 2>&1)"
     ]
   }
 }

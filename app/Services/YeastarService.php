@@ -357,4 +357,65 @@ class YeastarService
 
         return ['ok' => false, 'message' => 'Could not register webhook — no supported endpoint found on this PBX firmware.'];
     }
+
+    // ──────────────────────────────────────────────── blocked numbers ──────────
+
+    public function listBlockedNumbers(int $page = 1, int $pageSize = 50): array
+    {
+        $data = $this->request('get', 'block_numbers/list', [
+            'page'      => $page,
+            'page_size' => $pageSize,
+            'sort_by'   => 'id',
+            'order_by'  => 'desc',
+        ]);
+        return [
+            'total' => $data['total_number'] ?? 0,
+            'data'  => $data['data']         ?? [],
+        ];
+    }
+
+    public function searchBlockedNumbers(string $search, int $page = 1, int $pageSize = 50): array
+    {
+        $data = $this->request('get', 'block_numbers/search', [
+            'search_value' => $search,
+            'page'         => $page,
+            'page_size'    => $pageSize,
+        ]);
+        return [
+            'total' => $data['total_number'] ?? 0,
+            'data'  => $data['data']         ?? [],
+        ];
+    }
+
+    public function addBlockedNumber(string $name, string $numbers, string $limitType = 'inbound'): array
+    {
+        $data = $this->request('post', 'block_numbers/create', [
+            'name'        => $name,
+            'limit_type'  => $limitType,
+            'number_list' => $numbers,
+        ]);
+        return [
+            'ok'      => isset($data['errcode']) && $data['errcode'] === 0,
+            'id'      => $data['id']     ?? null,
+            'message' => $data['errmsg'] ?? 'Unknown error',
+        ];
+    }
+
+    public function updateBlockedNumber(int $id, array $fields): array
+    {
+        $data = $this->request('post', 'block_numbers/update', array_merge(['id' => $id], $fields));
+        return [
+            'ok'      => isset($data['errcode']) && $data['errcode'] === 0,
+            'message' => $data['errmsg'] ?? 'Unknown error',
+        ];
+    }
+
+    public function deleteBlockedNumber(int $id): array
+    {
+        $data = $this->request('post', 'block_numbers/delete', ['id' => $id]);
+        return [
+            'ok'      => isset($data['errcode']) && $data['errcode'] === 0,
+            'message' => $data['errmsg'] ?? 'Unknown error',
+        ];
+    }
 }
