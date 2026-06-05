@@ -15,8 +15,12 @@ const data = computed({
     set: (v) => emit('update:modelValue', v),
 });
 
+function persistCategories(patch = {}) {
+    emit('update:modelValue', { ...data.value, ...patch, _categories: allSelected.value });
+}
+
 function set(key, val) {
-    emit('update:modelValue', { ...data.value, [key]: val });
+    persistCategories({ [key]: val });
 }
 function get(key) { return data.value?.[key] ?? ''; }
 
@@ -279,8 +283,11 @@ const detectedCategories = computed(() => {
     );
 });
 
-// Manually selected additional categories
-const manualCats = ref([]);
+// Manually selected additional categories — initialized from saved _categories
+const manualCats = ref((props.modelValue?._categories ?? []).filter(
+    k => !detectedCategories.value.map(c => c.key).includes(k)
+));
+
 const allSelected = computed(() => {
     const auto = detectedCategories.value.map(c => c.key);
     const manual = manualCats.value;
@@ -323,6 +330,7 @@ const yesNoOptions = ['Yes', 'No', 'Unknown'];
                         @change="e => {
                             if (e.target.checked) manualCats.push(cat.key);
                             else manualCats.splice(manualCats.indexOf(cat.key), 1);
+                            persistCategories();
                         }"
                         class="rounded border-gray-300 text-brand-600" />
                     <span :class="detectedCategories.map(c=>c.key).includes(cat.key) ? 'text-brand-700 font-semibold' : ''">
