@@ -16,7 +16,10 @@
       "Bash(curl -s -o /dev/null -w \" tickets:%{http_code}\" http://yazcrm.test/tickets)",
       "WebFetch(domain:help.yeastar.com)",
       "WebSearch",
-      "PowerShell(npm run build 2>&1)"
+      "PowerShell(npm run build 2>&1)",
+      "Bash(grep -n \"function refreshData\\\\|\\\\/screen\\\\/data\" resources/views/public-dashboard.blade.php)",
+      "PowerShell(php artisan route:list --path=screen 2>&1)",
+      "PowerShell(php -l resources/views/public-dashboard.blade.php 2>&1)"
     ]
   }
 }

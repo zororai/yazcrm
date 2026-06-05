@@ -16,7 +16,9 @@ class PublicDashboardController extends Controller
     public function index(Request $request)
     {
         $service = trim($request->input('service', ''));
-        $d = $this->buildData($service);
+        $year    = $request->input('year');
+        $month   = $request->input('month');
+        $d = $this->buildData($service, $year, $month);
 
         return response()
             ->view('public-dashboard', $d)
@@ -28,7 +30,9 @@ class PublicDashboardController extends Controller
     public function data(Request $request): JsonResponse
     {
         $service = trim($request->input('service', ''));
-        $d = $this->buildData($service);
+        $year    = $request->input('year');
+        $month   = $request->input('month');
+        $d = $this->buildData($service, $year, $month);
 
         return response()->json([
             'periodData'          => $d['periodData'],
@@ -53,6 +57,7 @@ class PublicDashboardController extends Controller
             'serviceFilter'      => $d['serviceFilter'],
             'allServices'        => $d['allServices'],
             'serviceUptake'      => $d['serviceUptake'],
+            'availableYears'     => $d['availableYears'],
             'byPurpose'          => $d['byPurpose']->map(fn($r) => ['purpose_of_call' => $r->purpose_of_call, 'cnt' => $r->cnt]),
         ])->withHeaders([
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
@@ -70,7 +75,7 @@ class PublicDashboardController extends Controller
         ]);
     }
 
-    private function buildData(string $serviceFilter = ''): array
+    private function buildData(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null): array
     {
         // ── All-time scalars ─────────────────────────────────────────────────
         // Always build unfiltered list of services for the dropdown
@@ -134,12 +139,32 @@ class PublicDashboardController extends Controller
 
         $lastUpdated = (clone $base)->max('created_at');
 
+        // ── Available years (for year picker) ───────────────────────────────
+        $availableYears = DB::table('tickets')->whereNull('deleted_at')
+            ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
+            ->selectRaw("YEAR(created_at) as yr")
+            ->groupBy('yr')->orderByDesc('yr')->pluck('yr')->map(fn ($y) => (int) $y)->values();
+
         // ── Period-filtered ticket data ──────────────────────────────────────
+        // Year period: use selected year or current year
+        $yearVal = $selectedYear && preg_match('/^\d{4}$/', $selectedYear)
+            ? (int) $selectedYear : (int) now()->format('Y');
+        $yearStart = \Carbon\Carbon::create($yearVal, 1, 1)->startOfDay();
+        $yearEnd   = \Carbon\Carbon::create($yearVal, 12, 31)->endOfDay();
+
+        // Month period: use selected month (YYYY-MM) or current month
+        $monthStart = now()->startOfMonth();
+        $monthEnd   = now()->endOfDay();
+        if ($selectedMonth && preg_match('/^(\d{4})-(\d{2})$/', $selectedMonth, $m)) {
+            $monthStart = \Carbon\Carbon::create((int)$m[1], (int)$m[2], 1)->startOfDay();
+            $monthEnd   = $monthStart->copy()->endOfMonth()->endOfDay();
+        }
+
         $ticketPeriods = [
-            'day'   => [now()->startOfDay(),   now()->endOfDay()],
-            'week'  => [now()->startOfWeek(),  now()->endOfDay()],
-            'month' => [now()->startOfMonth(), now()->endOfDay()],
-            'year'  => [now()->startOfYear(),  now()->endOfDay()],
+            'day'   => [now()->startOfDay(),  now()->endOfDay()],
+            'week'  => [now()->startOfWeek(), now()->endOfDay()],
+            'month' => [$monthStart, $monthEnd],
+            'year'  => [$yearStart,  $yearEnd],
         ];
 
         $periodData = [];
@@ -410,7 +435,8 @@ class PublicDashboardController extends Controller
             'referredTotal', 'newCallers', 'referralCompPct',
             'maleTotal', 'femaleTotal', 'malePct', 'femalePct',
             'serviceUptake', 'sbcTotal',
-            'serviceFilter', 'allServices'
+            'serviceFilter', 'allServices',
+            'availableYears', 'yearVal', 'selectedMonth', 'monthStart'
         );
     }
 }

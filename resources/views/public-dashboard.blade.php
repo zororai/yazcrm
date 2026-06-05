@@ -78,11 +78,20 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
 .sec-title{font-size:15px;font-weight:700;color:#0f172a}
 
 /* Period buttons */
-.period-wrap{display:flex;gap:4px;background:#f1f5f9;border-radius:12px;padding:4px}
+.period-wrap{display:flex;gap:4px;background:#f1f5f9;border-radius:12px;padding:4px;align-items:center}
 .period-btn{padding:6px 13px;border:none;background:transparent;border-radius:8px;cursor:pointer;
   font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:#64748b;transition:all .15s;white-space:nowrap}
 .period-btn:hover{color:#1e293b}
 .period-btn.active-period{background:#fff;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,.1);font-weight:600}
+/* Period dropdowns (month / year pickers) */
+.period-select-wrap{position:relative;display:flex;align-items:center}
+.period-select{padding:5px 24px 5px 10px;border:none;background:transparent;border-radius:8px;cursor:pointer;
+  font-family:'Inter',sans-serif;font-size:12px;font-weight:500;color:#64748b;appearance:none;-webkit-appearance:none;
+  transition:all .15s;white-space:nowrap}
+.period-select:hover{color:#1e293b}
+.period-select.active-period{background:#fff;color:#1e293b;box-shadow:0 1px 4px rgba(0,0,0,.1);font-weight:600}
+.period-select-wrap::after{content:"▾";position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  font-size:10px;color:#94a3b8;pointer-events:none}
 
 /* KPI grid */
 .kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
@@ -345,8 +354,8 @@ tr:hover td{background:#f8fafc}
   <div class="period-wrap">
     <button class="period-btn {{ $ticketDefaultPeriod==='day'  ?'active-period':'' }}" onclick="setPeriod('overview','day',this)">Today</button>
     <button class="period-btn {{ $ticketDefaultPeriod==='week' ?'active-period':'' }}" onclick="setPeriod('overview','week',this)">This Week</button>
-    <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('overview','month',this)">This Month</button>
-    <button class="period-btn {{ $ticketDefaultPeriod==='year' ?'active-period':'' }}" onclick="setPeriod('overview','year',this)">This Year</button>
+    <div class="period-select-wrap"><select id="month-select-overview" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('overview',this)"></select></div>
+    <div class="period-select-wrap"><select id="year-select-overview" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('overview',this)"></select></div>
   </div>
 </div>
 
@@ -584,8 +593,8 @@ tr:hover td{background:#f8fafc}
     <div class="period-wrap">
       <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('geographic','day',this)">Today</button>
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('geographic','week',this)">This Week</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('geographic','month',this)">This Month</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('geographic','year',this)">This Year</button>
+      <div class="period-select-wrap"><select id="month-select-geographic" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('geographic',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-geographic" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('geographic',this)"></select></div>
     </div>
   </div>
   <div class="g2">
@@ -608,8 +617,8 @@ tr:hover td{background:#f8fafc}
     <div class="period-wrap">
       <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('demographics','day',this)">Today</button>
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('demographics','week',this)">This Week</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('demographics','month',this)">This Month</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('demographics','year',this)">This Year</button>
+      <div class="period-select-wrap"><select id="month-select-demographics" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('demographics',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-demographics" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('demographics',this)"></select></div>
     </div>
   </div>
   <div class="g3">
@@ -630,8 +639,8 @@ tr:hover td{background:#f8fafc}
     <div class="period-wrap">
       <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('services','day',this)">Today</button>
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('services','week',this)">This Week</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('services','month',this)">This Month</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('services','year',this)">This Year</button>
+      <div class="period-select-wrap"><select id="month-select-services" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('services',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-services" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('services',this)"></select></div>
     </div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
@@ -738,8 +747,8 @@ tr:hover td{background:#f8fafc}
     <div class="period-wrap">
       <button class="period-btn {{ $callDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('calls','day',this)">Today</button>
       <button class="period-btn {{ $callDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('calls','week',this)">This Week</button>
-      <button class="period-btn {{ $callDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('calls','month',this)">This Month</button>
-      <button class="period-btn {{ $callDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('calls','year',this)">This Year</button>
+      <div class="period-select-wrap"><select id="month-select-calls" class="period-select {{ $callDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('calls',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-calls" class="period-select {{ $callDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('calls',this)"></select></div>
     </div>
   </div>
   <div class="kpi-row">
@@ -801,8 +810,8 @@ tr:hover td{background:#f8fafc}
     <div class="period-wrap">
       <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('trends','day',this)">Today</button>
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('trends','week',this)">This Week</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('trends','month',this)">This Month</button>
-      <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('trends','year',this)">This Year</button>
+      <div class="period-select-wrap"><select id="month-select-trends" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('trends',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-trends" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('trends',this)"></select></div>
     </div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
@@ -848,8 +857,8 @@ tr:hover td{background:#f8fafc}
       <div class="period-wrap">
         <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('social','day',this)">Today</button>
         <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('social','week',this)">This Week</button>
-        <button class="period-btn {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onclick="setPeriod('social','month',this)">This Month</button>
-        <button class="period-btn {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onclick="setPeriod('social','year',this)">This Year</button>
+        <div class="period-select-wrap"><select id="month-select-social" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('social',this)"></select></div>
+        <div class="period-select-wrap"><select id="year-select-social" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('social',this)"></select></div>
       </div>
     </div>
   </div>
@@ -2197,7 +2206,8 @@ function el(id) { return document.getElementById(id); }
 // ── Period button dispatcher ───────────────────────────────────────────────────
 function setPeriod(section, period, btn) {
   document.querySelectorAll(`#sec-${section} .period-btn`).forEach(b => b.classList.remove('active-period'));
-  btn.classList.add('active-period');
+  document.querySelectorAll(`#sec-${section} .period-select`).forEach(s => s.classList.remove('active-period'));
+  if (btn) btn.classList.add('active-period');
 
   const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
   if (fn[section]) fn[section](period);
@@ -2217,6 +2227,10 @@ function showSection(name, btn) {
   if (activeBtn) {
     const match = activeBtn.getAttribute('onclick').match(/'(\w+)'/g);
     if (match && match[1]) setPeriod(name, match[1].replace(/'/g,''), activeBtn);
+  } else {
+    // Check if a select has active-period (year or month selected)
+    const activeSel = document.querySelector(`#sec-${name} .period-select.active-period`);
+    if (activeSel) activeSel.dispatchEvent(new Event('change'));
   }
 }
 
@@ -2224,21 +2238,154 @@ function showSection(name, btn) {
 const TICKET_DEFAULT = @json($ticketDefaultPeriod);
 const CALL_DEFAULT   = @json($callDefaultPeriod);
 
+// ── Year / Month picker state ────────────────────────────────────────────────
+let activeYear  = @json($yearVal);
+let activeMonth = @json($selectedMonth ?? $monthStart->format('Y-m'));
+let availableYears = @json($availableYears);
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function buildMonthOptions(selectEl, currentMonth) {
+  const [selY, selM] = currentMonth.split('-').map(Number);
+  const now = new Date();
+  selectEl.innerHTML = '';
+  // Show all months for the selected year (or up to current month if current year)
+  for (let m = 1; m <= 12; m++) {
+    if (selY === now.getFullYear() && m > now.getMonth() + 1) break;
+    const val = `${selY}-${String(m).padStart(2,'0')}`;
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = `${MONTH_NAMES[m-1]} ${selY}`;
+    if (m === selM) opt.selected = true;
+    selectEl.appendChild(opt);
+  }
+}
+
+function buildYearOptions(selectEl, years, currentYear) {
+  selectEl.innerHTML = '';
+  years.forEach(yr => {
+    const opt = document.createElement('option');
+    opt.value = yr;
+    opt.textContent = yr;
+    if (yr === currentYear) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+}
+
+function initPeriodSelects() {
+  const TICKET_SECTIONS = ['overview','geographic','demographics','services','trends','social'];
+  TICKET_SECTIONS.forEach(sec => {
+    const ySel = document.getElementById(`year-select-${sec}`);
+    const mSel = document.getElementById(`month-select-${sec}`);
+    if (ySel) buildYearOptions(ySel, availableYears, activeYear);
+    if (mSel) buildMonthOptions(mSel, activeMonth);
+  });
+  // Calls section
+  const cySel = document.getElementById('year-select-calls');
+  const cmSel = document.getElementById('month-select-calls');
+  if (cySel) buildYearOptions(cySel, availableYears, activeYear);
+  if (cmSel) buildMonthOptions(cmSel, activeMonth);
+}
+
+function onYearSelect(section, sel) {
+  const yr = parseInt(sel.value);
+  activeYear = yr;
+  // Reset month to Jan of the selected year (or current month if same year)
+  const now = new Date();
+  const defaultM = yr === now.getFullYear()
+    ? `${yr}-${String(now.getMonth()+1).padStart(2,'0')}`
+    : `${yr}-01`;
+  activeMonth = defaultM;
+
+  // Rebuild month dropdowns with new year
+  document.querySelectorAll('[id^="month-select-"]').forEach(mSel => {
+    buildMonthOptions(mSel, activeMonth);
+  });
+
+  // Mark this year select active, remove from buttons and month selects
+  document.querySelectorAll(`#sec-${section} .period-btn, #sec-${section} .period-select`).forEach(el => el.classList.remove('active-period'));
+  sel.classList.add('active-period');
+
+  // Fetch new data and re-render
+  fetchWithPeriod('year', section);
+}
+
+function onMonthSelect(section, sel) {
+  activeMonth = sel.value;
+  const [yr] = sel.value.split('-').map(Number);
+  activeYear = yr;
+
+  // Sync year dropdowns
+  document.querySelectorAll('[id^="year-select-"]').forEach(ySel => {
+    [...ySel.options].forEach(o => { o.selected = parseInt(o.value) === yr; });
+  });
+
+  // Mark this month select active
+  document.querySelectorAll(`#sec-${section} .period-btn, #sec-${section} .period-select`).forEach(el => el.classList.remove('active-period'));
+  sel.classList.add('active-period');
+
+  fetchWithPeriod('month', section);
+}
+
+function fetchWithPeriod(period, section) {
+  const params = new URLSearchParams();
+  if (activeService) params.set('service', activeService);
+  if (period === 'year')  params.set('year',  activeYear);
+  if (period === 'month') params.set('month', activeMonth);
+
+  fetch('/screen/data?' + params.toString(), { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(d => {
+      periodData     = d.periodData;
+      callStats      = d.callStats;
+      if (d.availableYears) availableYears = d.availableYears;
+
+      const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
+      if (fn[section]) fn[section](period);
+      labelPeriodBtns();
+    })
+    .catch(console.error);
+}
+
 function labelPeriodBtns() {
-  const LABELS = { day:'Today', week:'This Week', month:'This Month', year:'This Year' };
   ['overview','geographic','demographics','services','trends','social'].forEach(sec => {
     document.querySelectorAll(`#sec-${sec} .period-btn`).forEach(btn => {
-      const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
+      const m = btn.getAttribute('onclick').match(/'(day|week)'/);
       if (!m) return;
       const p = m[1], count = periodData[p]?.total ?? 0;
-      btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${fmt(count)})</span>` : '');
+      const labels = { day:'Today', week:'This Week' };
+      btn.innerHTML = labels[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${fmt(count)})</span>` : '');
     });
+    // Label month select
+    const mSel = document.getElementById(`month-select-${sec}`);
+    if (mSel) {
+      const count = periodData['month']?.total ?? 0;
+      const [y, m] = activeMonth.split('-').map(Number);
+      const label = MONTH_NAMES[m-1] + ' ' + y;
+      [...mSel.options].forEach(o => {
+        o.text = o.value === activeMonth
+          ? label + (count > 0 ? ` (${fmt(count)})` : '')
+          : MONTH_NAMES[parseInt(o.value.split('-')[1])-1] + ' ' + o.value.split('-')[0];
+      });
+    }
+    // Label year select
+    const ySel = document.getElementById(`year-select-${sec}`);
+    if (ySel) {
+      const count = periodData['year']?.total ?? 0;
+      [...ySel.options].forEach(o => {
+        o.text = parseInt(o.value) === activeYear
+          ? o.value + (count > 0 ? ` (${fmt(count)})` : '')
+          : o.value;
+      });
+    }
   });
+  // Calls section
   document.querySelectorAll('#sec-calls .period-btn').forEach(btn => {
-    const m = btn.getAttribute('onclick').match(/'(day|week|month|year)'/);
+    const m = btn.getAttribute('onclick').match(/'(day|week)'/);
     if (!m) return;
     const p = m[1], count = callStats[p]?.total ?? 0;
-    btn.innerHTML = LABELS[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${fmt(count)})</span>` : '');
+    const labels = { day:'Today', week:'This Week' };
+    btn.innerHTML = labels[p] + (count > 0 ? ` <span style="font-size:10px;font-weight:400;opacity:.6">(${fmt(count)})</span>` : '');
   });
 }
 
@@ -2344,7 +2491,11 @@ function applyServiceFilter(value) {
 
 // ── Background data refresh (no page reload) ──────────────────────────────────
 function refreshData() {
-  const params = activeService ? `?service=${encodeURIComponent(activeService)}` : '';
+  const p = new URLSearchParams();
+  if (activeService) p.set('service', activeService);
+  if (activeYear)    p.set('year', activeYear);
+  if (activeMonth)   p.set('month', activeMonth);
+  const params = p.toString() ? '?' + p.toString() : '';
   fetch('/screen/data' + params, { cache: 'no-store' })
     .then(r => r.ok ? r.json() : Promise.reject(r.status))
     .then(d => {
@@ -2354,6 +2505,7 @@ function refreshData() {
       months12       = d.months;
       prevPeriodData = d.prevPeriodData;
       callTargetRows = d.callTargetRows;
+      if (d.availableYears) availableYears = d.availableYears;
       if (d.uchat) uchatData = d.uchat;
       if (d.urgentOpen !== undefined) urgentOpen = d.urgentOpen;
       if (d.total !== undefined) {
@@ -2422,6 +2574,7 @@ function initOverviewCharts() {
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof lucide !== 'undefined') lucide.createIcons();
   initOverviewCharts();
+  initPeriodSelects();
   labelPeriodBtns();
   updateOverview(TICKET_DEFAULT);
   updateGeographic(TICKET_DEFAULT);
