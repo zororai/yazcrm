@@ -19,6 +19,8 @@ const PERM_LABELS = {
     users:       'Users Management',
     yeastar:     'Yeastar Settings',
     yalep:       'YALeP Students',
+    registry:    'Asset Register',
+    risk:        'Risk Register',
 };
 
 // ── Create ────────────────────────────────────────────────────────────────────
