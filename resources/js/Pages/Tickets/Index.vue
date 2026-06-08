@@ -294,7 +294,10 @@ function store() {
 
 function deleteTicket(ticket) {
     if (!confirm(`Delete ticket #${ticket.id} "${ticket.subject}"? This cannot be undone.`)) return;
-    router.delete(`/tickets/${ticket.id}`, { preserveScroll: true });
+    router.delete(`/tickets/${ticket.id}`, {
+        preserveScroll: true,
+        onError: (errors) => alert('Delete failed: ' + JSON.stringify(errors)),
+    });
 }
 
 function setReferralDate(ticket, date) {
