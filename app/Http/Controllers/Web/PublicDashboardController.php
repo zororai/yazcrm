@@ -403,15 +403,26 @@ class PublicDashboardController extends Controller
                 ->select(DB::raw("DATE_FORMAT(started_at,'%Y-%m') as ym"), DB::raw('COUNT(*) as cnt'))
                 ->groupBy('ym')->orderBy('ym')->pluck('cnt', 'ym')
         )->all();
+        if ($rangeStart && $rangeEnd) {
+            $callStats['range']['trend'] = DB::table('calls')->whereBetween('started_at', [$rangeStart, $rangeEnd])
+                ->select(DB::raw("DATE_FORMAT(started_at,'%Y-%m') as ym"), DB::raw('COUNT(*) as cnt'))
+                ->groupBy('ym')->orderBy('ym')->pluck('cnt', 'ym')->all();
+        }
 
         // ── Smart defaults ───────────────────────────────────────────────────
-        $ticketDefaultPeriod = 'month';
-        foreach (['day', 'week', 'month', 'year'] as $p) {
-            if (($periodData[$p]['total'] ?? 0) > 0) { $ticketDefaultPeriod = $p; break; }
-        }
-        $callDefaultPeriod = 'month';
-        foreach (['day', 'week', 'month', 'year'] as $p) {
-            if (($callStats[$p]['total'] ?? 0) > 0) { $callDefaultPeriod = $p; break; }
+        // If a date range is active, default all sections to 'range'
+        if ($rangeStart && $rangeEnd) {
+            $ticketDefaultPeriod = 'range';
+            $callDefaultPeriod   = 'range';
+        } else {
+            $ticketDefaultPeriod = 'month';
+            foreach (['day', 'week', 'month', 'year'] as $p) {
+                if (($periodData[$p]['total'] ?? 0) > 0) { $ticketDefaultPeriod = $p; break; }
+            }
+            $callDefaultPeriod = 'month';
+            foreach (['day', 'week', 'month', 'year'] as $p) {
+                if (($callStats[$p]['total'] ?? 0) > 0) { $callDefaultPeriod = $p; break; }
+            }
         }
 
         $uchat       = app(UchatService::class)->fetchAnalytics();
