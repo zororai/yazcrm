@@ -88,7 +88,7 @@ class TicketImportController extends Controller
                 'call_validity'             => $this->mapValidity($get('call validity')),
                 'purpose_of_call'           => $purpose ?: null,
                 'immediate_action_required' => $this->mapBool($get('immediate action required')) ? 1 : 0,
-                'caller_age'                => $this->toInt($get('age')),
+                'caller_age'                => min(150, $this->toInt($get('age')) ?? 0) ?: null,
                 'caller_gender'             => $this->mapGender($get('gender')),
                 'caller_marital_status'     => $get('marital status') ?: null,
                 'key_pops'                  => $get('key pops') ?: null,

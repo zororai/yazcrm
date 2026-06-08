@@ -315,19 +315,47 @@ tr:hover td{background:#f8fafc}
   </div>
   <div class="hdr-right">
     <div style="display:flex;align-items:center;gap:6px">
-      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Service Filter</label>
-      <select id="service-filter" onchange="applyServiceFilter(this.value)"
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">From</label>
+      <input type="month" id="range-from" value="{{ $dateFrom ?? '' }}"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:4px 8px;background:#fff;color:#374151;font-family:'Inter',sans-serif;">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">To</label>
+      <input type="month" id="range-to" value="{{ $dateTo ?? '' }}"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:4px 8px;background:#fff;color:#374151;font-family:'Inter',sans-serif;">
+      <button onclick="applyDateRange()"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#8b5cf6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply Range</button>
+      <a id="range-clear" href="#" onclick="clearDateRange();return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ ($dateFrom ?? '') ? '' : 'display:none' }}">✕ Clear</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Project</label>
+      <select id="project-filter"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:160px">
+        <option value="">All Projects</option>
+        @foreach($allProjects as $proj)
+          <option value="{{ $proj }}" {{ $projectFilter === $proj ? 'selected' : '' }}>{{ $proj }}</option>
+        @endforeach
+      </select>
+      <button onclick="applyProjectFilter(document.getElementById('project-filter').value)"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply</button>
+      <a id="proj-filter-clear" href="#" onclick="applyProjectFilter('');document.getElementById('project-filter').value='';return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $projectFilter ? '' : 'display:none' }}">✕ Clear</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Service</label>
+      <select id="service-filter"
         style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:180px">
         <option value="">All Services</option>
         @foreach($allServices as $svc)
           <option value="{{ $svc }}" {{ $serviceFilter === $svc ? 'selected' : '' }}>{{ $svc }}</option>
         @endforeach
       </select>
+      <button onclick="applyServiceFilter(document.getElementById('service-filter').value)"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply</button>
       <a id="svc-filter-clear" href="#" onclick="applyServiceFilter('');document.getElementById('service-filter').value='';return false;"
         style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $serviceFilter ? '' : 'display:none' }}">✕ Clear</a>
     </div>
     <div class="live-pill"><span class="live-dot" id="live-dot"></span> Live &mdash; <span id="live-updated">now</span></div>
-    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total) }}</div><div class="tl">{{ $serviceFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
+    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total) }}</div><div class="tl">{{ $projectFilter || $serviceFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
   </div>
 </div>
 
@@ -356,6 +384,7 @@ tr:hover td{background:#f8fafc}
     <button class="period-btn {{ $ticketDefaultPeriod==='week' ?'active-period':'' }}" onclick="setPeriod('overview','week',this)">This Week</button>
     <div class="period-select-wrap"><select id="month-select-overview" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('overview',this)"></select></div>
     <div class="period-select-wrap"><select id="year-select-overview" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('overview',this)"></select></div>
+    @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('overview','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
   </div>
 </div>
 
@@ -595,6 +624,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('geographic','week',this)">This Week</button>
       <div class="period-select-wrap"><select id="month-select-geographic" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('geographic',this)"></select></div>
       <div class="period-select-wrap"><select id="year-select-geographic" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('geographic',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('geographic','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
     </div>
   </div>
   <div class="g2">
@@ -619,6 +649,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('demographics','week',this)">This Week</button>
       <div class="period-select-wrap"><select id="month-select-demographics" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('demographics',this)"></select></div>
       <div class="period-select-wrap"><select id="year-select-demographics" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('demographics',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('demographics','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
     </div>
   </div>
   <div class="g3">
@@ -641,6 +672,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('services','week',this)">This Week</button>
       <div class="period-select-wrap"><select id="month-select-services" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('services',this)"></select></div>
       <div class="period-select-wrap"><select id="year-select-services" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('services',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('services','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
     </div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
@@ -749,6 +781,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn {{ $callDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('calls','week',this)">This Week</button>
       <div class="period-select-wrap"><select id="month-select-calls" class="period-select {{ $callDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('calls',this)"></select></div>
       <div class="period-select-wrap"><select id="year-select-calls" class="period-select {{ $callDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('calls',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('calls','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
     </div>
   </div>
   <div class="kpi-row">
@@ -812,6 +845,7 @@ tr:hover td{background:#f8fafc}
       <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('trends','week',this)">This Week</button>
       <div class="period-select-wrap"><select id="month-select-trends" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('trends',this)"></select></div>
       <div class="period-select-wrap"><select id="year-select-trends" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('trends',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('trends','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
     </div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
@@ -859,6 +893,7 @@ tr:hover td{background:#f8fafc}
         <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('social','week',this)">This Week</button>
         <div class="period-select-wrap"><select id="month-select-social" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('social',this)"></select></div>
         <div class="period-select-wrap"><select id="year-select-social" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('social',this)"></select></div>
+        @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('social','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
       </div>
     </div>
   </div>
@@ -1322,6 +1357,8 @@ let prevPeriodData = @json($prevPeriodData);
 let callTargetRows = @json($callTargetRows);
 let activeService  = @json($serviceFilter);  // '' means all services
 let allServices    = @json($allServices);
+let activeProject  = @json($projectFilter);  // '' means all projects
+let allProjects    = @json($allProjects);
 
 const CAT_LABELS = {
   household_social:     'Household & Social',
@@ -2242,6 +2279,8 @@ const CALL_DEFAULT   = @json($callDefaultPeriod);
 let activeYear  = @json($yearVal);
 let activeMonth = @json($selectedMonth ?? $monthStart->format('Y-m'));
 let availableYears = @json($availableYears);
+let activeDateFrom = @json($dateFrom ?? '');
+let activeDateTo   = @json($dateTo ?? '');
 
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -2329,7 +2368,10 @@ function onMonthSelect(section, sel) {
 
 function fetchWithPeriod(period, section) {
   const params = new URLSearchParams();
-  if (activeService) params.set('service', activeService);
+  if (activeService)  params.set('service',    activeService);
+  if (activeProject)  params.set('project',    activeProject);
+  if (activeDateFrom) params.set('date_from',  activeDateFrom);
+  if (activeDateTo)   params.set('date_to',    activeDateTo);
   if (period === 'year')  params.set('year',  activeYear);
   if (period === 'month') params.set('month', activeMonth);
 
@@ -2489,10 +2531,49 @@ function applyServiceFilter(value) {
   refreshData();
 }
 
+// ── Date range filter ─────────────────────────────────────────────────────────
+function applyDateRange() {
+  const from = document.getElementById('range-from').value;
+  const to   = document.getElementById('range-to').value;
+  if (!from && !to) return;
+  const url = new URL(window.location.href);
+  if (from) url.searchParams.set('date_from', from);
+  else url.searchParams.delete('date_from');
+  if (to) url.searchParams.set('date_to', to || from);
+  else url.searchParams.delete('date_to');
+  // Keep other active filters
+  if (activeService) url.searchParams.set('service', activeService);
+  else url.searchParams.delete('service');
+  if (activeProject) url.searchParams.set('project', activeProject);
+  else url.searchParams.delete('project');
+  window.location.href = url.toString();
+}
+function clearDateRange() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('date_from');
+  url.searchParams.delete('date_to');
+  window.location.href = url.toString();
+}
+
+// ── Project filter ────────────────────────────────────────────────────────────
+function applyProjectFilter(value) {
+  activeProject = value;
+  const url = new URL(window.location.href);
+  if (value) { url.searchParams.set('project', value); }
+  else        { url.searchParams.delete('project'); }
+  window.history.replaceState({}, '', url.toString());
+  const clearLink = document.getElementById('proj-filter-clear');
+  if (clearLink) clearLink.style.display = value ? 'inline' : 'none';
+  refreshData();
+}
+
 // ── Background data refresh (no page reload) ──────────────────────────────────
 function refreshData() {
   const p = new URLSearchParams();
-  if (activeService) p.set('service', activeService);
+  if (activeService)  p.set('service',   activeService);
+  if (activeProject)  p.set('project',   activeProject);
+  if (activeDateFrom) p.set('date_from', activeDateFrom);
+  if (activeDateTo)   p.set('date_to',   activeDateTo);
   if (activeYear)    p.set('year', activeYear);
   if (activeMonth)   p.set('month', activeMonth);
   const params = p.toString() ? '?' + p.toString() : '';
