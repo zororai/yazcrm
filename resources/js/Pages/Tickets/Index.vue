@@ -26,6 +26,7 @@ const showAdd  = ref(false);
 
 // ── Blocked Numbers ──────────────────────────────────────────────────────────
 const showBlocked       = ref(false);
+const blockedTab        = ref('requests'); // 'requests' | 'active'
 const blockedLoading    = ref(false);
 const blockedList       = ref([]);
 const blockedTotal      = ref(0);
@@ -36,6 +37,81 @@ const editingBlocked    = ref(null);
 const blockedForm       = ref({ name: '', numbers: '', limit_type: 'inbound' });
 const blockedSaving     = ref(false);
 const blockedError      = ref('');
+
+// ── Requests ──────────────────────────────────────────────────────────────────
+const reqList       = ref([]);
+const reqLoading    = ref(false);
+const reqError      = ref('');
+const showReqForm   = ref(false);
+const reqForm       = ref({ name: '', numbers: '', limit_type: 'inbound' });
+const reqSaving     = ref(false);
+const rejectingId   = ref(null);
+const rejectReason  = ref('');
+const pendingCount  = computed(() => reqList.value.filter(r => r.status === 'pending').length);
+
+async function loadRequests() {
+    reqLoading.value = true;
+    reqError.value   = '';
+    try {
+        const res  = await fetch('/blocked-number-requests');
+        reqList.value = await res.json();
+    } catch {
+        reqError.value = 'Failed to load requests.';
+    } finally {
+        reqLoading.value = false;
+    }
+}
+
+async function submitRequest() {
+    reqSaving.value = true;
+    reqError.value  = '';
+    try {
+        const res  = await fetch('/blocked-number-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify(reqForm.value),
+        });
+        const data = await res.json();
+        if (res.status >= 400) { reqError.value = data.message || Object.values(data.errors ?? {})[0]?.[0] || 'Error.'; return; }
+        showReqForm.value = false;
+        reqForm.value = { name: '', numbers: '', limit_type: 'inbound' };
+        loadRequests();
+    } catch {
+        reqError.value = 'Network error.';
+    } finally {
+        reqSaving.value = false;
+    }
+}
+
+async function approveRequest(id) {
+    const res  = await fetch(`/blocked-number-requests/${id}/approve`, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+    });
+    const data = await res.json();
+    if (data.ok) loadRequests();
+    else alert(data.message || 'Approve failed.');
+}
+
+async function rejectRequest(id) {
+    const res  = await fetch(`/blocked-number-requests/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+        body: JSON.stringify({ reason: rejectReason.value }),
+    });
+    const data = await res.json();
+    if (data.ok) { rejectingId.value = null; rejectReason.value = ''; loadRequests(); }
+    else alert(data.message || 'Reject failed.');
+}
+
+async function deleteRequest(id) {
+    if (!confirm('Delete this request?')) return;
+    await fetch(`/blocked-number-requests/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+    });
+    loadRequests();
+}
 
 async function loadBlocked() {
     blockedLoading.value = true;
@@ -54,7 +130,13 @@ async function loadBlocked() {
     }
 }
 
-function openBlocked() { showBlocked.value = true; loadBlocked(); }
+function openBlocked() {
+    showBlocked.value = true;
+    blockedTab.value  = 'requests';
+    loadRequests();
+}
+
+watch(blockedTab, (t) => { if (t === 'active') loadBlocked(); });
 
 const debouncedBlockedSearch = debounce(() => { blockedPage.value = 1; loadBlocked(); }, 350);
 watch(blockedSearch, debouncedBlockedSearch);
@@ -782,20 +864,137 @@ const statusColor = {
         <!-- ── Blocked Numbers Modal ─────────────────────────────────────────── -->
         <div v-if="showBlocked" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+
                 <!-- Header -->
                 <div class="flex items-center justify-between px-6 py-4 border-b">
                     <h3 class="font-semibold text-gray-900 flex items-center gap-2">
                         <NoSymbolIcon class="h-5 w-5 text-red-500" /> Blocked Numbers
                     </h3>
-                    <button @click="showBlocked = false; showBlockedForm = false" class="text-gray-400 hover:text-gray-600">
+                    <button @click="showBlocked = false; showBlockedForm = false; showReqForm = false" class="text-gray-400 hover:text-gray-600">
                         <XMarkIcon class="h-5 w-5" />
                     </button>
                 </div>
 
-                <!-- Add/Edit Form -->
-                <div v-if="showBlockedForm" class="px-6 py-4 border-b bg-gray-50">
-                    <h4 class="text-sm font-medium text-gray-700 mb-3">{{ editingBlocked ? 'Edit Rule' : 'Add Blocked Number Rule' }}</h4>
-                    <div class="space-y-3">
+                <!-- Tabs -->
+                <div class="flex border-b text-sm font-medium">
+                    <button @click="blockedTab = 'requests'"
+                        class="px-5 py-2.5 border-b-2 transition-colors"
+                        :class="blockedTab === 'requests' ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                        Block Requests
+                        <span v-if="pendingCount" class="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{{ pendingCount }}</span>
+                    </button>
+                    <button v-if="isAdmin" @click="blockedTab = 'active'"
+                        class="px-5 py-2.5 border-b-2 transition-colors"
+                        :class="blockedTab === 'active' ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                        Active Rules
+                    </button>
+                </div>
+
+                <!-- ── TAB: Requests ── -->
+                <div v-if="blockedTab === 'requests'" class="flex flex-col flex-1 overflow-hidden">
+
+                    <!-- Submit request form -->
+                    <div v-if="showReqForm" class="px-6 py-4 border-b bg-gray-50 space-y-3">
+                        <h4 class="text-sm font-medium text-gray-700">Request a Block</h4>
+                        <div>
+                            <label class="label">Rule Name</label>
+                            <input v-model="reqForm.name" class="input" placeholder="e.g. Harassing caller" />
+                        </div>
+                        <div>
+                            <label class="label">Phone Number(s) <span class="text-gray-400 text-xs">(comma-separated)</span></label>
+                            <input v-model="reqForm.numbers" class="input" placeholder="e.g. 0771234567" />
+                        </div>
+                        <div>
+                            <label class="label">Block Direction</label>
+                            <select v-model="reqForm.limit_type" class="input w-40">
+                                <option value="inbound">Inbound</option>
+                                <option value="outbound">Outbound</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                        <p v-if="reqError" class="text-red-600 text-sm">{{ reqError }}</p>
+                        <div class="flex gap-2">
+                            <button @click="submitRequest" :disabled="reqSaving" class="btn-primary btn-sm">{{ reqSaving ? 'Submitting…' : 'Submit Request' }}</button>
+                            <button @click="showReqForm = false; reqError = ''" class="btn-secondary btn-sm">Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="px-6 py-3 flex justify-between items-center border-b">
+                        <span class="text-sm text-gray-500">{{ reqList.length }} request(s)</span>
+                        <button v-if="!showReqForm" @click="showReqForm = true" class="btn-primary btn-sm inline-flex items-center gap-1">
+                            <PlusIcon class="h-4 w-4" /> Request Block
+                        </button>
+                    </div>
+
+                    <!-- Requests list -->
+                    <div class="overflow-y-auto flex-1 px-6 py-3">
+                        <p v-if="reqLoading" class="text-sm text-gray-500 text-center py-6">Loading…</p>
+                        <p v-else-if="reqError && !reqList.length" class="text-sm text-red-500 text-center py-6">{{ reqError }}</p>
+                        <p v-else-if="!reqList.length" class="text-sm text-gray-400 text-center py-6">No block requests yet.</p>
+                        <div v-else class="space-y-3">
+                            <div v-for="r in reqList" :key="r.id"
+                                class="border rounded-xl p-4 text-sm"
+                                :class="{
+                                    'border-amber-200 bg-amber-50': r.status === 'pending',
+                                    'border-green-200 bg-green-50': r.status === 'approved',
+                                    'border-red-200 bg-red-50':    r.status === 'rejected',
+                                }">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex-1">
+                                        <p class="font-semibold text-gray-800">{{ r.name }}</p>
+                                        <p class="text-gray-500 text-xs mt-0.5">{{ r.numbers }}</p>
+                                        <div class="flex gap-3 mt-1 text-xs text-gray-400">
+                                            <span>{{ r.limit_type }}</span>
+                                            <span>by {{ r.requested_by?.name }}</span>
+                                            <span>{{ new Date(r.created_at).toLocaleDateString() }}</span>
+                                        </div>
+                                        <p v-if="r.status === 'rejected' && r.rejection_reason" class="mt-1 text-xs text-red-600 italic">Reason: {{ r.rejection_reason }}</p>
+                                        <p v-if="r.status !== 'pending'" class="mt-1 text-xs text-gray-400">Reviewed by {{ r.reviewed_by?.name }}</p>
+                                    </div>
+                                    <div class="flex flex-col items-end gap-2 shrink-0">
+                                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                            :class="{
+                                                'bg-amber-100 text-amber-700': r.status === 'pending',
+                                                'bg-green-100 text-green-700': r.status === 'approved',
+                                                'bg-red-100 text-red-700':    r.status === 'rejected',
+                                            }">
+                                            {{ r.status }}
+                                        </span>
+                                        <!-- Admin actions -->
+                                        <div v-if="isAdmin && r.status === 'pending'" class="flex gap-1.5">
+                                            <button @click="approveRequest(r.id)"
+                                                class="text-xs px-2.5 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                                                Approve
+                                            </button>
+                                            <button @click="rejectingId = r.id; rejectReason = ''"
+                                                class="text-xs px-2.5 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium">
+                                                Reject
+                                            </button>
+                                        </div>
+                                        <button v-if="isAdmin" @click="deleteRequest(r.id)" class="text-gray-300 hover:text-red-500">
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Inline reject reason input -->
+                                <div v-if="isAdmin && rejectingId === r.id" class="mt-3 flex gap-2">
+                                    <input v-model="rejectReason" class="input text-xs flex-1" placeholder="Reason (optional)" />
+                                    <button @click="rejectRequest(r.id)" class="btn-sm bg-red-500 text-white hover:bg-red-600 rounded-lg px-3 text-xs font-medium">Confirm Reject</button>
+                                    <button @click="rejectingId = null" class="btn-secondary btn-sm text-xs">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── TAB: Active Rules (admin only) ── -->
+                <div v-if="blockedTab === 'active'" class="flex flex-col flex-1 overflow-hidden">
+
+                    <!-- Add/Edit Form -->
+                    <div v-if="showBlockedForm" class="px-6 py-4 border-b bg-gray-50 space-y-3">
+                        <h4 class="text-sm font-medium text-gray-700">{{ editingBlocked ? 'Edit Rule' : 'Add Rule' }}</h4>
                         <div>
                             <label class="label">Rule Name</label>
                             <input v-model="blockedForm.name" class="input" placeholder="e.g. Spam Caller" />
@@ -814,70 +1013,67 @@ const statusColor = {
                         </div>
                         <p v-if="blockedError" class="text-red-600 text-sm">{{ blockedError }}</p>
                         <div class="flex gap-2">
-                            <button @click="saveBlocked" :disabled="blockedSaving" class="btn-primary btn-sm">
-                                {{ blockedSaving ? 'Saving…' : (editingBlocked ? 'Update' : 'Add Rule') }}
-                            </button>
+                            <button @click="saveBlocked" :disabled="blockedSaving" class="btn-primary btn-sm">{{ blockedSaving ? 'Saving…' : (editingBlocked ? 'Update' : 'Add Rule') }}</button>
                             <button @click="showBlockedForm = false" class="btn-secondary btn-sm">Cancel</button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Search + Add button -->
-                <div class="px-6 py-3 flex gap-2 items-center border-b">
-                    <div class="relative flex-1">
-                        <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                        <input v-model="blockedSearch" class="input pl-9" placeholder="Search by number or name…" />
+                    <!-- Search + Add -->
+                    <div class="px-6 py-3 flex gap-2 items-center border-b">
+                        <div class="relative flex-1">
+                            <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                            <input v-model="blockedSearch" class="input pl-9" placeholder="Search by number or name…" />
+                        </div>
+                        <button v-if="!showBlockedForm" @click="openAddBlocked" class="btn-primary btn-sm inline-flex items-center gap-1">
+                            <PlusIcon class="h-4 w-4" /> Add Rule
+                        </button>
                     </div>
-                    <button v-if="!showBlockedForm" @click="openAddBlocked" class="btn-primary btn-sm inline-flex items-center gap-1">
-                        <PlusIcon class="h-4 w-4" /> Add Rule
-                    </button>
-                </div>
 
-                <!-- List -->
-                <div class="overflow-y-auto flex-1 px-6 py-3">
-                    <p v-if="blockedLoading" class="text-sm text-gray-500 text-center py-6">Loading…</p>
-                    <p v-else-if="blockedError && !blockedList.length" class="text-sm text-red-500 text-center py-6">{{ blockedError }}</p>
-                    <p v-else-if="!blockedList.length" class="text-sm text-gray-400 text-center py-6">No blocked number rules found.</p>
-                    <table v-else class="w-full text-sm">
-                        <thead>
-                            <tr class="text-left text-gray-500 border-b">
-                                <th class="pb-2 font-medium">Name</th>
-                                <th class="pb-2 font-medium">Numbers</th>
-                                <th class="pb-2 font-medium">Direction</th>
-                                <th class="pb-2"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="row in blockedList" :key="row.id" class="border-b last:border-0 hover:bg-gray-50">
-                                <td class="py-2 pr-3 font-medium text-gray-800">{{ row.name }}</td>
-                                <td class="py-2 pr-3 text-gray-600 max-w-[200px] truncate" :title="row.number_list">{{ row.number_list }}</td>
-                                <td class="py-2 pr-3">
-                                    <span class="text-xs rounded-full px-2 py-0.5 font-medium"
-                                        :class="{ 'bg-blue-100 text-blue-700': row.limit_type === 'inbound', 'bg-orange-100 text-orange-700': row.limit_type === 'outbound', 'bg-purple-100 text-purple-700': row.limit_type === 'both' }">
-                                        {{ row.limit_type }}
-                                    </span>
-                                </td>
-                                <td class="py-2 flex gap-2 justify-end">
-                                    <button @click="openEditBlocked(row)" class="text-gray-400 hover:text-blue-600" title="Edit">
-                                        <PencilIcon class="h-4 w-4" />
-                                    </button>
-                                    <button @click="deleteBlocked(row.id)" class="text-gray-400 hover:text-red-600" title="Delete">
-                                        <TrashIcon class="h-4 w-4" />
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- Pagination -->
-                    <div v-if="blockedTotal > 50" class="flex justify-between items-center mt-3 text-sm text-gray-500">
-                        <span>{{ blockedTotal }} total rules</span>
-                        <div class="flex gap-2">
-                            <button :disabled="blockedPage <= 1" @click="blockedPage--; loadBlocked()" class="btn-secondary btn-sm" :class="{ 'opacity-40 cursor-not-allowed': blockedPage <= 1 }">Prev</button>
-                            <button :disabled="blockedPage * 50 >= blockedTotal" @click="blockedPage++; loadBlocked()" class="btn-secondary btn-sm" :class="{ 'opacity-40 cursor-not-allowed': blockedPage * 50 >= blockedTotal }">Next</button>
+                    <!-- List -->
+                    <div class="overflow-y-auto flex-1 px-6 py-3">
+                        <p v-if="blockedLoading" class="text-sm text-gray-500 text-center py-6">Loading…</p>
+                        <p v-else-if="blockedError && !blockedList.length" class="text-sm text-red-500 text-center py-6">{{ blockedError }}</p>
+                        <p v-else-if="!blockedList.length" class="text-sm text-gray-400 text-center py-6">No blocked number rules found.</p>
+                        <table v-else class="w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-500 border-b">
+                                    <th class="pb-2 font-medium">Name</th>
+                                    <th class="pb-2 font-medium">Numbers</th>
+                                    <th class="pb-2 font-medium">Direction</th>
+                                    <th class="pb-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="row in blockedList" :key="row.id" class="border-b last:border-0 hover:bg-gray-50">
+                                    <td class="py-2 pr-3 font-medium text-gray-800">{{ row.name }}</td>
+                                    <td class="py-2 pr-3 text-gray-600 max-w-[200px] truncate" :title="row.number_list">{{ row.number_list }}</td>
+                                    <td class="py-2 pr-3">
+                                        <span class="text-xs rounded-full px-2 py-0.5 font-medium"
+                                            :class="{ 'bg-blue-100 text-blue-700': row.limit_type === 'inbound', 'bg-orange-100 text-orange-700': row.limit_type === 'outbound', 'bg-purple-100 text-purple-700': row.limit_type === 'both' }">
+                                            {{ row.limit_type }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2 flex gap-2 justify-end">
+                                        <button @click="openEditBlocked(row)" class="text-gray-400 hover:text-blue-600" title="Edit">
+                                            <PencilIcon class="h-4 w-4" />
+                                        </button>
+                                        <button @click="deleteBlocked(row.id)" class="text-gray-400 hover:text-red-600" title="Delete">
+                                            <TrashIcon class="h-4 w-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div v-if="blockedTotal > 50" class="flex justify-between items-center mt-3 text-sm text-gray-500">
+                            <span>{{ blockedTotal }} total rules</span>
+                            <div class="flex gap-2">
+                                <button :disabled="blockedPage <= 1" @click="blockedPage--; loadBlocked()" class="btn-secondary btn-sm" :class="{ 'opacity-40 cursor-not-allowed': blockedPage <= 1 }">Prev</button>
+                                <button :disabled="blockedPage * 50 >= blockedTotal" @click="blockedPage++; loadBlocked()" class="btn-secondary btn-sm" :class="{ 'opacity-40 cursor-not-allowed': blockedPage * 50 >= blockedTotal }">Next</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </AppLayout>

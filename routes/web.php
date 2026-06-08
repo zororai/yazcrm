@@ -68,6 +68,13 @@ Route::middleware('auth')->group(function () {
     Route::put('blocked-numbers/{id}',      [Web\BlockedNumberController::class, 'update'])->name('blocked-numbers.update');
     Route::delete('blocked-numbers/{id}',   [Web\BlockedNumberController::class, 'destroy'])->name('blocked-numbers.destroy');
 
+    // ─── Blocked Number Requests (agents submit, admins approve) ─────────────
+    Route::get('blocked-number-requests',                          [Web\BlockedNumberRequestController::class, 'index'])->name('blocked-number-requests.index');
+    Route::post('blocked-number-requests',                         [Web\BlockedNumberRequestController::class, 'store'])->name('blocked-number-requests.store');
+    Route::post('blocked-number-requests/{blockedNumberRequest}/approve', [Web\BlockedNumberRequestController::class, 'approve'])->name('blocked-number-requests.approve');
+    Route::post('blocked-number-requests/{blockedNumberRequest}/reject',  [Web\BlockedNumberRequestController::class, 'reject'])->name('blocked-number-requests.reject');
+    Route::delete('blocked-number-requests/{blockedNumberRequest}', [Web\BlockedNumberRequestController::class, 'destroy'])->name('blocked-number-requests.destroy');
+
     // ─── SBC / YALeP — all authenticated users ───────────────────────────────
     Route::get('sbc',                         [Web\SbcController::class, 'index'])->name('sbc.index');
     Route::post('sbc/import',                 [Web\SbcController::class, 'import'])->name('sbc.import');
