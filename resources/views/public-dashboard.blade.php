@@ -2520,15 +2520,10 @@ function loadBotTrendChart() {
 
 // ── Service filter ────────────────────────────────────────────────────────────
 function applyServiceFilter(value) {
-  activeService = value;
   const url = new URL(window.location.href);
-  if (value) { url.searchParams.set('service', value); }
-  else        { url.searchParams.delete('service'); }
-  window.history.replaceState({}, '', url.toString());
-  // Update clear link visibility
-  const clearLink = document.getElementById('svc-filter-clear');
-  if (clearLink) clearLink.style.display = value ? 'inline' : 'none';
-  refreshData();
+  if (value) url.searchParams.set('service', value);
+  else url.searchParams.delete('service');
+  window.location.href = url.toString();
 }
 
 // ── Date range filter ─────────────────────────────────────────────────────────
@@ -2557,14 +2552,10 @@ function clearDateRange() {
 
 // ── Project filter ────────────────────────────────────────────────────────────
 function applyProjectFilter(value) {
-  activeProject = value;
   const url = new URL(window.location.href);
-  if (value) { url.searchParams.set('project', value); }
-  else        { url.searchParams.delete('project'); }
-  window.history.replaceState({}, '', url.toString());
-  const clearLink = document.getElementById('proj-filter-clear');
-  if (clearLink) clearLink.style.display = value ? 'inline' : 'none';
-  refreshData();
+  if (value) url.searchParams.set('project', value);
+  else url.searchParams.delete('project');
+  window.location.href = url.toString();
 }
 
 // ── Background data refresh (no page reload) ──────────────────────────────────
