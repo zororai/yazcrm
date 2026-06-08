@@ -7,6 +7,7 @@ import {
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon, FolderOpenIcon,
     ExclamationTriangleIcon, ChatBubbleLeftRightIcon, ShieldCheckIcon, TableCellsIcon,
+    ServerStackIcon, ShieldExclamationIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -148,6 +149,8 @@ const navigation = computed(() => [
     ...(can('by_project')   ? [{ name: 'By Project',  href: '/distress-domains/section/project', icon: FolderOpenIcon }] : []),
     ...(can('domains')      ? [{ name: 'Domains',     href: '/distress-domains',                 icon: TagIcon }] : []),
     ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
+    ...(isAdmin.value       ? [{ name: 'Asset Register', href: '/registry',                     icon: ServerStackIcon }] : []),
+    ...(isAdmin.value       ? [{ name: 'Risk Register',  href: '/risk',                         icon: ShieldExclamationIcon }] : []),
     ...(isAdmin.value       ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
     ...(can('yalep') ? [{ name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon }] : []),
     ...(isAdmin.value       ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),

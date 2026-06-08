@@ -20,7 +20,8 @@
       "Bash(grep -n \"function refreshData\\\\|\\\\/screen\\\\/data\" resources/views/public-dashboard.blade.php)",
       "PowerShell(php artisan route:list --path=screen 2>&1)",
       "PowerShell(php -l resources/views/public-dashboard.blade.php 2>&1)",
-      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate --force 2>&1)"
+      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate --force 2>&1)",
+      "Bash(git merge *)"
     ]
   }
 }

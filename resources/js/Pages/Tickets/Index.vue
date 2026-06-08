@@ -295,8 +295,11 @@ function store() {
 function deleteTicket(ticket) {
     if (!confirm(`Delete ticket #${ticket.id} "${ticket.subject}"? This cannot be undone.`)) return;
     router.delete(`/tickets/${ticket.id}`, {
-        preserveScroll: true,
-        onError: (errors) => alert('Delete failed: ' + JSON.stringify(errors)),
+        preserveScroll: false,
+        onError: (errors) => {
+            const msg = Object.values(errors)[0] ?? 'Delete failed. Please refresh and try again.';
+            alert(msg);
+        },
     });
 }
 

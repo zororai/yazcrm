@@ -81,6 +81,35 @@ Route::middleware('auth')->group(function () {
     Route::get('sbc/import-template',         [Web\SbcController::class, 'importTemplate'])->name('sbc.import-template');
     Route::get('sbc/{signup}/certificate',    [Web\SbcController::class, 'certificate'])->name('sbc.certificate');
 
+    // ─── Asset Register (admin only) ─────────────────────────────────────────
+    Route::middleware('admin')->prefix('registry')->group(function () {
+        Route::get('/', [Web\AssetRegisterController::class, 'index'])->name('registry.index');
+        Route::get('/assets/create', [Web\AssetController::class, 'create'])->name('assets.create');
+        Route::post('/assets', [Web\AssetController::class, 'store'])->name('assets.store');
+        Route::get('/assets/{asset}', [Web\AssetController::class, 'show'])->name('assets.show');
+        Route::get('/assets/{asset}/edit', [Web\AssetController::class, 'edit'])->name('assets.edit');
+        Route::put('/assets/{asset}', [Web\AssetController::class, 'update'])->name('assets.update');
+        Route::delete('/assets/{asset}', [Web\AssetController::class, 'destroy'])->name('assets.destroy');
+        Route::get('/export', [Web\AssetRegisterController::class, 'export'])->name('registry.export');
+    });
+
+    // ─── Risk Register (admin only) ──────────────────────────────────────────
+    Route::middleware('admin')->prefix('risk')->group(function () {
+        Route::get('/', [Web\RiskDashboardController::class, 'index'])->name('risk.dashboard');
+        Route::get('/risks', [Web\RiskController::class, 'index'])->name('risks.index');
+        Route::post('/risks', [Web\RiskController::class, 'store'])->name('risks.store');
+        Route::put('/risks/{risk}', [Web\RiskController::class, 'update'])->name('risks.update');
+        Route::delete('/risks/{risk}', [Web\RiskController::class, 'destroy'])->name('risks.destroy');
+        Route::post('/controls', [Web\ControlController::class, 'store'])->name('controls.store');
+        Route::put('/controls/{control}', [Web\ControlController::class, 'update'])->name('controls.update');
+        Route::delete('/controls/{control}', [Web\ControlController::class, 'destroy'])->name('controls.destroy');
+        Route::get('/actions', [Web\PriorityActionController::class, 'index'])->name('actions.index');
+        Route::post('/actions', [Web\PriorityActionController::class, 'store'])->name('actions.store');
+        Route::put('/actions/{action}', [Web\PriorityActionController::class, 'update'])->name('actions.update');
+        Route::delete('/actions/{action}', [Web\PriorityActionController::class, 'destroy'])->name('actions.destroy');
+        Route::get('/report', [Web\RiskReportController::class, 'export'])->name('risk.report');
+    });
+
     // ─── Admin only ───────────────────────────────────────────────────────────
     Route::middleware('admin')->group(function () {
         Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
