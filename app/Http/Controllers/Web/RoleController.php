@@ -14,6 +14,7 @@ class RoleController extends Controller
     private array $validPerms = [
         'extensions','analytics','targets','by_project',
         'domains','bot_contacts','users','yeastar','yalep',
+        'registry','risk',
     ];
 
     public function index(): Response
