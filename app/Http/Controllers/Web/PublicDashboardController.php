@@ -15,13 +15,15 @@ class PublicDashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $service  = trim($request->input('service', ''));
-        $project  = trim($request->input('project', ''));
-        $year     = $request->input('year');
-        $month    = $request->input('month');
-        $dateFrom = trim($request->input('date_from', ''));
-        $dateTo   = trim($request->input('date_to', ''));
-        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo);
+        $service      = trim($request->input('service', ''));
+        $project      = trim($request->input('project', ''));
+        $year         = $request->input('year');
+        $month        = $request->input('month');
+        $dateFrom     = trim($request->input('date_from', ''));
+        $dateTo       = trim($request->input('date_to', ''));
+        $genderFilter = trim($request->input('gender', ''));
+        $ageFilter    = trim($request->input('age', ''));
+        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo, $genderFilter, $ageFilter);
 
         return response()
             ->view('public-dashboard', $d)
@@ -32,13 +34,15 @@ class PublicDashboardController extends Controller
 
     public function data(Request $request): JsonResponse
     {
-        $service  = trim($request->input('service', ''));
-        $project  = trim($request->input('project', ''));
-        $year     = $request->input('year');
-        $month    = $request->input('month');
-        $dateFrom = trim($request->input('date_from', ''));
-        $dateTo   = trim($request->input('date_to', ''));
-        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo);
+        $service      = trim($request->input('service', ''));
+        $project      = trim($request->input('project', ''));
+        $year         = $request->input('year');
+        $month        = $request->input('month');
+        $dateFrom     = trim($request->input('date_from', ''));
+        $dateTo       = trim($request->input('date_to', ''));
+        $genderFilter = trim($request->input('gender', ''));
+        $ageFilter    = trim($request->input('age', ''));
+        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo, $genderFilter, $ageFilter);
 
         return response()->json([
             'periodData'          => $d['periodData'],
@@ -66,6 +70,8 @@ class PublicDashboardController extends Controller
             'allProjects'        => $d['allProjects'],
             'dateFrom'           => $d['dateFrom'],
             'dateTo'             => $d['dateTo'],
+            'genderFilter'       => $d['genderFilter'],
+            'ageFilter'          => $d['ageFilter'],
             'serviceUptake'      => $d['serviceUptake'],
             'availableYears'     => $d['availableYears'],
             'byPurpose'          => $d['byPurpose']->map(fn($r) => ['purpose_of_call' => $r->purpose_of_call, 'cnt' => $r->cnt]),
@@ -85,7 +91,7 @@ class PublicDashboardController extends Controller
         ]);
     }
 
-    private function buildData(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = ''): array
+    private function buildData(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = ''): array
     {
         // ── All-time scalars ─────────────────────────────────────────────────
         // Always build unfiltered list of services for the dropdown
@@ -98,9 +104,23 @@ class PublicDashboardController extends Controller
             ->whereNotNull('project')->where('project', '!=', '')
             ->distinct()->orderBy('project')->pluck('project');
 
+        // Age filter closure — defined early so all queries can use it
+        $applyAge = function ($q) use ($ageFilter) {
+            return match($ageFilter) {
+                'u18'   => $q->whereBetween('caller_age', [1, 17]),
+                '18-24' => $q->whereBetween('caller_age', [18, 24]),
+                '25-34' => $q->whereBetween('caller_age', [25, 34]),
+                '35-44' => $q->whereBetween('caller_age', [35, 44]),
+                '45p'   => $q->where('caller_age', '>=', 45),
+                default => $q,
+            };
+        };
+
         $a = DB::table('tickets')->whereNull('deleted_at')
             ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
             ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
+            ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
+            ->when($ageFilter,     $applyAge)
             ->selectRaw('
             COUNT(*) as total,
             SUM(call_validity = "valid")          as valid_total,
@@ -130,7 +150,9 @@ class PublicDashboardController extends Controller
         // ── All-time groupby queries ─────────────────────────────────────────
         $base = DB::table('tickets')->whereNull('deleted_at')
             ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
-            ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter));
+            ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
+            ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
+            ->when($ageFilter,     $applyAge);
 
         $byStatus   = (clone $base)->select('status', DB::raw('count(*) as cnt'))->groupBy('status')->pluck('cnt', 'status');
         $byProvince = (clone $base)->whereNotNull('province')->where('province', '!=', '')->select('province', DB::raw('count(*) as cnt'))->groupBy('province')->orderByDesc('cnt')->get();
@@ -160,6 +182,8 @@ class PublicDashboardController extends Controller
         $availableYears = DB::table('tickets')->whereNull('deleted_at')
             ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
             ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
+            ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
+            ->when($ageFilter,     $applyAge)
             ->selectRaw("YEAR(created_at) as yr")
             ->groupBy('yr')->orderByDesc('yr')->pluck('yr')->map(fn ($y) => (int) $y)->values();
 
@@ -204,7 +228,9 @@ class PublicDashboardController extends Controller
         foreach ($ticketPeriods as $pKey => [$start, $end]) {
             $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end])
                 ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
-                ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter));
+                ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
+                ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
+                ->when($ageFilter,     $applyAge);
 
             $ps = (clone $pb)->selectRaw('
                 COUNT(*) as total,
@@ -291,18 +317,43 @@ class PublicDashboardController extends Controller
                     ->map(fn ($r) => ['type' => $r->psychosocial_type, 'total' => (int)$r->cnt, 'uptake' => (int)$r->uptake]),
                 'by_referral'        => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->referred_to, $r->cnt]),
                 'by_purpose'         => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get()->map(fn ($r) => [$r->purpose_of_call, $r->cnt]),
+                'by_age_gender'      => (clone $pb)
+                    ->whereNotNull('caller_gender')->where('caller_gender', '!=', '')
+                    ->whereBetween('caller_age', [10, 120])
+                    ->selectRaw("
+                        CASE
+                            WHEN caller_age BETWEEN 10 AND 14 THEN '10-14'
+                            WHEN caller_age BETWEEN 15 AND 19 THEN '15-19'
+                            WHEN caller_age BETWEEN 20 AND 25 THEN '20-25'
+                            ELSE '25+'
+                        END as age_band,
+                        caller_gender,
+                        COUNT(*) as cnt
+                    ")
+                    ->groupBy('age_band', 'caller_gender')
+                    ->get()
+                    ->groupBy('age_band')
+                    ->map(fn ($rows) => $rows->pluck('cnt', 'caller_gender')->toArray())
+                    ->toArray(),
                 'by_agent'           => DB::table('users')
                     ->where('users.is_active', true)
                     ->leftJoin('extensions', 'extensions.user_id', '=', 'users.id')
-                    ->leftJoin('tickets', function ($join) use ($start, $end, $serviceFilter, $projectFilter) {
+                    ->leftJoin('tickets', function ($join) use ($start, $end, $serviceFilter, $projectFilter, $genderFilter, $ageFilter) {
                         $join->on('tickets.agent_id', '=', 'users.id')
                              ->whereNull('tickets.deleted_at')
                              ->whereBetween('tickets.created_at', [$start, $end]);
-                        if ($serviceFilter) {
-                            $join->where('tickets.services_requested', $serviceFilter);
-                        }
-                        if ($projectFilter) {
-                            $join->where('tickets.project', $projectFilter);
+                        if ($serviceFilter) $join->where('tickets.services_requested', $serviceFilter);
+                        if ($projectFilter) $join->where('tickets.project', $projectFilter);
+                        if ($genderFilter)  $join->where('tickets.caller_gender', $genderFilter);
+                        if ($ageFilter) {
+                            match($ageFilter) {
+                                'u18'   => $join->whereBetween('tickets.caller_age', [1, 17]),
+                                '18-24' => $join->whereBetween('tickets.caller_age', [18, 24]),
+                                '25-34' => $join->whereBetween('tickets.caller_age', [25, 34]),
+                                '35-44' => $join->whereBetween('tickets.caller_age', [35, 44]),
+                                '45p'   => $join->where('tickets.caller_age', '>=', 45),
+                                default => null,
+                            };
                         }
                     })
                     ->selectRaw('
@@ -340,7 +391,9 @@ class PublicDashboardController extends Controller
         foreach ($prevBounds as $pKey => [$start, $end]) {
             $pb = DB::table('tickets')->whereNull('deleted_at')->whereBetween('created_at', [$start, $end])
                 ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
-                ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter));
+                ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
+                ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
+                ->when($ageFilter,     $applyAge);
             $prevPeriodData[$pKey] = [
                 'total'      => (clone $pb)->count(),
                 'by_purpose' => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')
@@ -491,6 +544,7 @@ class PublicDashboardController extends Controller
             'serviceFilter', 'allServices',
             'projectFilter', 'allProjects',
             'dateFrom', 'dateTo',
+            'genderFilter', 'ageFilter',
             'availableYears', 'yearVal', 'selectedMonth', 'monthStart'
         );
     }

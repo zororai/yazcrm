@@ -354,8 +354,37 @@ tr:hover td{background:#f8fafc}
       <a id="svc-filter-clear" href="#" onclick="applyServiceFilter('');document.getElementById('service-filter').value='';return false;"
         style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $serviceFilter ? '' : 'display:none' }}">✕ Clear</a>
     </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Gender</label>
+      <select id="gender-filter"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:130px">
+        <option value="">All Genders</option>
+        <option value="male"   {{ $genderFilter==='male'   ? 'selected':'' }}>Male</option>
+        <option value="female" {{ $genderFilter==='female' ? 'selected':'' }}>Female</option>
+      </select>
+      <button onclick="applyGenderFilter(document.getElementById('gender-filter').value)"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply</button>
+      <a href="#" onclick="applyGenderFilter('');document.getElementById('gender-filter').value='';return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $genderFilter ? '' : 'display:none' }}" id="gender-filter-clear">✕ Clear</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Age Group</label>
+      <select id="age-filter"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:130px">
+        <option value="">All Ages</option>
+        <option value="u18"   {{ $ageFilter==='u18'   ? 'selected':'' }}>Under 18</option>
+        <option value="18-24" {{ $ageFilter==='18-24'  ? 'selected':'' }}>18 – 24</option>
+        <option value="25-34" {{ $ageFilter==='25-34'  ? 'selected':'' }}>25 – 34</option>
+        <option value="35-44" {{ $ageFilter==='35-44'  ? 'selected':'' }}>35 – 44</option>
+        <option value="45p"   {{ $ageFilter==='45p'   ? 'selected':'' }}>45+</option>
+      </select>
+      <button onclick="applyAgeFilter(document.getElementById('age-filter').value)"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply</button>
+      <a href="#" onclick="applyAgeFilter('');document.getElementById('age-filter').value='';return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $ageFilter ? '' : 'display:none' }}" id="age-filter-clear">✕ Clear</a>
+    </div>
     <div class="live-pill"><span class="live-dot" id="live-dot"></span> Live &mdash; <span id="live-updated">now</span></div>
-    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total) }}</div><div class="tl">{{ $projectFilter || $serviceFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
+    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total) }}</div><div class="tl">{{ $projectFilter || $serviceFilter || $genderFilter || $ageFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
   </div>
 </div>
 
@@ -422,13 +451,13 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
 
-  {{-- Card 2: Resolved Cases --}}
+  {{-- Card 2: High Risk Cases --}}
   <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <div style="width:36px;height:36px;border-radius:50%;background:#ea580c;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       </div>
-      <span style="font-weight:700;font-size:13px;color:#374151">Resolved Cases</span>
+      <span style="font-weight:700;font-size:13px;color:#374151">High Risk Cases</span>
     </div>
     <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1;margin-bottom:10px" id="ov-resolved-new">{{ number_format($resolvedTotal) }}</div>
 
@@ -661,6 +690,10 @@ tr:hover td{background:#f8fafc}
     <h3>Key Population Groups</h3>
     <div id="dem-keypops"></div>
   </div>
+  <div class="s-card" style="margin-top:14px">
+    <h3>Key Population Groups by Gender &amp; Age</h3>
+    <div style="height:280px"><canvas id="demAgeGenderChart"></canvas></div>
+  </div>
 </div>
 
 {{-- ══════════════════════════════════ SERVICES ══════════════════════════════════ --}}
@@ -733,7 +766,7 @@ tr:hover td{background:#f8fafc}
   <div class="g3">
     <div class="s-card"><h3>Top Services Requested</h3><div class="ch220"><canvas id="svcServiceChart"></canvas></div></div>
     <div class="s-card"><h3>Top Referral Destinations</h3><div class="ch220"><canvas id="svcReferralChart"></canvas></div></div>
-    <div class="s-card"><h3>Key Population Groups</h3><div class="ch220"><canvas id="svcKeyPopsChart"></canvas></div></div>
+    <div class="s-card"><h3>Key Population Groups by Gender &amp; Age</h3><div style="height:280px"><canvas id="svcKeyPopsChart"></canvas></div></div>
   </div>
   <div class="s-card">
     <h3>Services Detail</h3>
@@ -1689,6 +1722,15 @@ function updateDemographics(p) {
 
   document.getElementById('dem-keypops').innerHTML =
     progressBars(d.by_key_pops, d.total, '#8b5cf6', 'No key pops data for this period');
+
+  // Key Population Groups by Gender & Age grouped bar chart
+  const ageBands = ['10-14','15-19','20-25','25+'];
+  const agGender = d.by_age_gender ?? {};
+  rcGrouped('demAgeGenderChart', ageBands, [
+    { label:'Male',   backgroundColor:'#3b82f6', data: ageBands.map(b => agGender[b]?.male   ?? 0) },
+    { label:'Female', backgroundColor:'#ec4899', data: ageBands.map(b => agGender[b]?.female ?? 0) },
+    { label:'Other',  backgroundColor:'#a78bfa', data: ageBands.map(b => agGender[b]?.other  ?? 0) },
+  ]);
 }
 
 // ── Grouped bar chart (2 series) ───────────────────────────────────────────────
@@ -1767,7 +1809,13 @@ function updateServices(p) {
 
   rc('svcServiceChart',  'bar', d.by_service.map(r  => r[0]), d.by_service.map(r  => r[1]), { single:'#0d9488', legend:false, indexAxis:'y' });
   rc('svcReferralChart', 'bar', d.by_referral.map(r => r[0]), d.by_referral.map(r => r[1]), { single:'#fbbf24', legend:false, indexAxis:'y' });
-  rc('svcKeyPopsChart',  'doughnut', d.by_key_pops.map(r => r[0]), d.by_key_pops.map(r => r[1]), {});
+  const ageBands2 = ['10-14','15-19','20-25','25+'];
+  const agGender2 = d.by_age_gender ?? {};
+  rcGrouped('svcKeyPopsChart', ageBands2, [
+    { label:'Male',   backgroundColor:'#3b82f6', data: ageBands2.map(b => agGender2[b]?.male   ?? 0) },
+    { label:'Female', backgroundColor:'#ec4899', data: ageBands2.map(b => agGender2[b]?.female ?? 0) },
+    { label:'Other',  backgroundColor:'#a78bfa', data: ageBands2.map(b => agGender2[b]?.other  ?? 0) },
+  ]);
 
   document.getElementById('svc-bars').innerHTML =
     progressBars(d.by_service, d.total, '#0d9488', 'No services data for this period');
@@ -2555,6 +2603,22 @@ function applyProjectFilter(value) {
   const url = new URL(window.location.href);
   if (value) url.searchParams.set('project', value);
   else url.searchParams.delete('project');
+  window.location.href = url.toString();
+}
+
+// ── Gender filter ─────────────────────────────────────────────────────────────
+function applyGenderFilter(value) {
+  const url = new URL(window.location.href);
+  if (value) url.searchParams.set('gender', value);
+  else url.searchParams.delete('gender');
+  window.location.href = url.toString();
+}
+
+// ── Age filter ────────────────────────────────────────────────────────────────
+function applyAgeFilter(value) {
+  const url = new URL(window.location.href);
+  if (value) url.searchParams.set('age', value);
+  else url.searchParams.delete('age');
   window.location.href = url.toString();
 }
 
