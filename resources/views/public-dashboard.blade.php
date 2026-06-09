@@ -451,7 +451,8 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
 
-  {{-- Card 2: Referred Cases --}}
+  {{-- Card 2: Referred Cases = total − high risk --}}
+  @php $referredCasesTotal = $total - $immediateAct; $referredCasesPct = $total > 0 ? round($referredCasesTotal/$total*100,1) : 0; @endphp
   <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -459,32 +460,33 @@ tr:hover td{background:#f8fafc}
       </div>
       <span style="font-weight:700;font-size:13px;color:#374151">Referred Cases</span>
     </div>
-    <div style="font-size:34px;font-weight:900;color:#2563eb;line-height:1.1;margin-bottom:10px" id="ov-referred-new">{{ number_format($referredTotal) }}</div>
+    <div style="font-size:34px;font-weight:900;color:#2563eb;line-height:1.1;margin-bottom:10px" id="ov-referred-new">{{ number_format($referredCasesTotal) }}</div>
 
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <svg width="60" height="60" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="26" fill="none" stroke="#dbeafe" stroke-width="6"/>
-        <circle id="ov-ref-comp-arc" cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
-          stroke-dasharray="{{ $circ * min($referralCompPct,100) / 100 }} {{ $circ }}"
+        <circle id="ov-ref-comp-arc" cx="30" cy="30" r="26" fill="none" stroke="#2563eb" stroke-width="6"
+          stroke-dasharray="{{ $circ * min($referredCasesPct,100) / 100 }} {{ $circ }}"
           stroke-linecap="round" transform="rotate(-90 30 30)"/>
-        <text id="ov-ref-comp-txt" x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#ea580c">{{ $referralCompPct }}%</text>
+        <text id="ov-ref-comp-txt" x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#2563eb">{{ $referredCasesPct }}%</text>
       </svg>
       <div>
-        <div style="font-size:11px;font-weight:700;color:#374151">Referral Completion</div>
-        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes</div>
+        <div style="font-size:11px;font-weight:700;color:#374151">% of Total</div>
+        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes confirmed</div>
       </div>
     </div>
 
     <div style="background:#f0f9ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
       <div style="font-size:20px">🤝</div>
       <div>
-        <div style="font-size:10px;color:#6b7280">Case Conference Calls</div>
-        <div id="ov-imm-cnt" style="font-size:18px;font-weight:900;color:#1d4ed8">{{ number_format($immediateAct) }}</div>
+        <div style="font-size:10px;color:#6b7280">Referral Completion</div>
+        <div id="ov-imm-cnt" style="font-size:18px;font-weight:900;color:#1d4ed8">{{ $referralCompPct }}%</div>
       </div>
     </div>
   </div>
 
-  {{-- Card 3: High Risk Cases --}}
+  {{-- Card 3: High Risk Cases = immediate_action_required --}}
+  @php $highRiskPct = $total > 0 ? round($immediateAct/$total*100,1) : 0; @endphp
   <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <div style="width:36px;height:36px;border-radius:50%;background:#ea580c;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -492,19 +494,19 @@ tr:hover td{background:#f8fafc}
       </div>
       <span style="font-weight:700;font-size:13px;color:#374151">High Risk Cases</span>
     </div>
-    <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1;margin-bottom:10px" id="ov-resolved-new">{{ number_format($resolvedTotal) }}</div>
+    <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1;margin-bottom:10px" id="ov-resolved-new">{{ number_format($immediateAct) }}</div>
 
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
       <svg width="60" height="60" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="26" fill="none" stroke="#fee2e2" stroke-width="6"/>
         <circle id="ov-pending-arc" cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
-          stroke-dasharray="{{ $circ * $pendingPct / 100 }} {{ $circ }}"
+          stroke-dasharray="{{ $circ * $highRiskPct / 100 }} {{ $circ }}"
           stroke-linecap="round" transform="rotate(-90 30 30)"/>
-        <text id="ov-pending-txt" x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#ea580c">{{ $pendingPct }}%</text>
+        <text id="ov-pending-txt" x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#ea580c">{{ $highRiskPct }}%</text>
       </svg>
       <div>
-        <div style="font-size:11px;font-weight:700;color:#374151">Pending Cases</div>
-        <div id="ov-pending-open" style="font-size:10px;color:#9ca3af">{{ number_format($pendingTotal) }} open</div>
+        <div style="font-size:11px;font-weight:700;color:#374151">% of Total</div>
+        <div id="ov-pending-open" style="font-size:10px;color:#9ca3af">{{ number_format($pendingTotal) }} pending</div>
       </div>
     </div>
 
@@ -535,20 +537,17 @@ tr:hover td{background:#f8fafc}
     <div style="font-size:11px;color:#6b7280;margin-bottom:8px">YALeP Course Completions</div>
     <div style="font-size:10px;color:#6b7280;margin-bottom:10px">Total Youth Engaged : <strong style="color:#1f2937">{{ number_format($sbcEngagedTotal) }}</strong></div>
 
-    <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-bottom:8px">
-      <div style="font-size:10px;color:#6b7280;margin-bottom:6px">New Calls Vs Repeats</div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1;background:#eff6ff;border-radius:8px;padding:6px 10px;text-align:center">
-          <div style="font-size:15px;font-weight:900;color:#2563eb" id="ov-new-callers">{{ number_format($newCallers) }}</div>
-          <div style="font-size:9px;color:#6b7280">New</div>
-        </div>
-        <div style="flex:1;background:#fef3c7;border-radius:8px;padding:6px 10px;text-align:center">
-          <div style="font-size:15px;font-weight:900;color:#d97706" id="ov-repeat-callers">{{ number_format($repeatTotal) }}</div>
-          <div style="font-size:9px;color:#6b7280">Repeats</div>
-        </div>
-      </div>
-    </div>
 
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="50" height="50" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#dbeafe" stroke-width="6"/>
+        <circle id="ov-male-arc" cx="30" cy="30" r="26" fill="none" stroke="#2563eb" stroke-width="6"
+          stroke-dasharray="{{ $circ * min($malePct,100) / 100 }} {{ $circ }}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text id="ov-male-txt" x="30" y="34" text-anchor="middle" font-size="11" font-weight="800" fill="#2563eb">{{ $malePct }}%</text>
+      </svg>
+      <div style="font-size:10px;color:#6b7280">Males</div>
+    </div>
     <div style="display:flex;align-items:center;gap:10px">
       <svg width="50" height="50" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="26" fill="none" stroke="#fce7f3" stroke-width="6"/>
@@ -574,7 +573,7 @@ tr:hover td{background:#f8fafc}
   <div style="display:flex;gap:0;border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px">
     @foreach([['📞','Total',  'ov-c-total',   $sc['total']],   ['📥','Inbound', 'ov-c-inbound', $sc['inbound']],
               ['📤','Outbound','ov-c-outbound',$sc['outbound']],['🚨','Urgent',  'ov-c-urgent',  $urgentOpen],
-              ['✅','Answered','ov-c-answered',$sc['answered']],['⏱️','Avg Dur', 'ov-c-avgdur',  $sc['avg_dur'].'s']] as [$ico,$lbl,$id,$val])
+              ['✅','Answered','ov-c-answered',$sc['answered']]] as [$ico,$lbl,$id,$val])
     <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6;padding:0 8px">
       <div style="font-size:16px">{{ $ico }}</div>
       <div style="font-size:16px;font-weight:800;color:#1f2937" id="{{ $id }}">{{ is_numeric($val) ? number_format($val) : $val }}</div>
@@ -1567,40 +1566,39 @@ function updateOverview(p) {
     if (el) el.textContent = fmt(v);
   });
 
-  // ── Card 2: Resolved / Pending ────────────────────────────────────────────
-  const statusMap = {};
-  (d.by_status ?? []).forEach(([k, v]) => { statusMap[k] = v; });
-  const resolvedCnt = statusMap['resolved'] ?? 0;
-  const pendingCnt  = (statusMap['open'] ?? 0) + (statusMap['in_progress'] ?? 0);
-  const pendingPct  = d.total > 0 ? +(pendingCnt / d.total * 100).toFixed(1) : 0;
-  document.getElementById('ov-resolved-new').textContent = fmt(resolvedCnt);
+  // ── Card 2: Referred Cases = total − high risk ───────────────────────────
+  const immCnt         = d.imm_act ?? 0;
+  const uptakeCnt      = d.uptake ?? 0;
+  const refCnt         = d.referral_count ?? 0;
+  const refCompPct     = refCnt > 0 ? Math.min(100, +(uptakeCnt / refCnt * 100).toFixed(1)) : 0;
+  const referredCases  = Math.max(0, d.total - immCnt);
+  const referredPct    = d.total > 0 ? +(referredCases / d.total * 100).toFixed(1) : 0;
+  document.getElementById('ov-referred-new').textContent = fmt(referredCases);
+  const refArc  = document.getElementById('ov-ref-comp-arc');
+  const refTxt  = document.getElementById('ov-ref-comp-txt');
+  const uptakeEl = document.getElementById('ov-uptake-cnt');
+  const immEl    = document.getElementById('ov-imm-cnt');
+  if (refArc)   refArc.setAttribute('stroke-dasharray', `${OV_CIRC * referredPct / 100} ${OV_CIRC}`);
+  if (refTxt)   refTxt.textContent   = referredPct + '%';
+  if (uptakeEl) uptakeEl.textContent = fmt(uptakeCnt) + ' uptakes confirmed';
+  if (immEl)    immEl.textContent    = refCompPct + '%';
+
+  // ── Card 3: High Risk Cases = immediate_action_required ──────────────────
+  const highRiskPct = d.total > 0 ? +(immCnt / d.total * 100).toFixed(1) : 0;
+  const pendingCnt  = ((() => { const sm = {}; (d.by_status ?? []).forEach(([k,v]) => sm[k]=v); return (sm['open']??0)+(sm['in_progress']??0); })());
+  document.getElementById('ov-resolved-new').textContent = fmt(immCnt);
   const pendArc  = document.getElementById('ov-pending-arc');
   const pendTxt  = document.getElementById('ov-pending-txt');
   const pendOpen = document.getElementById('ov-pending-open');
-  if (pendArc)  pendArc.setAttribute('stroke-dasharray', `${OV_CIRC * pendingPct / 100} ${OV_CIRC}`);
-  if (pendTxt)  pendTxt.textContent  = pendingPct + '%';
-  if (pendOpen) pendOpen.textContent = fmt(pendingCnt) + ' open';
+  if (pendArc)  pendArc.setAttribute('stroke-dasharray', `${OV_CIRC * highRiskPct / 100} ${OV_CIRC}`);
+  if (pendTxt)  pendTxt.textContent  = highRiskPct + '%';
+  if (pendOpen) pendOpen.textContent = fmt(pendingCnt) + ' pending';
 
-  // ── Card 3: Referred / Referral Completion ────────────────────────────────
-  const refCnt     = d.referral_count ?? 0;
-  const uptakeCnt  = d.uptake ?? 0;
-  const refCompPct = refCnt > 0 ? Math.min(100, +(uptakeCnt / refCnt * 100).toFixed(1)) : 0;
-  const immCnt     = d.imm_act ?? 0;
-  document.getElementById('ov-referred-new').textContent = fmt(refCnt);
-  const refArc    = document.getElementById('ov-ref-comp-arc');
-  const refTxt    = document.getElementById('ov-ref-comp-txt');
-  const uptakeEl  = document.getElementById('ov-uptake-cnt');
-  const immEl     = document.getElementById('ov-imm-cnt');
-  if (refArc)   refArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(refCompPct, 100) / 100} ${OV_CIRC}`);
-  if (refTxt)   refTxt.textContent  = refCompPct + '%';
-  if (uptakeEl) uptakeEl.textContent = fmt(uptakeCnt) + ' uptakes';
-  if (immEl)    immEl.textContent    = fmt(immCnt);
-
-  // ── Card 4: New vs Repeat callers + Female donut ──────────────────────────
-  const newCnt    = Math.max(0, d.total - (d.repeat ?? 0));
-  const repeatCnt = d.repeat ?? 0;
-  document.getElementById('ov-new-callers').textContent    = fmt(newCnt);
-  document.getElementById('ov-repeat-callers').textContent = fmt(repeatCnt);
+  // ── Card 4: Gender donuts ─────────────────────────────────────────────────
+  const maleArc = document.getElementById('ov-male-arc');
+  const maleTxt = document.getElementById('ov-male-txt');
+  if (maleArc) maleArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(mPct, 100) / 100} ${OV_CIRC}`);
+  if (maleTxt) maleTxt.textContent = mPct + '%';
   const femArc = document.getElementById('ov-female-arc');
   const femTxt = document.getElementById('ov-female-txt');
   if (femArc) femArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(fPct, 100) / 100} ${OV_CIRC}`);
@@ -1641,15 +1639,22 @@ function updateOverview(p) {
     caseLabels.slice(0, 6).forEach((lbl, i) => { if (spans[i]) spans[i].textContent = lbl.length > 14 ? lbl.slice(0,14)+'…' : lbl; });
   }
 
-  // Calls Per Month — show period trend (ticket interactions)
-  const ptkeys = Object.keys(d.trend);
-  const ptvals = Object.values(d.trend);
+  // Calls Per Month — always use monthly buckets from the active period
+  let mthKeys, mthVals;
+  if (p === 'year' || p === 'range') {
+    mthKeys = Object.keys(d.trend);
+    mthVals = Object.values(d.trend);
+  } else {
+    mthKeys = Object.keys(months12);
+    mthVals = Object.values(months12);
+  }
+  const mthLabels = mthKeys.map(k => { const [y,m] = k.split('-'); return new Date(+y,+m-1).toLocaleString('default',{month:'short',year:'2-digit'}); });
   if (CC['ovMonthLine']) { CC['ovMonthLine'].destroy(); delete CC['ovMonthLine']; }
   const mlCtx = document.getElementById('ovMonthLine');
   if (mlCtx) {
     CC['ovMonthLine'] = new Chart(mlCtx, {
-      type: 'line',
-      data: { labels: trendLabels(p, ptkeys), datasets: [{ label:'Cases', data: ptvals, borderColor:'#f97316', backgroundColor:'rgba(249,115,22,.1)', fill:true, tension:0.4, pointRadius:3, borderWidth:2 }] },
+      type: 'bar',
+      data: { labels: mthLabels, datasets: [{ label:'Cases', data: mthVals, backgroundColor:'#f97316', borderRadius:4 }] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:9}}}} },
     });
   }
