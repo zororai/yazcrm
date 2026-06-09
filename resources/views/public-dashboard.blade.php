@@ -384,7 +384,7 @@ tr:hover td{background:#f8fafc}
         style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $ageFilter ? '' : 'display:none' }}" id="age-filter-clear">✕ Clear</a>
     </div>
     <div class="live-pill"><span class="live-dot" id="live-dot"></span> Live &mdash; <span id="live-updated">now</span></div>
-    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total) }}</div><div class="tl">{{ $projectFilter || $serviceFilter || $genderFilter || $ageFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
+    <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total - $displayTotalOffset) }}</div><div class="tl">{{ $projectFilter || $serviceFilter || $genderFilter || $ageFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
   </div>
 </div>
 
@@ -451,8 +451,8 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
 
-  {{-- Card 2: Referred Cases = total − high risk --}}
-  @php $referredCasesTotal = $total - $immediateAct; $referredCasesPct = $total > 0 ? round($referredCasesTotal/$total*100,1) : 0; @endphp
+  {{-- Card 2: Referred Cases = tickets with a referral destination --}}
+  @php $referredCasesTotal = $referredTotal; $referredCasesPct = $total > 0 ? round($referredCasesTotal/$total*100,1) : 0; @endphp
   <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -535,7 +535,8 @@ tr:hover td{background:#f8fafc}
     </div>
     <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1">{{ number_format($sbcTotal) }}</div>
     <div style="font-size:11px;color:#6b7280;margin-bottom:8px">YALeP Course Completions</div>
-    <div style="font-size:10px;color:#6b7280;margin-bottom:10px">Total Youth Engaged : <strong style="color:#1f2937">{{ number_format($sbcEngagedTotal) }}</strong></div>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:4px">Total Youth Engaged</div>
+    <div style="font-size:28px;font-weight:900;color:#16a34a;line-height:1.1;margin-bottom:10px">{{ number_format($sbcEngagedTotal) }}</div>
 
 
     <div style="display:flex;align-items:center;gap:10px">
@@ -571,9 +572,9 @@ tr:hover td{background:#f8fafc}
   <div style="height:160px"><canvas id="ovTrendChart"></canvas></div>
   <!-- Call KPIs from PBX -->
   <div style="display:flex;gap:0;border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px">
-    @foreach([['📞','Total',  'ov-c-total',   $sc['total']],   ['📥','Inbound', 'ov-c-inbound', $sc['inbound']],
-              ['📤','Outbound','ov-c-outbound',$sc['outbound']],['🚨','Urgent',  'ov-c-urgent',  $urgentOpen],
-              ['✅','Answered','ov-c-answered',$sc['answered']]] as [$ico,$lbl,$id,$val])
+    @foreach([['📞','Total Cases','ov-c-total',$total - $displayTotalOffset],['✅','Valid','ov-c-inbound',$validTotal],
+              ['🔁','Repeat','ov-c-outbound',$repeatTotal],['🚨','Urgent','ov-c-urgent',$urgentOpen],
+              ['📋','Resolved','ov-c-answered',$resolvedTotal]] as [$ico,$lbl,$id,$val])
     <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6;padding:0 8px">
       <div style="font-size:16px">{{ $ico }}</div>
       <div style="font-size:16px;font-weight:800;color:#1f2937" id="{{ $id }}">{{ is_numeric($val) ? number_format($val) : $val }}</div>
@@ -690,7 +691,7 @@ tr:hover td{background:#f8fafc}
     <div id="dem-keypops"></div>
   </div>
   <div class="s-card" style="margin-top:14px">
-    <h3>Key Population Groups by Gender &amp; Age</h3>
+    <h3>Call Group by Gender &amp; Age</h3>
     <div style="height:280px"><canvas id="demAgeGenderChart"></canvas></div>
   </div>
 </div>
@@ -729,17 +730,6 @@ tr:hover td{background:#f8fafc}
   </div>
   <div class="svc-kpi-row">
     <div class="svc-kpi-card">
-      <div class="svc-kpi-title">Referred Cases</div>
-      <div class="svc-kpi-body">
-        <div class="svc-kpi-icon">👥</div>
-        <div class="svc-kpi-num" id="svc-kpi-referred">0</div>
-      </div>
-      <div class="svc-kpi-foot">
-        <span class="svc-kpi-foot-lbl">Referral Completion</span>
-        <span class="svc-kpi-rate" id="svc-kpi-ref-rate">0%</span>
-      </div>
-    </div>
-    <div class="svc-kpi-card">
       <div class="svc-kpi-title">Services Requested</div>
       <div class="svc-kpi-body">
         <div class="svc-kpi-icon">🏥</div>
@@ -748,6 +738,17 @@ tr:hover td{background:#f8fafc}
       <div class="svc-kpi-foot">
         <span class="svc-kpi-foot-lbl">Uptake Rate</span>
         <span class="svc-kpi-rate" id="svc-kpi-svc-rate">0%</span>
+      </div>
+    </div>
+    <div class="svc-kpi-card">
+      <div class="svc-kpi-title">Referred Cases</div>
+      <div class="svc-kpi-body">
+        <div class="svc-kpi-icon">👥</div>
+        <div class="svc-kpi-num" id="svc-kpi-referred">0</div>
+      </div>
+      <div class="svc-kpi-foot">
+        <span class="svc-kpi-foot-lbl">Referral Completion</span>
+        <span class="svc-kpi-rate" id="svc-kpi-ref-rate">0%</span>
       </div>
     </div>
     <div class="svc-kpi-card">
@@ -765,7 +766,7 @@ tr:hover td{background:#f8fafc}
   <div class="g3">
     <div class="s-card"><h3>Top Services Requested</h3><div class="ch220"><canvas id="svcServiceChart"></canvas></div></div>
     <div class="s-card"><h3>Top Referral Destinations</h3><div class="ch220"><canvas id="svcReferralChart"></canvas></div></div>
-    <div class="s-card"><h3>Key Population Groups by Gender &amp; Age</h3><div style="height:280px"><canvas id="svcKeyPopsChart"></canvas></div></div>
+    <div class="s-card"><h3>Call Group by Gender &amp; Age</h3><div style="height:280px"><canvas id="svcKeyPopsChart"></canvas></div></div>
   </div>
   <div class="s-card">
     <h3>Services Detail</h3>
@@ -1389,7 +1390,9 @@ let prevPeriodData = @json($prevPeriodData);
 let callTargetRows = @json($callTargetRows);
 let activeService  = @json($serviceFilter);  // '' means all services
 let allServices    = @json($allServices);
-let activeProject  = @json($projectFilter);  // '' means all projects
+let activeProject       = @json($projectFilter);  // '' means all projects
+const DISPLAY_OFFSET        = @json($displayTotalOffset);   // subtract from displayed total
+const DISPLAY_UPTAKE_OFFSET = @json($displayUptakeOffset);  // subtract from displayed uptake
 let allProjects    = @json($allProjects);
 
 const CAT_LABELS = {
@@ -1566,14 +1569,13 @@ function updateOverview(p) {
     if (el) el.textContent = fmt(v);
   });
 
-  // ── Card 2: Referred Cases = total − high risk ───────────────────────────
+  // ── Card 2: Referred Cases = tickets with a referral destination ─────────
   const immCnt         = d.imm_act ?? 0;
   const uptakeCnt      = d.uptake ?? 0;
   const refCnt         = d.referral_count ?? 0;
   const refCompPct     = refCnt > 0 ? Math.min(100, +(uptakeCnt / refCnt * 100).toFixed(1)) : 0;
-  const referredCases  = Math.max(0, d.total - immCnt);
-  const referredPct    = d.total > 0 ? +(referredCases / d.total * 100).toFixed(1) : 0;
-  document.getElementById('ov-referred-new').textContent = fmt(referredCases);
+  const referredPct    = d.total > 0 ? +(refCnt / d.total * 100).toFixed(1) : 0;
+  document.getElementById('ov-referred-new').textContent = fmt(refCnt);
   const refArc  = document.getElementById('ov-ref-comp-arc');
   const refTxt  = document.getElementById('ov-ref-comp-txt');
   const uptakeEl = document.getElementById('ov-uptake-cnt');
@@ -1604,13 +1606,13 @@ function updateOverview(p) {
   if (femArc) femArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(fPct, 100) / 100} ${OV_CIRC}`);
   if (femTxt) femTxt.textContent = fPct + '%';
 
-  // ── Call Activity strip ───────────────────────────────────────────────────
-  document.getElementById('ov-c-total').textContent    = fmt(s.total);
-  document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
-  document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
+  // ── Call Activity strip (ticket-based) ───────────────────────────────────
+  document.getElementById('ov-c-total').textContent    = fmt(Math.max(0, d.total - DISPLAY_OFFSET));
+  document.getElementById('ov-c-inbound').textContent  = fmt(d.valid);
+  document.getElementById('ov-c-outbound').textContent = fmt(d.repeat);
   document.getElementById('ov-c-urgent').textContent   = fmt(urgentOpen);
-  document.getElementById('ov-c-answered').textContent = fmt(s.answered);
-  document.getElementById('ov-c-avgdur').textContent   = s.avg_dur + 's';
+  const statusMap2 = {}; (d.by_status ?? []).forEach(([k,v]) => statusMap2[k]=v);
+  document.getElementById('ov-c-answered').textContent = fmt((statusMap2['resolved']??0) + (statusMap2['closed']??0));
 
   // ── Trend chart ───────────────────────────────────────────────────────────
   const ctkeys = Object.keys(s.trend);
@@ -1773,7 +1775,7 @@ function updateServices(p) {
   document.getElementById('svc-kpi-ref-rate').textContent    = (refCount ? Math.round(uptake / refCount * 100) : 0) + '%';
   document.getElementById('svc-kpi-services').textContent    = fmt(svcCount);
   document.getElementById('svc-kpi-svc-rate').textContent    = (svcCount ? Math.round(uptake / svcCount * 100) : 0) + '%';
-  document.getElementById('svc-kpi-uptake').textContent      = fmt(uptake);
+  document.getElementById('svc-kpi-uptake').textContent      = fmt(Math.max(0, uptake - DISPLAY_UPTAKE_OFFSET));
   document.getElementById('svc-kpi-uptake-rate').textContent = (total  ? Math.round(uptake / total  * 100) : 0) + '%';
 
   // Referral By Service — grouped bar (referred vs confirmed uptake)
@@ -2651,7 +2653,7 @@ function refreshData() {
       if (d.urgentOpen !== undefined) urgentOpen = d.urgentOpen;
       if (d.total !== undefined) {
         const hdrTotal = document.getElementById('hdr-total');
-        if (hdrTotal) hdrTotal.textContent = Number(d.total).toLocaleString();
+        if (hdrTotal) hdrTotal.textContent = Math.max(0, d.total - DISPLAY_OFFSET).toLocaleString();
       }
 
       // Update live indicator

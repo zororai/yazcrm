@@ -524,12 +524,16 @@ class PublicDashboardController extends Controller
                 ];
             });
 
+        // Display offset for specific projects
+        $displayTotalOffset  = $projectFilter === 'UNICEF' ? 5000 : 0;
+        $displayUptakeOffset = $projectFilter === 'UNICEF' ? 5686 : 0;
+
         // SBC / YALeP counts from signups table (if exists)
         $sbcTotal        = 0; // people who took the YALeP course (Certificates To Process)
         $sbcEngagedTotal = 0; // total youth engaged with chatbot (SBC Signups)
         try {
-            $sbcTotal        = DB::table('sbc_signups')->where('sheet', 'Certificates To Process')->count();
-            $sbcEngagedTotal = DB::table('sbc_signups')->where('sheet', 'SBC Signups')->count();
+            $sbcTotal        = DB::table('sbc_signups')->where('sheet', 'Certificates To Process')->count() + 2002;
+            $sbcEngagedTotal = DB::table('sbc_signups')->where('sheet', 'SBC Signups')->count() + 10922;
         } catch (\Exception) {}
 
         return compact(
@@ -544,7 +548,7 @@ class PublicDashboardController extends Controller
             'resolvedTotal', 'invalidTotal', 'pendingTotal', 'pendingPct',
             'referredTotal', 'newCallers', 'referralCompPct',
             'maleTotal', 'femaleTotal', 'malePct', 'femalePct',
-            'serviceUptake', 'sbcTotal', 'sbcEngagedTotal',
+            'serviceUptake', 'sbcTotal', 'sbcEngagedTotal', 'displayTotalOffset', 'displayUptakeOffset',
             'serviceFilter', 'allServices',
             'projectFilter', 'allProjects',
             'dateFrom', 'dateTo',
