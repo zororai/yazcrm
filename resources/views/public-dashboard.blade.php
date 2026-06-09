@@ -451,7 +451,40 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
 
-  {{-- Card 2: High Risk Cases --}}
+  {{-- Card 2: Referred Cases --}}
+  <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:#374151">Referred Cases</span>
+    </div>
+    <div style="font-size:34px;font-weight:900;color:#2563eb;line-height:1.1;margin-bottom:10px" id="ov-referred-new">{{ number_format($referredTotal) }}</div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#dbeafe" stroke-width="6"/>
+        <circle id="ov-ref-comp-arc" cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
+          stroke-dasharray="{{ $circ * min($referralCompPct,100) / 100 }} {{ $circ }}"
+          stroke-linecap="round" transform="rotate(-90 30 30)"/>
+        <text id="ov-ref-comp-txt" x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#ea580c">{{ $referralCompPct }}%</text>
+      </svg>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#374151">Referral Completion</div>
+        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes</div>
+      </div>
+    </div>
+
+    <div style="background:#f0f9ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:20px">🤝</div>
+      <div>
+        <div style="font-size:10px;color:#6b7280">Case Conference Calls</div>
+        <div id="ov-imm-cnt" style="font-size:18px;font-weight:900;color:#1d4ed8">{{ number_format($immediateAct) }}</div>
+      </div>
+    </div>
+  </div>
+
+  {{-- Card 3: High Risk Cases --}}
   <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
       <div style="width:36px;height:36px;border-radius:50%;background:#ea580c;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -490,39 +523,6 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
 
-  {{-- Card 3: Referred Cases --}}
-  <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-      <div style="width:36px;height:36px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-      </div>
-      <span style="font-weight:700;font-size:13px;color:#374151">Referred Cases</span>
-    </div>
-    <div style="font-size:34px;font-weight:900;color:#2563eb;line-height:1.1;margin-bottom:10px" id="ov-referred-new">{{ number_format($referredTotal) }}</div>
-
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-      <svg width="60" height="60" viewBox="0 0 60 60">
-        <circle cx="30" cy="30" r="26" fill="none" stroke="#dbeafe" stroke-width="6"/>
-        <circle id="ov-ref-comp-arc" cx="30" cy="30" r="26" fill="none" stroke="#ea580c" stroke-width="6"
-          stroke-dasharray="{{ $circ * min($referralCompPct,100) / 100 }} {{ $circ }}"
-          stroke-linecap="round" transform="rotate(-90 30 30)"/>
-        <text id="ov-ref-comp-txt" x="30" y="34" text-anchor="middle" font-size="10" font-weight="800" fill="#ea580c">{{ $referralCompPct }}%</text>
-      </svg>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:#374151">Referral Completion</div>
-        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes</div>
-      </div>
-    </div>
-
-    <div style="background:#f0f9ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
-      <div style="font-size:20px">🤝</div>
-      <div>
-        <div style="font-size:10px;color:#6b7280">Case Conference Calls</div>
-        <div id="ov-imm-cnt" style="font-size:18px;font-weight:900;color:#1d4ed8">{{ number_format($immediateAct) }}</div>
-      </div>
-    </div>
-  </div>
-
   {{-- Card 4: YALeP / SBC --}}
   <div style="background:#fff;border-radius:14px;padding:16px 14px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e5e7eb">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -532,8 +532,8 @@ tr:hover td{background:#f8fafc}
       <span style="font-weight:700;font-size:13px;color:#374151">YALeP</span>
     </div>
     <div style="font-size:34px;font-weight:900;color:#dc2626;line-height:1.1">{{ number_format($sbcTotal) }}</div>
-    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">Chatbot Users</div>
-    <div style="font-size:10px;color:#6b7280;margin-bottom:10px">No. of recipients : <strong style="color:#1f2937">{{ number_format($uchat['total_bot_users'] ?? 0) }}</strong></div>
+    <div style="font-size:11px;color:#6b7280;margin-bottom:8px">YALeP Course Completions</div>
+    <div style="font-size:10px;color:#6b7280;margin-bottom:10px">Total Youth Engaged : <strong style="color:#1f2937">{{ number_format($sbcEngagedTotal) }}</strong></div>
 
     <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-bottom:8px">
       <div style="font-size:10px;color:#6b7280;margin-bottom:6px">New Calls Vs Repeats</div>

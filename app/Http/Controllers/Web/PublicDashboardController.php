@@ -524,9 +524,13 @@ class PublicDashboardController extends Controller
                 ];
             });
 
-        // SBC / YALeP count from signups table (if exists)
-        $sbcTotal = 0;
-        try { $sbcTotal = DB::table('sbc_signups')->count(); } catch (\Exception) {}
+        // SBC / YALeP counts from signups table (if exists)
+        $sbcTotal        = 0; // people who took the YALeP course (Certificates To Process)
+        $sbcEngagedTotal = 0; // total youth engaged with chatbot (SBC Signups)
+        try {
+            $sbcTotal        = DB::table('sbc_signups')->where('sheet', 'Certificates To Process')->count();
+            $sbcEngagedTotal = DB::table('sbc_signups')->where('sheet', 'SBC Signups')->count();
+        } catch (\Exception) {}
 
         return compact(
             'total', 'validTotal', 'repeatTotal', 'uptakeTotal', 'immediateAct',
@@ -540,7 +544,7 @@ class PublicDashboardController extends Controller
             'resolvedTotal', 'invalidTotal', 'pendingTotal', 'pendingPct',
             'referredTotal', 'newCallers', 'referralCompPct',
             'maleTotal', 'femaleTotal', 'malePct', 'femalePct',
-            'serviceUptake', 'sbcTotal',
+            'serviceUptake', 'sbcTotal', 'sbcEngagedTotal',
             'serviceFilter', 'allServices',
             'projectFilter', 'allProjects',
             'dateFrom', 'dateTo',
