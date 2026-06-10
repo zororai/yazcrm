@@ -457,13 +457,6 @@ tr:hover td{background:#f8fafc}
       </div>
     </div>
 
-    <div style="background:#f0f9ff;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
-      <div style="font-size:20px">🤝</div>
-      <div>
-        <div style="font-size:10px;color:#6b7280">Referral Completion</div>
-        <div id="ov-imm-cnt" style="font-size:18px;font-weight:900;color:#1d4ed8">{{ $referralCompPct }}%</div>
-      </div>
-    </div>
   </div>
 
   {{-- Card 3: High Risk Cases = immediate_action_required --}}
