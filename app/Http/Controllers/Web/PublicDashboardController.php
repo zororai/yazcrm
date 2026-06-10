@@ -178,6 +178,26 @@ class PublicDashboardController extends Controller
 
         $lastUpdated = (clone $base)->max('created_at');
 
+        // ── All-time Age × Gender breakdown for overview chart ──────────────
+        $ageGenderData = (clone $base)
+            ->whereNotNull('caller_gender')->where('caller_gender', '!=', '')
+            ->whereBetween('caller_age', [10, 120])
+            ->selectRaw("
+                CASE
+                    WHEN caller_age BETWEEN 10 AND 14 THEN '10-14'
+                    WHEN caller_age BETWEEN 15 AND 19 THEN '15-19'
+                    WHEN caller_age BETWEEN 20 AND 25 THEN '20-25'
+                    ELSE '25+'
+                END as age_band,
+                caller_gender,
+                COUNT(*) as cnt
+            ")
+            ->groupBy('age_band', 'caller_gender')
+            ->get()
+            ->groupBy('age_band')
+            ->map(fn ($rows) => $rows->pluck('cnt', 'caller_gender')->toArray())
+            ->toArray();
+
         // ── Available years (for year picker) ───────────────────────────────
         $availableYears = DB::table('tickets')->whereNull('deleted_at')
             ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
@@ -549,6 +569,7 @@ class PublicDashboardController extends Controller
             'referredTotal', 'newCallers', 'referralCompPct',
             'maleTotal', 'femaleTotal', 'malePct', 'femalePct',
             'serviceUptake', 'sbcTotal', 'sbcEngagedTotal', 'displayTotalOffset', 'displayUptakeOffset',
+            'ageGenderData',
             'serviceFilter', 'allServices',
             'projectFilter', 'allProjects',
             'dateFrom', 'dateTo',

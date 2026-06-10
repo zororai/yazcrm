@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -429,26 +429,7 @@ tr:hover td{background:#f8fafc}
       <span style="font-weight:700;font-size:13px;color:#374151">Total Cases</span>
     </div>
     <div style="font-size:34px;font-weight:900;color:#0891b2;line-height:1.1;margin-bottom:8px" id="ov-total-new">{{ number_format($total) }}</div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
-      <span id="ov-male-pill" style="background:#ede9fe;color:#6d28d9;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Males {{ $malePct }}%</span>
-      <span id="ov-female-pill" style="background:#fff7ed;color:#c2410c;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700">Females {{ $femalePct }}%</span>
-    </div>
-    <div style="font-size:10px;color:#9ca3af;margin-bottom:10px" id="ov-nonconf-txt">
-      Non-confirming: {{ max(0, round(100 - $malePct - $femalePct, 1)) }}%&nbsp;&nbsp;|&nbsp;&nbsp;Anonymous
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="width:68px;height:68px;flex-shrink:0"><canvas id="ovAgeDonut"></canvas></div>
-      <div style="flex:1;font-size:10px">
-        <div style="color:#6b7280;font-weight:600;margin-bottom:4px">Calls by Age %</div>
-        @foreach(['0–17'=>($ageGroups['Under 18']??0),'18–24'=>($ageGroups['18–24']??0),'25–34'=>($ageGroups['25–34']??0),'35+'=>$age35p] as $lbl=>$v)
-        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
-          <div style="width:7px;height:7px;border-radius:50%;background:{{ ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'][array_search($lbl,['0–17','18–24','25–34','35+'])] }};flex-shrink:0"></div>
-          <span style="color:#6b7280;width:28px">{{ $lbl }}</span>
-          <span id="ov-age-val-{{ $loop->index }}" style="font-weight:700;color:#1f2937">{{ number_format($v) }}</span>
-        </div>
-        @endforeach
-      </div>
-    </div>
+    <div style="height:110px"><canvas id="ovAgeGenderChart"></canvas></div>
   </div>
 
   {{-- Card 2: Referred Cases = tickets with a referral destination --}}
@@ -1539,35 +1520,37 @@ function updateOverview(p) {
   // ── Card 1: Total Calls ───────────────────────────────────────────────────
   document.getElementById('ov-total-new').textContent = fmt(d.total);
 
-  // Gender breakdown
+  // Gender percentages (used for SBC arcs below)
   const gArr  = d.by_gender ?? [];
   const gSum  = Math.max(1, gArr.reduce((a, r) => a + r[1], 0));
   const maleR = gArr.find(r => r[0] === 'male');
   const femR  = gArr.find(r => r[0] === 'female');
   const mPct  = maleR ? Math.round(maleR[1] / gSum * 100) : 0;
   const fPct  = femR  ? Math.round(femR[1]  / gSum * 100) : 0;
-  const ncPct = Math.max(0, 100 - mPct - fPct);
-  document.getElementById('ov-male-pill').textContent   = 'Males ' + mPct + '%';
-  document.getElementById('ov-female-pill').textContent = 'Females ' + fPct + '%';
-  document.getElementById('ov-nonconf-txt').textContent = 'Non-confirming: ' + ncPct + '%  |  Anonymous';
 
-  // Age donut + legend
-  const ag     = d.age_groups ?? [];
-  const age35p = (ag[3]?.[1] ?? 0) + (ag[4]?.[1] ?? 0);
-  const ageData = [ag[0]?.[1] ?? 0, ag[1]?.[1] ?? 0, ag[2]?.[1] ?? 0, age35p];
-  if (CC['ovAgeDonut']) { CC['ovAgeDonut'].destroy(); delete CC['ovAgeDonut']; }
-  const ageCtx = document.getElementById('ovAgeDonut');
-  if (ageCtx) {
-    CC['ovAgeDonut'] = new Chart(ageCtx, {
-      type: 'doughnut',
-      data: { labels: ['0–17','18–24','25–34','35+'], datasets: [{ data: ageData, backgroundColor: ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'], borderWidth: 0 }] },
-      options: { cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: true } }, responsive: true, maintainAspectRatio: false },
+  // Overview: Gender x Age grouped bar chart
+  const ovAgBands = ['10-14','15-19','20-25','25+'];
+  const ovAgG     = d.by_age_gender ?? {};
+  if (CC['ovAgeGenderChart']) { CC['ovAgeGenderChart'].destroy(); delete CC['ovAgeGenderChart']; }
+  const ovAgCtx = document.getElementById('ovAgeGenderChart');
+  if (ovAgCtx) {
+    CC['ovAgeGenderChart'] = new Chart(ovAgCtx, {
+      type: 'bar',
+      data: {
+        labels: ovAgBands,
+        datasets: [
+          { label:'Male',   backgroundColor:'#3b82f6', data: ovAgBands.map(b => ovAgG[b]?.male   ?? 0) },
+          { label:'Female', backgroundColor:'#ec4899', data: ovAgBands.map(b => ovAgG[b]?.female ?? 0) },
+          { label:'Other',  backgroundColor:'#a78bfa', data: ovAgBands.map(b => ovAgG[b]?.other  ?? 0) },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position:'top', labels:{ boxWidth:10, font:{ size:10 } } }, tooltip:{ enabled:true } },
+        scales: { x:{ ticks:{ font:{ size:9 } } }, y:{ ticks:{ font:{ size:9 } }, beginAtZero:true } }
+      }
     });
   }
-  ageData.forEach((v, i) => {
-    const el = document.getElementById('ov-age-val-' + i);
-    if (el) el.textContent = fmt(v);
-  });
 
   // ── Card 2: Referred Cases = tickets with a referral destination ─────────
   const immCnt         = d.imm_act ?? 0;
@@ -2686,37 +2669,35 @@ function refreshData() {
     .catch(err => console.warn('[screen] refresh failed:', err));
 }
 
-@php
-  $ageChartData = [
-      (int)($ageGroups['Under 18'] ?? 0),
-      (int)($ageGroups['18–24']    ?? 0),
-      (int)($ageGroups['25–34']    ?? 0),
-      (int)$age35p,
-  ];
-@endphp
-// ── Overview new charts ────────────────────────────────────────────────────
 function initOverviewCharts() {
-  // Age donut — stored in CC so updateOverview can destroy/recreate on period change
-  const ageCtx = document.getElementById('ovAgeDonut');
-  if (ageCtx) {
-    CC['ovAgeDonut'] = new Chart(ageCtx, {
-      type: 'doughnut',
+  // Overview Gender x Age grouped bar — init with server-rendered data
+  const ovAgBands0 = ['10-14','15-19','20-25','25+'];
+  const ovAgG0     = @json($ageGenderData ?? []);
+  const ovAgCtx0   = document.getElementById('ovAgeGenderChart');
+  if (ovAgCtx0) {
+    CC['ovAgeGenderChart'] = new Chart(ovAgCtx0, {
+      type: 'bar',
       data: {
-        labels: ['0–17','18–24','25–34','35+'],
-        datasets: [{ data: @json($ageChartData),
-          backgroundColor: ['#0ea5e9','#f59e0b','#8b5cf6','#10b981'], borderWidth: 0 }],
+        labels: ovAgBands0,
+        datasets: [
+          { label:'Male',   backgroundColor:'#3b82f6', data: ovAgBands0.map(b => ovAgG0[b]?.male   ?? 0) },
+          { label:'Female', backgroundColor:'#ec4899', data: ovAgBands0.map(b => ovAgG0[b]?.female ?? 0) },
+          { label:'Other',  backgroundColor:'#a78bfa', data: ovAgBands0.map(b => ovAgG0[b]?.other  ?? 0) },
+        ]
       },
-      options: { cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: true } }, responsive: true, maintainAspectRatio: false },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position:'top', labels:{ boxWidth:10, font:{ size:10 } } }, tooltip:{ enabled:true } },
+        scales: { x:{ ticks:{ font:{ size:9 } } }, y:{ ticks:{ font:{ size:9 } }, beginAtZero:true } }
+      }
     });
   }
-
   // ovCaseTypeDonut, ovMonthLine, ovServiceBar are owned by updateOverview — no init needed here
 }
-
 // ── Bootstrap ─────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   if (typeof lucide !== 'undefined') lucide.createIcons();
-  initOverviewCharts();
+  try { initOverviewCharts(); } catch(e) { console.error('[initOverviewCharts]', e); }
   initPeriodSelects();
   labelPeriodBtns();
   updateOverview(TICKET_DEFAULT);
