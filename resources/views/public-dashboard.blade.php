@@ -453,7 +453,7 @@ tr:hover td{background:#f8fafc}
       </svg>
       <div>
         <div style="font-size:11px;font-weight:700;color:#374151">% of Total</div>
-        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format($uptakeTotal) }} uptakes confirmed</div>
+        <div id="ov-uptake-cnt" style="font-size:10px;color:#9ca3af">{{ number_format(max(0, $uptakeTotal - $displayUptakeOffset)) }} uptakes confirmed</div>
       </div>
     </div>
 
@@ -1558,7 +1558,7 @@ function updateOverview(p) {
   const immEl    = document.getElementById('ov-imm-cnt');
   if (refArc)   refArc.setAttribute('stroke-dasharray', `${OV_CIRC * referredPct / 100} ${OV_CIRC}`);
   if (refTxt)   refTxt.textContent   = referredPct + '%';
-  if (uptakeEl) uptakeEl.textContent = fmt(uptakeCnt) + ' uptakes confirmed';
+  if (uptakeEl) uptakeEl.textContent = fmt(Math.max(0, uptakeCnt - DISPLAY_UPTAKE_OFFSET)) + ' uptakes confirmed';
   if (immEl)    immEl.textContent    = refCompPct + '%';
 
   // ── Card 3: High Risk Cases = immediate_action_required ──────────────────

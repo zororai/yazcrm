@@ -546,7 +546,7 @@ class PublicDashboardController extends Controller
 
         // Display offset for specific projects
         $displayTotalOffset  = $projectFilter === 'UNICEF' ? 5000 : 0;
-        $displayUptakeOffset = $projectFilter === 'UNICEF' ? 5686 : 0;
+        $displayUptakeOffset = $projectFilter === 'UNICEF' ? 5686 : ($projectFilter ? 0 : 19821);
 
         // SBC / YALeP counts from signups table (if exists)
         $sbcTotal        = 0; // people who took the YALeP course (Certificates To Process)
