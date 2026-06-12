@@ -30,7 +30,8 @@
     26 => 'Carbon\\Laravel\\ServiceProvider',
     27 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
     28 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    29 => 'App\\Providers\\AppServiceProvider',
+    29 => 'OpenAI\\Laravel\\ServiceProvider',
+    30 => 'App\\Providers\\AppServiceProvider',
   ),
   'eager' => 
   array (
@@ -209,6 +210,9 @@
     'Laravel\\Sail\\Console\\InstallCommand' => 'Laravel\\Sail\\SailServiceProvider',
     'Laravel\\Sail\\Console\\PublishCommand' => 'Laravel\\Sail\\SailServiceProvider',
     'command.tinker' => 'Laravel\\Tinker\\TinkerServiceProvider',
+    'OpenAI\\Client' => 'OpenAI\\Laravel\\ServiceProvider',
+    'OpenAI\\Contracts\\ClientContract' => 'OpenAI\\Laravel\\ServiceProvider',
+    'openai' => 'OpenAI\\Laravel\\ServiceProvider',
   ),
   'when' => 
   array (
@@ -252,6 +256,9 @@
     array (
     ),
     'Laravel\\Tinker\\TinkerServiceProvider' => 
+    array (
+    ),
+    'OpenAI\\Laravel\\ServiceProvider' => 
     array (
     ),
   ),

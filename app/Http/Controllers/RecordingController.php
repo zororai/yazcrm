@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\TranscribeAndDraftNotes;
 use App\Models\Recording;
 use App\Services\YeastarService;
 use Illuminate\Http\JsonResponse;
@@ -30,5 +31,26 @@ class RecordingController extends Controller
         }
 
         return response()->json(['url' => $url]);
+    }
+
+    public function aiNotes(Recording $recording): JsonResponse
+    {
+        return response()->json([
+            'status'     => $recording->transcription_status,
+            'transcript' => $recording->transcript,
+            'ai_notes'   => $recording->ai_notes,
+        ]);
+    }
+
+    public function retranscribe(Recording $recording): JsonResponse
+    {
+        if ($recording->transcription_status === 'processing') {
+            return response()->json(['message' => 'Already processing.'], 409);
+        }
+
+        $recording->update(['transcription_status' => 'pending']);
+        TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
+
+        return response()->json(['message' => 'Transcription queued.']);
     }
 }

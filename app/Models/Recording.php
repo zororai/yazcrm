@@ -9,6 +9,7 @@ class Recording extends Model
     protected $fillable = [
         'call_id', 'file_name', 'file_path', 'file_url',
         'duration', 'file_size', 'format',
+        'transcript', 'ai_notes', 'transcription_status',
     ];
 
     public function call()

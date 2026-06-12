@@ -11,6 +11,7 @@
         "@inertiajs/vue3": "^2.0",
         "axios": "^1.7",
         "chart.js": "^4.4",
+        "jssip": "^3.13.8",
         "laravel-echo": "^1.16",
         "pusher-js": "^8.4",
         "vue": "^3.4",

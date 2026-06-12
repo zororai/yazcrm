@@ -35,15 +35,18 @@ class CallEndedEvent implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
+        $recording = $this->call->recording;
+
         return [
-            'call_id'   => $this->call->id,
-            'caller'    => $this->call->caller,
-            'callee'    => $this->call->callee,
-            'duration'  => $this->call->duration,
-            'direction' => $this->call->direction,
-            'client'    => $this->call->client
+            'call_id'      => $this->call->id,
+            'caller'       => $this->call->caller,
+            'callee'       => $this->call->callee,
+            'duration'     => $this->call->duration,
+            'direction'    => $this->call->direction,
+            'client'       => $this->call->client
                 ? $this->call->client->only(['id', 'name', 'phone'])
                 : null,
+            'recording_id' => $recording?->id,
         ];
     }
 }

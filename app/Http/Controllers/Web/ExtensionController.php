@@ -36,9 +36,11 @@ class ExtensionController extends Controller
     public function update(Request $request, Extension $extension): RedirectResponse
     {
         $data = $request->validate([
-            'name'        => 'sometimes|string|max:255',
-            'status'      => 'in:active,inactive',
+            'name'           => 'sometimes|string|max:255',
+            'status'         => 'in:active,inactive',
             'caller_id_name' => 'nullable|string|max:50',
+            'sip_password'   => 'nullable|string|max:255',
+            'sip_domain'     => 'nullable|string|max:255',
         ]);
 
         $extension->update($data);

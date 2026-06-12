@@ -9,6 +9,7 @@ class Extension extends Model
     protected $fillable = [
         'extension_number', 'name', 'status', 'user_id',
         'caller_id_name', 'email', 'voicemail_enabled',
+        'sip_password', 'sip_domain',
     ];
 
     protected $casts = [

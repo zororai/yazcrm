@@ -60,6 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Extensions — read available to all; sync admin-only (below)
     Route::get('extensions',             [ExtensionController::class, 'index']);
+    Route::get('extensions/sip-config',  [ExtensionController::class, 'mySipConfig']);
     Route::get('extensions/{extension}', [ExtensionController::class, 'show']);
 
     // Clients
@@ -85,8 +86,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('tickets/{ticket}', [TicketController::class, 'destroy']);
 
     // Recordings
-    Route::get('recordings/{recording}',          [RecordingController::class, 'show']);
-    Route::get('recordings/{recording}/download', [RecordingController::class, 'download']);
+    Route::get('recordings/{recording}',           [RecordingController::class, 'show']);
+    Route::get('recordings/{recording}/download',  [RecordingController::class, 'download']);
+    Route::get('recordings/{recording}/ai-notes',  [RecordingController::class, 'aiNotes']);
+    Route::post('recordings/{recording}/transcribe', [RecordingController::class, 'retranscribe']);
 
     // Analytics
     Route::get('analytics/overview',          [AnalyticsController::class, 'overview']);

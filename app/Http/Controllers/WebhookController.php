@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Events\CallEndedEvent;
 use App\Events\IncomingCallEvent;
+use App\Jobs\TranscribeAndDraftNotes;
 use App\Models\Call;
 use App\Models\CallbackQueue;
 use App\Models\Client;
 use App\Models\Extension;
+use App\Models\Recording;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -104,6 +106,21 @@ class WebhookController extends Controller
         // Prompt agents to log a ticket for any answered call that lasted ≥ 30 s
         if ($status === 'answered' && $duration >= 30) {
             event(new CallEndedEvent($call->load('client')));
+        }
+
+        // If Yeastar included a recording file, create Recording and queue transcription
+        $recordFile = $payload['recordfile'] ?? $payload['record_file'] ?? $payload['recording'] ?? null;
+        if ($recordFile && $status === 'answered') {
+            $recording = Recording::firstOrCreate(
+                ['call_id' => $call->id],
+                [
+                    'file_name' => basename($recordFile),
+                    'file_path' => $recordFile,
+                    'duration'  => $duration,
+                    'format'    => 'wav',
+                ]
+            );
+            TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
         }
 
         if ($status === 'missed') {

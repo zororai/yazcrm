@@ -11,6 +11,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
+import Dialer from '@/Components/Dialer.vue';
 
 const page  = usePage();
 const user  = computed(() => page.props.auth.user);
@@ -403,4 +404,7 @@ function logout() {
         :calls="visibleCalls"
         @dismiss="dismissCall"
     />
+
+    <!-- WebRTC Dialer -->
+    <Dialer />
 </template>

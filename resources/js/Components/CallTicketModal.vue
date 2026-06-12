@@ -1,12 +1,12 @@
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { PhoneIcon, XMarkIcon, ClockIcon } from '@heroicons/vue/24/outline';
 
 const distressDomains = computed(() => usePage().props.distressDomains ?? []);
 
 const props = defineProps({
-    call: Object,   // { call_id, caller, callee, duration, direction, client }
+    call: Object,   // { call_id, caller, callee, duration, direction, client, recording_id }
 });
 
 const emit = defineEmits(['close']);
@@ -39,6 +39,39 @@ function submit() {
     form.post('/tickets', {
         onSuccess: () => emit('close'),
     });
+}
+
+const aiStatus   = ref(null);   // null | 'loading' | 'done' | 'processing' | 'failed'
+const aiMessage  = ref('');
+
+async function loadAiNotes() {
+    if (!props.call.recording_id) {
+        aiMessage.value = 'No recording found for this call.';
+        aiStatus.value  = 'failed';
+        return;
+    }
+    aiStatus.value  = 'loading';
+    aiMessage.value = '';
+    try {
+        const res  = await fetch(`/api/recordings/${props.call.recording_id}/ai-notes`, {
+            headers: { 'Accept': 'application/json' },
+        });
+        const data = await res.json();
+
+        if (data.status === 'done' && data.ai_notes) {
+            form.description = data.ai_notes;
+            aiStatus.value   = 'done';
+        } else if (data.status === 'processing' || data.status === 'pending') {
+            aiStatus.value  = 'processing';
+            aiMessage.value = 'Still transcribing — try again in a moment.';
+        } else {
+            aiStatus.value  = 'failed';
+            aiMessage.value = 'Notes not ready yet. Try again shortly.';
+        }
+    } catch {
+        aiStatus.value  = 'failed';
+        aiMessage.value = 'Could not load AI notes.';
+    }
 }
 
 function fmt(s) {
@@ -210,7 +243,27 @@ const priorityColor = {
 
                 <!-- Notes -->
                 <div>
-                    <label class="label">Counsellor's Notes <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="label">Counsellor's Notes <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <button
+                            type="button"
+                            @click="loadAiNotes"
+                            :disabled="aiStatus === 'loading'"
+                            class="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                        >
+                            <svg v-if="aiStatus !== 'loading'" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                            </svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                            </svg>
+                            {{ aiStatus === 'loading' ? 'Loading…' : 'Load AI Notes' }}
+                        </button>
+                    </div>
+                    <p v-if="aiMessage" class="mb-1 text-xs" :class="aiStatus === 'done' ? 'text-green-600' : 'text-amber-600'">
+                        {{ aiMessage }}
+                    </p>
                     <textarea
                         v-model="form.description"
                         class="input h-20 resize-none"
