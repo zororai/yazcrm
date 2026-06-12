@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use Anthropic\Laravel\Facades\Anthropic;
 use App\Http\Controllers\Controller;
 use App\Models\Call;
 use App\Models\Client;
@@ -161,7 +162,7 @@ class TicketController extends Controller
             'client_id'      => 'nullable|exists:clients,id',
             'call_id'        => 'nullable|exists:calls,id',
             'priority'       => 'in:low,medium,high,urgent',
-            'status'         => 'nullable|in:open,closed,resolved,ongoing',
+            'status'         => 'nullable|in:open,in_progress,closed,resolved,ongoing',
             'classification' => 'nullable|array',
             ...$this->crmRules,
         ]);
@@ -212,6 +213,53 @@ class TicketController extends Controller
         $ticket->update($data);
 
         return back()->with('success', 'Ticket updated.');
+    }
+
+    public function draftNotes(Request $request): JsonResponse
+    {
+        $data = $request->only([
+            'subject', 'purpose_of_call', 'services_requested', 'second_service_requested',
+            'caller_age', 'caller_gender', 'caller_marital_status', 'key_pops',
+            'province', 'district', 'location', 'mode_of_communication',
+            'priority', 'action_status', 'referred_to', 'is_repeat_caller',
+            'call_validity', 'project', 'psychosocial_type', 'classification',
+        ]);
+
+        $lines = [];
+        if (!empty($data['subject']))                $lines[] = "Case name: {$data['subject']}";
+        if (!empty($data['purpose_of_call']))         $lines[] = "Purpose of call: {$data['purpose_of_call']}";
+        if (!empty($data['services_requested']))      $lines[] = "Service requested: {$data['services_requested']}";
+        if (!empty($data['second_service_requested'])) $lines[] = "Second service: {$data['second_service_requested']}";
+        if (!empty($data['caller_age']))              $lines[] = "Caller age: {$data['caller_age']}";
+        if (!empty($data['caller_gender']))           $lines[] = "Gender: {$data['caller_gender']}";
+        if (!empty($data['caller_marital_status']))   $lines[] = "Marital status: {$data['caller_marital_status']}";
+        if (!empty($data['key_pops']))                $lines[] = "Key population: {$data['key_pops']}";
+        if (!empty($data['province']))                $lines[] = "Province: {$data['province']}";
+        if (!empty($data['district']))                $lines[] = "District: {$data['district']}";
+        if (!empty($data['location']))                $lines[] = "Location: {$data['location']}";
+        if (!empty($data['mode_of_communication']))   $lines[] = "Mode of communication: {$data['mode_of_communication']}";
+        if (!empty($data['priority']))                $lines[] = "Priority: {$data['priority']}";
+        if (!empty($data['action_status']))           $lines[] = "Action status: {$data['action_status']}";
+        if (!empty($data['referred_to']))             $lines[] = "Referred to: {$data['referred_to']}";
+        if (!empty($data['is_repeat_caller']))        $lines[] = "Repeat caller: yes";
+        if (!empty($data['psychosocial_type']))       $lines[] = "Psychosocial type: {$data['psychosocial_type']}";
+        if (!empty($data['classification']) && is_array($data['classification'])) {
+            $flat = collect($data['classification'])->flatten()->filter()->implode(', ');
+            if ($flat) $lines[] = "Classification: {$flat}";
+        }
+
+        $context = implode("\n", $lines);
+
+        $message = Anthropic::messages()->create([
+            'model'      => 'claude-haiku-4-5-20251001',
+            'max_tokens' => 400,
+            'system'     => 'You are assisting a counsellor at a helpline. Write a concise, professional counsellor session note in 3-5 sentences based on the intake data provided. Use neutral, non-judgmental clinical language. Do not invent details not present in the data.',
+            'messages'   => [
+                ['role' => 'user', 'content' => "Intake data:\n{$context}\n\nDraft a counsellor note."],
+            ],
+        ]);
+
+        return response()->json(['note' => $message->content[0]->text]);
     }
 
     public function destroy(Request $request, Ticket $ticket): RedirectResponse

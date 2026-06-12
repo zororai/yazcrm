@@ -3,13 +3,22 @@
         'name' => 'crm/pbx-backend',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '1842f6b71aa66c529c0e06ffd7ef331f0b893579',
+        'reference' => '5127eebb9304fbbd6f7383d3e5c2ce3e88f03152',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
         'dev' => true,
     ),
     'versions' => array(
+        'anthropic-ai/sdk' => array(
+            'pretty_version' => 'v0.29.1',
+            'version' => '0.29.1.0',
+            'reference' => '322a3b2f312dd30e4154e6ae301b8c7039f39783',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../anthropic-ai/sdk',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'brick/math' => array(
             'pretty_version' => '0.14.8',
             'version' => '0.14.8.0',
@@ -46,7 +55,7 @@
         'crm/pbx-backend' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '1842f6b71aa66c529c0e06ffd7ef331f0b893579',
+            'reference' => '5127eebb9304fbbd6f7383d3e5c2ce3e88f03152',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -682,6 +691,27 @@
             'aliases' => array(),
             'dev_requirement' => true,
         ),
+        'php-http/async-client-implementation' => array(
+            'dev_requirement' => false,
+            'provided' => array(
+                0 => '*',
+            ),
+        ),
+        'php-http/client-implementation' => array(
+            'dev_requirement' => false,
+            'provided' => array(
+                0 => '*',
+            ),
+        ),
+        'php-http/discovery' => array(
+            'pretty_version' => '1.20.0',
+            'version' => '1.20.0.0',
+            'reference' => '82fe4c73ef3363caed49ff8dd1539ba06044910d',
+            'type' => 'composer-plugin',
+            'install_path' => __DIR__ . '/../php-http/discovery',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'phpoffice/phpspreadsheet' => array(
             'pretty_version' => '5.7.0',
             'version' => '5.7.0.0',
@@ -811,7 +841,8 @@
         'psr/http-client-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
+                0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/http-factory' => array(
@@ -826,7 +857,8 @@
         'psr/http-factory-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
+                0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/http-message' => array(
@@ -841,7 +873,8 @@
         'psr/http-message-implementation' => array(
             'dev_requirement' => false,
             'provided' => array(
-                0 => '1.0',
+                0 => '*',
+                1 => '1.0',
             ),
         ),
         'psr/log' => array(
@@ -1093,6 +1126,15 @@
             'install_path' => __DIR__ . '/../staabm/side-effects-detector',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'standard-webhooks/standard-webhooks' => array(
+            'pretty_version' => 'v1.0.2',
+            'version' => '1.0.2.0',
+            'reference' => 'a1773d7ffc577d730e2bf4d4bd740a82a42aa904',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../standard-webhooks/standard-webhooks',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'symfony/clock' => array(
             'pretty_version' => 'v7.4.8',

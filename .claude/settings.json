@@ -25,7 +25,11 @@
       "Bash(grep -n '$sc\\\\b' 'C:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\resources\\\\views\\\\public-dashboard.blade.php')",
       "Bash(grep -n 'All-time Interactions\\\\|ov-total\\\\|id=\"total\"\\\\|number_format\\($total\\)' 'C:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\resources\\\\views\\\\public-dashboard.blade.php')",
       "Bash(grep -n 'initOverviewCharts\\\\|ovAgeGenderChart\\\\|@json\\\\\\($ageGenderData' 'C:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\\\\resources\\\\views\\\\public-dashboard.blade.php')",
-      "Bash('C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe' -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $blade = $app->make\\('\\\\''view'\\\\''\\); echo '\\\\''OK'\\\\'';')"
+      "Bash('C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe' -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $blade = $app->make\\('\\\\''view'\\\\''\\); echo '\\\\''OK'\\\\'';')",
+      "Bash(xargs grep -l \"showAdd\")",
+      "Bash(xargs grep -l \"class.*Ticket\")",
+      "Bash(xargs grep -l \"ticket\")",
+      "Bash(php -r \"echo phpversion\\(\\);\")"
     ]
   }
 }

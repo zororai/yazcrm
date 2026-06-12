@@ -292,6 +292,43 @@ function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
 }
 
+const draftingNotes = ref(false);
+async function draftNotes() {
+    draftingNotes.value = true;
+    try {
+        const res = await fetch('/tickets/draft-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify({
+                subject: addForm.subject,
+                purpose_of_call: addForm.purpose_of_call,
+                services_requested: addForm.services_requested,
+                second_service_requested: addForm.second_service_requested,
+                caller_age: addForm.caller_age,
+                caller_gender: addForm.caller_gender,
+                caller_marital_status: addForm.caller_marital_status,
+                key_pops: addForm.key_pops,
+                province: addForm.province,
+                district: addForm.district,
+                location: addForm.location,
+                mode_of_communication: addForm.mode_of_communication,
+                priority: addForm.priority,
+                action_status: addForm.action_status,
+                referred_to: addForm.referred_to,
+                is_repeat_caller: addForm.is_repeat_caller,
+                psychosocial_type: addForm.psychosocial_type,
+                classification: addForm.classification,
+            }),
+        });
+        const json = await res.json();
+        if (json.note) addForm.description = json.note;
+    } catch {
+        // silently fail — counsellor can type manually
+    } finally {
+        draftingNotes.value = false;
+    }
+}
+
 function deleteTicket(ticket) {
     if (!confirm(`Delete ticket #${ticket.id} "${ticket.subject}"? This cannot be undone.`)) return;
     router.delete(`/tickets/${ticket.id}`, {
@@ -850,7 +887,24 @@ const statusColor = {
                     <div>
                         <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Notes</h4>
                         <div>
-                            <label class="label">Counsellor's Notes</label>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="label">Counsellor's Notes</label>
+                                <button
+                                    type="button"
+                                    @click="draftNotes"
+                                    :disabled="draftingNotes"
+                                    class="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                                >
+                                    <svg v-if="!draftingNotes" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                    </svg>
+                                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                                    </svg>
+                                    {{ draftingNotes ? 'Drafting…' : 'AI Draft Notes' }}
+                                </button>
+                            </div>
                             <textarea v-model="addForm.description" class="input h-24 resize-none" placeholder="Notes from the session…" />
                         </div>
                     </div>
