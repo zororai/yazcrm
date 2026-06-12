@@ -230,7 +230,7 @@ function closeReferredToDrop() {
 }
 
 const addForm = useForm({
-    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', status: 'open', follow_up_date: '',
+    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', status: 'in_progress', follow_up_date: '',
     // CRM fields
     mode_of_communication:    'phone',
     call_validity:            'valid',
@@ -629,9 +629,8 @@ const statusColor = {
                                 <div>
                                     <label class="label">Case Status</label>
                                     <select v-model="addForm.status" class="input">
-                                        <option value="open">Open</option>
                                         <option value="in_progress">In Progress</option>
-                                        <option value="ongoing">Ongoing</option>
+                                        <option value="ongoing">On Going</option>
                                         <option value="resolved">Resolved</option>
                                         <option value="closed">Closed</option>
                                     </select>
