@@ -7,7 +7,7 @@ import {
     QueueListIcon, SignalIcon, UserGroupIcon, ArrowRightOnRectangleIcon,
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon, FolderOpenIcon,
     ExclamationTriangleIcon, ChatBubbleLeftRightIcon, ShieldCheckIcon, TableCellsIcon,
-    ServerStackIcon, ShieldExclamationIcon,
+    ServerStackIcon, ShieldExclamationIcon, PhoneArrowUpRightIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -140,7 +140,8 @@ onUnmounted(() => {
 
 const navigation = computed(() => [
     { name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon },
-    { name: 'Calls',      href: '/calls',        icon: PhoneIcon },
+    { name: 'Dialer',    href: '/dialer',       icon: PhoneArrowUpRightIcon },
+    { name: 'Calls',     href: '/calls',        icon: PhoneIcon },
     { name: 'Callbacks',  href: '/callbacks',    icon: QueueListIcon },
     { name: 'Tickets',    href: '/tickets',      icon: TicketIcon },
     { name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount },

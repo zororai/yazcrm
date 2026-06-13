@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Extension;
 use App\Models\User;
 use App\Services\YeastarService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -46,6 +47,27 @@ class ExtensionController extends Controller
         $extension->update($data);
 
         return back()->with('success', 'Extension updated.');
+    }
+
+    public function mySipConfig(Request $request): JsonResponse
+    {
+        $ext = Extension::where('user_id', $request->user()->id)->first();
+
+        if (!$ext || !$ext->sip_password) {
+            return response()->json(['configured' => false]);
+        }
+
+        $pbxHost   = parse_url(config('yeastar.base_url'), PHP_URL_HOST) ?? '192.168.10.150';
+        $sipDomain = $ext->sip_domain ?: $pbxHost;
+
+        return response()->json([
+            'configured'       => true,
+            'extension_number' => $ext->extension_number,
+            'sip_password'     => $ext->sip_password,
+            'sip_domain'       => $sipDomain,
+            'ws_url'           => "wss://{$sipDomain}:8088/ws",
+            'display_name'     => $ext->caller_id_name ?: $ext->name,
+        ]);
     }
 
     public function assignUser(Request $request, Extension $extension): RedirectResponse

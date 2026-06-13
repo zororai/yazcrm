@@ -41,7 +41,7 @@ const callDurationFormatted = computed(() => {
 async function loadSipConfig() {
     status.value = 'loading';
     try {
-        const res  = await fetch('/api/extensions/sip-config', { headers: { Accept: 'application/json' } });
+        const res  = await fetch('/dialer/sip-config', { headers: { Accept: 'application/json' }, credentials: 'include' });
         const data = await res.json();
         if (!data.configured) {
             status.value  = 'unconfigured';

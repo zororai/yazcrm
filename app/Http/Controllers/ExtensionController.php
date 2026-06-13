@@ -76,12 +76,14 @@ class ExtensionController extends Controller
         $pbxHost = parse_url(config('yeastar.base_url'), PHP_URL_HOST)
             ?? config('yeastar.base_url');
 
+        $sipDomain = $ext->sip_domain ?: $pbxHost;
+
         return response()->json([
             'configured'       => true,
             'extension_number' => $ext->extension_number,
             'sip_password'     => $ext->sip_password,
-            'sip_domain'       => $ext->sip_domain ?: $pbxHost,
-            'ws_url'           => "wss://{$pbxHost}:8088/ws",
+            'sip_domain'       => $sipDomain,
+            'ws_url'           => "wss://{$sipDomain}:8088/ws",
             'display_name'     => $ext->caller_id_name ?: $ext->name,
         ]);
     }

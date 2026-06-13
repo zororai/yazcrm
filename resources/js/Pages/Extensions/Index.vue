@@ -25,7 +25,7 @@ function saveAssign() {
 
 // ── SIP config modal ──────────────────────────────────────────────────────────
 const sipModal = ref(null);
-const sipForm  = useForm({ sip_password: '', sip_domain: '192.168.10.200' });
+const sipForm  = useForm({ sip_password: '', sip_domain: '192.168.10.150' });
 
 function openSip(ext) {
     sipModal.value = ext;

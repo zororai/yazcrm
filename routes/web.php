@@ -23,6 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::redirect('/', '/dashboard');
 
     Route::get('dashboard', [Web\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dialer',           fn() => inertia('Dialer/Index'))->name('dialer');
+    Route::get('dialer/sip-config', [Web\ExtensionController::class, 'mySipConfig'])->name('dialer.sip-config');
 
     // Calls
     Route::get('calls', [Web\CallController::class, 'index'])->name('calls.index');
