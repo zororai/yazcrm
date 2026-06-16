@@ -69,10 +69,13 @@ class WebhookController extends Controller
         $duration   = (int)($payload['duration'] ?? 0);
 
         $status = match (strtoupper($disposition)) {
-            'ANSWERED'  => 'answered',
-            'BUSY'      => 'busy',
-            'FAILED'    => 'failed',
-            default     => 'missed',
+            'ANSWERED'                      => 'answered',
+            'BUSY'                          => 'busy',
+            'FAILED', 'CONGESTION',
+            'CHANUNAVAIL'                   => 'failed',
+            'NOANSWER', 'NO ANSWER',
+            'CANCEL', 'CANCELLED'           => 'missed',
+            default                         => 'failed',
         };
 
         $call = Call::where('call_id', $callId)->first();
@@ -123,7 +126,8 @@ class WebhookController extends Controller
             TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
         }
 
-        if ($status === 'missed') {
+        // Only queue a callback for inbound missed calls — not outbound or internal
+        if ($status === 'missed' && $call->direction === 'inbound') {
             CallbackQueue::firstOrCreate(
                 ['call_id' => $call->id, 'status' => 'pending'],
                 [

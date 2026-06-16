@@ -206,13 +206,26 @@ class YeastarService
                 $row       = (array) $row;
                 $direction = $this->mapDirectionFromDb($row['calltype'] ?? '');
 
+                $uniqueid  = (string) $row['uniqueid'];
+                $mappedStatus = $this->mapStatus($row['disposition'] ?? '');
+
+                // Try to find a webhook-created call (direction always 'inbound' from webhook)
+                // that matches by caller + start time window (within 5 seconds) to avoid duplicates
+                $existingCall = Call::where('call_id', $uniqueid)->first()
+                    ?? Call::where('caller', $row['src'] ?? '')
+                        ->where('started_at', '>=', date('Y-m-d H:i:s', strtotime(($row['datetime'] ?? 'now') . ' -5 seconds')))
+                        ->where('started_at', '<=', date('Y-m-d H:i:s', strtotime(($row['datetime'] ?? 'now') . ' +5 seconds')))
+                        ->whereNotNull('call_id')
+                        ->first();
+
                 $call = Call::updateOrCreate(
-                    ['call_id' => (string) $row['uniqueid']],
+                    ['call_id' => $existingCall ? $existingCall->call_id : $uniqueid],
                     [
+                        'call_id'          => $uniqueid,
                         'caller'           => $row['src']          ?? '',
                         'callee'           => $row['dst']          ?? '',
                         'direction'        => $direction,
-                        'status'           => $this->mapStatus($row['disposition'] ?? ''),
+                        'status'           => $mappedStatus,
                         'duration'         => (int)($row['talkduration'] ?? $row['duration'] ?? 0),
                         'started_at'       => $row['datetime']     ?? null,
                         'ended_at'         => null,
@@ -305,13 +318,14 @@ class YeastarService
 
     private function mapStatus(string $status): string
     {
-        return match (strtolower($status)) {
-            'answered', 'answer'  => 'answered',
-            'no answer', 'noanswer', 'missed' => 'missed',
-            'busy'    => 'busy',
-            'failed'  => 'failed',
-            'voicemail' => 'voicemail',
-            default   => 'missed',
+        return match (strtolower(trim($status))) {
+            'answered', 'answer'                        => 'answered',
+            'no answer', 'noanswer', 'missed'           => 'missed',
+            'cancel', 'cancelled'                       => 'missed',
+            'busy'                                      => 'busy',
+            'failed', 'congestion', 'chanunavail'       => 'failed',
+            'voicemail'                                 => 'voicemail',
+            default                                     => 'failed',
         };
     }
 
