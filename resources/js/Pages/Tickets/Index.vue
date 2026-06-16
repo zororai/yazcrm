@@ -5,7 +5,7 @@ import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 const distressDomains = computed(() => usePage().props.distressDomains ?? []);
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
-import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon, NoSymbolIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon, NoSymbolIcon, PencilIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
@@ -18,6 +18,9 @@ const gender         = ref(props.filters.gender         ?? '');
 const service        = ref(props.filters.service        ?? '');
 const project        = ref(props.filters.project        ?? '');
 const province       = ref(props.filters.province       ?? '');
+const district       = ref(props.filters.district       ?? '');
+const location       = ref(props.filters.location       ?? '');
+const referredTo     = ref(props.filters.referred_to    ?? '');
 const repeatCaller   = ref(props.filters.repeat_caller  ?? '');
 const callDirection  = ref(props.filters.call_direction ?? '');
 const ageGroup       = ref(props.filters.age_group      ?? '');
@@ -257,8 +260,28 @@ const addForm = useForm({
     psychosocial_type:        '',
 });
 
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+    if (search.value)       params.set('search',        search.value);
+    if (status.value)       params.set('status',        status.value);
+    if (priority.value)     params.set('priority',      priority.value);
+    if (agentId.value)      params.set('agent_id',      agentId.value);
+    if (gender.value)       params.set('gender',        gender.value);
+    if (service.value)      params.set('service',       service.value);
+    if (project.value)      params.set('project',       project.value);
+    if (province.value)     params.set('province',      province.value);
+    if (district.value)     params.set('district',      district.value);
+    if (location.value)     params.set('location',      location.value);
+    if (referredTo.value)   params.set('referred_to',   referredTo.value);
+    if (repeatCaller.value) params.set('repeat_caller', repeatCaller.value);
+    if (callDirection.value)params.set('call_direction',callDirection.value);
+    if (ageGroup.value)     params.set('age_group',     ageGroup.value);
+    const qs = params.toString();
+    return '/tickets/export' + (qs ? '?' + qs : '');
+});
+
 const activeFilterCount = computed(() =>
-    [agentId, gender, service, project, province, repeatCaller, callDirection, ageGroup]
+    [agentId, gender, service, project, province, district, location, referredTo, repeatCaller, callDirection, ageGroup]
         .filter(r => r.value).length
 );
 
@@ -272,6 +295,9 @@ function apply() {
         service:         service.value        || undefined,
         project:         project.value        || undefined,
         province:        province.value       || undefined,
+        district:        district.value       || undefined,
+        location:        location.value       || undefined,
+        referred_to:     referredTo.value     || undefined,
         repeat_caller:   repeatCaller.value   || undefined,
         call_direction:  callDirection.value  || undefined,
         age_group:       ageGroup.value       || undefined,
@@ -280,13 +306,15 @@ function apply() {
 
 function clearFilters() {
     agentId.value = gender.value = service.value = project.value =
-    province.value = repeatCaller.value = callDirection.value = ageGroup.value = '';
+    province.value = district.value = location.value = referredTo.value =
+    repeatCaller.value = callDirection.value = ageGroup.value = '';
     apply();
 }
 
 const debouncedApply = debounce(apply, 350);
 watch(search, debouncedApply);
-watch([status, priority, agentId, gender, service, project, province, repeatCaller, callDirection, ageGroup], apply);
+watch([status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup], apply);
+watch([location, district], debounce(apply, 350));
 
 function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
@@ -425,6 +453,10 @@ const statusColor = {
                             {{ activeFilterCount }}
                         </span>
                     </button>
+                    <a :href="exportUrl"
+                        class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                        <ArrowDownTrayIcon class="h-4 w-4" /> Export CSV
+                    </a>
                     <button v-if="activeFilterCount" @click="clearFilters"
                         class="btn-secondary btn-sm text-red-500 hover:text-red-700 inline-flex items-center gap-1">
                         <XMarkIcon class="h-3.5 w-3.5" /> Clear
@@ -514,6 +546,24 @@ const statusColor = {
                         <option value="Matabeleland North">Matabeleland North</option>
                         <option value="Matabeleland South">Matabeleland South</option>
                         <option value="Midlands">Midlands</option>
+                    </select>
+                </div>
+                <!-- Location -->
+                <div>
+                    <label class="label">Location</label>
+                    <input v-model="location" type="text" class="input" placeholder="Search location…" />
+                </div>
+                <!-- District -->
+                <div>
+                    <label class="label">District</label>
+                    <input v-model="district" type="text" class="input" placeholder="Search district…" />
+                </div>
+                <!-- Referred To -->
+                <div>
+                    <label class="label">Referred To</label>
+                    <select v-model="referredTo" class="input">
+                        <option value="">All Referrals</option>
+                        <option v-for="r in props.referredTo" :key="r" :value="r">{{ r }}</option>
                     </select>
                 </div>
             </div>

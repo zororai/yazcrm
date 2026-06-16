@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +35,9 @@ class TicketController extends Controller
         if ($request->filled('service'))         { $query->where('services_requested', $request->service); }
         if ($request->filled('project'))         { $query->where('project',            $request->project); }
         if ($request->filled('province'))        { $query->where('province',           $request->province); }
+        if ($request->filled('district'))        { $query->where('district',            $request->district); }
+        if ($request->filled('location'))        { $query->where('location',            'like', "%{$request->location}%"); }
+        if ($request->filled('referred_to'))     { $query->where('referred_to',         $request->referred_to); }
         if ($request->filled('repeat_caller'))   { $query->where('is_repeat_caller',   $request->repeat_caller); }
         if ($request->filled('call_direction'))  {
             // inbound/outbound mapped via mode_of_communication or joined calls table
@@ -72,7 +76,8 @@ class TicketController extends Controller
             'filters' => $request->only([
                 'status', 'priority', 'search',
                 'agent_id', 'gender', 'service', 'project',
-                'province', 'repeat_caller', 'call_direction', 'age_group',
+                'province', 'district', 'location', 'referred_to',
+                'repeat_caller', 'call_direction', 'age_group',
             ]),
             'keyPops'             => LookupItem::where('type', 'key_pops')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'modesOfCommunication' => LookupItem::where('type', 'mode_of_communication')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
@@ -82,6 +87,108 @@ class TicketController extends Controller
             'servicesRequestedBefore'  => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'referredTo'               => LookupItem::where('type', 'referred_to')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'serviceCategories'        => LookupItem::where('type', 'service_requested')->where('is_active', true)->get(['name', 'classification_categories'])->mapWithKeys(fn ($i) => [$i->name => $i->classification_categories ?? []]),
+        ]);
+    }
+
+    public function export(Request $request): HttpResponse
+    {
+        $query = Ticket::latest();
+
+        if ($request->user()->role !== 'admin') {
+            $query->where('agent_id', $request->user()->id);
+        }
+
+        if ($request->filled('status'))        { $query->where('status',            $request->status); }
+        if ($request->filled('priority'))       { $query->where('priority',           $request->priority); }
+        if ($request->filled('agent_id'))       { $query->where('agent_id',           $request->agent_id); }
+        if ($request->filled('gender'))         { $query->where('caller_gender',      $request->gender); }
+        if ($request->filled('service'))        { $query->where('services_requested', $request->service); }
+        if ($request->filled('project'))        { $query->where('project',            $request->project); }
+        if ($request->filled('province'))       { $query->where('province',           $request->province); }
+        if ($request->filled('district'))       { $query->where('district',           $request->district); }
+        if ($request->filled('location'))       { $query->where('location',           'like', "%{$request->location}%"); }
+        if ($request->filled('referred_to'))    { $query->where('referred_to',        $request->referred_to); }
+        if ($request->filled('repeat_caller'))  { $query->where('is_repeat_caller',   $request->repeat_caller); }
+        if ($request->filled('age_group')) {
+            match ($request->age_group) {
+                'under_18' => $query->whereBetween('caller_age', [1,  17]),
+                '18_24'    => $query->whereBetween('caller_age', [18, 24]),
+                '25_34'    => $query->whereBetween('caller_age', [25, 34]),
+                '35_44'    => $query->whereBetween('caller_age', [35, 44]),
+                '45_plus'  => $query->where('caller_age', '>=', 45),
+                default    => null,
+            };
+        }
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('subject', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('contact_number', 'like', "%{$request->search}%");
+            });
+        }
+
+        $csvHeaders = [
+            'ID', 'Date', 'Agent', 'Client', 'Contact Number', 'Subject',
+            'Purpose of Call', 'Mode of Communication', 'Status', 'Priority',
+            'Gender', 'Age', 'Marital Status', 'Key Pops',
+            'Province', 'District', 'Location',
+            'Services Requested', 'Second Service', 'Services Requested Before',
+            'Number of Services', 'Referred To', 'Uptake Confirmed', 'Referral Uptake Date',
+            'Repeat Caller', 'Project', 'Call Validity', 'Classification',
+            'Psychosocial Type', 'Follow Up Date', 'Resolved At',
+        ];
+
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $csvHeaders);
+
+        $query->with(['client', 'agent'])->chunk(200, function ($chunk) use ($handle) {
+            foreach ($chunk as $t) {
+                fputcsv($handle, [
+                    $t->id,
+                    $t->created_at?->format('Y-m-d H:i'),
+                    $t->agent?->name ?? '',
+                    $t->client?->name ?? '',
+                    $t->contact_number ?? '',
+                    $t->subject ?? '',
+                    $t->purpose_of_call ?? '',
+                    $t->mode_of_communication ?? '',
+                    $t->status ?? '',
+                    $t->priority ?? '',
+                    $t->caller_gender ?? '',
+                    $t->caller_age ?? '',
+                    $t->caller_marital_status ?? '',
+                    $t->key_pops ?? '',
+                    $t->province ?? '',
+                    $t->district ?? '',
+                    $t->location ?? '',
+                    $t->services_requested ?? '',
+                    $t->second_service_requested ?? '',
+                    $t->services_requested_before ?? '',
+                    $t->number_of_services ?? '',
+                    $t->referred_to ?? '',
+                    $t->uptake_confirmed ? 'Yes' : 'No',
+                    $t->referral_uptake_date ?? '',
+                    $t->is_repeat_caller ? 'Yes' : 'No',
+                    $t->project ?? '',
+                    $t->call_validity ?? '',
+                    is_array($t->classification) ? implode(', ', array_map(fn($v) => is_array($v) ? implode('|', $v) : (string)$v, $t->classification)) : ($t->classification ?? ''),
+                    $t->psychosocial_type ?? '',
+                    $t->follow_up_date ?? '',
+                    $t->resolved_at?->format('Y-m-d H:i') ?? '',
+                ]);
+            }
+        });
+
+        rewind($handle);
+        $csv      = stream_get_contents($handle);
+        fclose($handle);
+
+        $filename = 'tickets-export-' . now()->format('Y-m-d') . '.csv';
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control'       => 'no-store',
         ]);
     }
 
