@@ -220,8 +220,9 @@ class SbcController extends Controller
             return back()->with('error', 'Could not find "First Name" or "Surname" columns. Please check your file headers.');
         }
 
-        $now     = now();
+        $now      = now();
         $inserted = 0;
+        $skipped  = 0;
 
         foreach (array_slice($rows, 1) as $row) {
             $firstName = trim((string)($row[$firstNameCol] ?? ''));
@@ -229,21 +230,36 @@ class SbcController extends Controller
 
             if ($firstName === '' && $surname === '') continue;
 
-            SbcSignup::create([
-                'sheet'        => 'Certificates To Process',
-                'first_name'   => $firstName,
-                'surname'      => $surname,
-                'phone_number' => $phoneCol !== false ? trim((string)($row[$phoneCol] ?? '')) : null,
-                'age'          => $ageCol   !== false ? (int)($row[$ageCol] ?? 0) ?: null : null,
-                'sex'          => $sexCol   !== false ? trim((string)($row[$sexCol] ?? '')) : null,
-                'location'     => $locationCol !== false ? trim((string)($row[$locationCol] ?? '')) : null,
-                'date'         => ($dateCol !== false && $dateCol !== null && isset($row[$dateCol]) && $row[$dateCol]) ? now()->toDateString() : $now->toDateString(),
-                'synced_at'    => $now,
-            ]);
-            $inserted++;
+            $date = ($dateCol !== false && $dateCol !== null && isset($row[$dateCol]) && $row[$dateCol])
+                ? now()->toDateString()
+                : $now->toDateString();
+
+            $phone = $phoneCol !== false ? trim((string)($row[$phoneCol] ?? '')) : null;
+
+            try {
+                SbcSignup::create([
+                    'sheet'        => 'Certificates To Process',
+                    'first_name'   => $firstName,
+                    'surname'      => $surname,
+                    'phone_number' => $phone ?: null,
+                    'age'          => $ageCol !== false ? (int)($row[$ageCol] ?? 0) ?: null : null,
+                    'sex'          => $sexCol !== false ? trim((string)($row[$sexCol] ?? '')) ?: null : null,
+                    'location'     => $locationCol !== false ? trim((string)($row[$locationCol] ?? '')) ?: null : null,
+                    'date'         => $date,
+                    'synced_at'    => $now,
+                ]);
+                $inserted++;
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Skip duplicate entries silently
+                if ($e->getCode() === '23000') { $skipped++; continue; }
+                throw $e;
+            }
         }
 
-        return back()->with('success', "{$inserted} record(s) imported to Certificates To Process.");
+        $msg = "{$inserted} record(s) imported to Certificates To Process.";
+        if ($skipped) $msg .= " {$skipped} duplicate(s) skipped.";
+
+        return back()->with('success', $msg);
     }
 
     public function uploadTemplate(Request $request): RedirectResponse
