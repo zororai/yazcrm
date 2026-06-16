@@ -202,11 +202,11 @@ class SbcController extends Controller
             return back()->with('error', 'The file has no data rows.');
         }
 
-        // Normalise header row — case-insensitive key mapping
+        // Normalise header row — case-insensitive key mapping, skip empty headers
         $header = array_map(fn($h) => strtolower(trim((string)$h)), $rows[0]);
         $col    = fn(string ...$names) => collect($names)
-            ->map(fn($n) => array_search($n, $header))
-            ->first(fn($i) => $i !== false);
+            ->map(fn($n) => $n !== '' ? array_search($n, $header) : false)
+            ->first(fn($i) => $i !== false && $i !== null);
 
         $firstNameCol  = $col('first name', 'firstname', 'first_name', 'name');
         $surnameCol    = $col('surname', 'last name', 'lastname', 'last_name');
@@ -237,7 +237,7 @@ class SbcController extends Controller
                 'age'          => $ageCol   !== false ? (int)($row[$ageCol] ?? 0) ?: null : null,
                 'sex'          => $sexCol   !== false ? trim((string)($row[$sexCol] ?? '')) : null,
                 'location'     => $locationCol !== false ? trim((string)($row[$locationCol] ?? '')) : null,
-                'date'         => $dateCol  !== false && $row[$dateCol] ? now()->toDateString() : $now->toDateString(),
+                'date'         => ($dateCol !== false && $dateCol !== null && isset($row[$dateCol]) && $row[$dateCol]) ? now()->toDateString() : $now->toDateString(),
                 'synced_at'    => $now,
             ]);
             $inserted++;
