@@ -103,25 +103,13 @@ const CATEGORIES = [
     keywords: ['health', 'medical', 'cholera', 'covid', 'vaccination', 'outbreak', 'medication'],
     fields: [
       { key: 'general_health_topic', label: 'General Health Topic', type: 'text' },
-      { key: 'medication_information_requested', label: 'Medication Information Requested', type: 'yesno' },
-      { key: 'cholera_information', label: 'Cholera Information', type: 'yesno' },
-      { key: 'outbreak_reported', label: 'Outbreak Reported', type: 'yesno' },
-      { key: 'cholera_vaccination_status', label: 'Cholera Vaccination Status', type: 'select', options: ['Vaccinated', 'Not Vaccinated', 'Unknown'] },
-      { key: 'adverse_reaction_reported', label: 'Adverse Reaction Reported', type: 'yesno' },
-      { key: 'severity_of_illness', label: 'Severity of Illness', type: 'select', options: ['Mild', 'Moderate', 'Severe', 'Critical'] },
-      { key: 'covid_vaccination_status', label: 'COVID Vaccination Status', type: 'select', options: ['Fully Vaccinated', 'Partially Vaccinated', 'Not Vaccinated', 'Unknown'] },
-      { key: 'covid_symptoms', label: 'COVID Symptoms', type: 'yesno' },
     ],
   },
   {
     key: 'mental_health', label: 'Mental Health & Psychosocial Support',
     keywords: ['mental', 'psychosocial', 'counselling', 'depression', 'anxiety', 'trauma', 'suicide', 'distress', 'mhpss'],
     fields: [
-      { key: 'ssq14', label: 'SSQ-14', type: 'number' },
-      { key: 'phq9', label: 'PHQ-9', type: 'number' },
-      { key: 'gad7', label: 'GAD-7', type: 'number' },
       { key: 'assist', label: 'ASSIST', type: 'text' },
-      { key: 'audit_c', label: 'AUDIT-C', type: 'number' },
       { key: 'distress_level', label: 'Distress Level', type: 'select', options: ['None', 'Mild', 'Moderate', 'Severe'] },
       { key: 'depressive_symptoms', label: 'Depressive Symptoms', type: 'yesno' },
       { key: 'anxiety_symptoms', label: 'Anxiety Symptoms', type: 'yesno' },
@@ -167,7 +155,7 @@ const CATEGORIES = [
       { key: 'perpetrator_known', label: 'Perpetrator Known', type: 'yesno' },
       { key: 'relationship_to_perpetrator', label: 'Relationship to Perpetrator', type: 'text' },
       { key: 'gbv_type', label: 'GBV Type', type: 'select', options: ['Physical', 'Sexual', 'Emotional', 'Economic', 'Other'] },
-      { key: 'gbv_sub_type', label: 'GBV Sub-Type', type: 'text' },
+      { key: 'gbv_sub_type', label: 'Please specify GBV Type', type: 'text', showWhen: { key: 'gbv_type', value: 'Other' }, required: true },
       { key: 'incident_date', label: 'Incident Date', type: 'date' },
       { key: 'incident_location', label: 'Incident Location', type: 'text' },
       { key: 'prior_incidents', label: 'Prior Incidents', type: 'yesno' },
@@ -186,11 +174,10 @@ const CATEGORIES = [
     fields: [
       { key: 'child_age', label: 'Child Age', type: 'number' },
       { key: 'child_gender', label: 'Child Gender', type: 'select', options: ['Male', 'Female', 'Other'] },
-      { key: 'disclosure_type', label: 'Disclosure Type', type: 'text' },
       { key: 'visible_injury', label: 'Visible Injury', type: 'yesno' },
-      { key: 'child_safe_currently', label: 'Child Safe Currently', type: 'yesno' },
       { key: 'dssd_report', label: 'DSSD Report', type: 'yesno' },
-      { key: 'childline_contacted', label: 'Childline Contacted', type: 'yesno' },
+      { key: 'childline_contacted', label: 'Childline Contacted', type: 'select', options: ['Yes', 'No', 'Other'] },
+      { key: 'childline_contacted_other', label: 'Specification', type: 'text', showWhen: { key: 'childline_contacted', value: 'Other' }, required: true },
     ],
   },
   {
@@ -262,6 +249,24 @@ const CATEGORIES = [
       { key: 'follow_up_outcome', label: 'Follow-Up Outcome', type: 'text' },
       { key: 'case_status', label: 'Case Status', type: 'select', options: ['Open', 'In Progress', 'Resolved', 'Closed', 'Lost to Follow-Up'] },
       { key: 'case_closure_date', label: 'Case Closure Date', type: 'date' },
+    ],
+  },
+  {
+    key: 'cyberbullying', label: 'Cyberbullying',
+    keywords: ['cyberbullying', 'cyber', 'online harassment', 'online abuse', 'social media', 'digital abuse', 'trolling', 'doxxing', 'sexting', 'revenge porn'],
+    fields: [
+      { key: 'platform', label: 'Platform', type: 'select', options: ['Facebook', 'WhatsApp', 'Instagram', 'TikTok', 'Twitter/X', 'Snapchat', 'YouTube', 'Online Gaming', 'Other'] },
+      { key: 'cyberbullying_type', label: 'Cyberbullying Type', type: 'select', options: ['Harassment', 'Threats', 'Impersonation', 'Doxxing', 'Non-consensual Image Sharing', 'Hate Speech', 'Exclusion', 'Other'] },
+      { key: 'cyberbullying_type_other', label: 'Please specify Cyberbullying Type', type: 'text', showWhen: { key: 'cyberbullying_type', value: 'Other' }, required: true },
+      { key: 'perpetrator_known', label: 'Perpetrator Known', type: 'yesno' },
+      { key: 'relationship_to_perpetrator', label: 'Relationship to Perpetrator', type: 'text' },
+      { key: 'duration', label: 'Duration of Bullying', type: 'select', options: ['Once-off', 'Less than 1 week', '1–4 weeks', '1–6 months', 'More than 6 months'] },
+      { key: 'evidence_available', label: 'Evidence Available (screenshots etc)', type: 'yesno' },
+      { key: 'reported_to_platform', label: 'Reported to Platform', type: 'yesno' },
+      { key: 'reported_to_police', label: 'Reported to Police', type: 'yesno' },
+      { key: 'emotional_impact', label: 'Emotional Impact', type: 'select', options: ['None', 'Mild', 'Moderate', 'Severe'] },
+      { key: 'safety_concern', label: 'Safety Concern', type: 'yesno' },
+      { key: 'account_blocked_perpetrator', label: 'Perpetrator Blocked/Reported', type: 'yesno' },
     ],
   },
 ];
@@ -355,8 +360,12 @@ const yesNoOptions = ['Yes', 'No', 'Unknown'];
             <!-- Fields -->
             <div v-if="isOpen(cat.key)" class="p-4 grid grid-cols-2 gap-3">
                 <div v-for="field in cat.fields" :key="field.key"
+                    v-show="!field.showWhen || get(field.showWhen.key) === field.showWhen.value"
                     :class="field.type === 'text' && !field.options ? 'col-span-2' : ''">
-                    <label class="label text-xs">{{ field.label }}</label>
+                    <label class="label text-xs">
+                        {{ field.label }}
+                        <span v-if="field.required && (!field.showWhen || get(field.showWhen.key) === field.showWhen.value)" class="text-red-500 ml-0.5">*</span>
+                    </label>
 
                     <!-- Psychosocial type — writes to both JSON and dedicated DB column -->
                     <select v-if="field.type === 'psychosocial'"
@@ -407,6 +416,8 @@ const yesNoOptions = ['Yes', 'No', 'Unknown'];
                         type="text"
                         :value="get(field.key)"
                         @input="set(field.key, $event.target.value)"
+                        :required="field.required && (!field.showWhen || get(field.showWhen.key) === field.showWhen.value)"
+                        :placeholder="field.required ? 'Required' : ''"
                         class="input text-sm" />
                 </div>
             </div>
