@@ -213,14 +213,14 @@ const priorityColor = {
                         <label class="label">Referred To</label>
                         <select v-model="form.referred_to" class="input">
                             <option value="">— select —</option>
-                            <option value="Clinic / Health Facility">Clinic / Health Facility — SRHR, MH referrals</option>
-                            <option value="Police Station">Police Station — GBV &amp; protection cases</option>
-                            <option value="CeSHHAR / STI Clinic">CeSHHAR / STI Clinic — SRHR specialist service</option>
-                            <option value="School Headmaster">School Headmaster — Child protection</option>
-                            <option value="DSD / Social Welfare">DSD / Social Welfare — Socioeconomic cases</option>
-                            <option value="Civil Court">Civil Court — Legal justice cases</option>
-                            <option value="VFU (Victim Support)">VFU (Victim Support) — Violence survivors</option>
-                            <option value="YALEP Programme">YALEP Programme — Education track</option>
+                            <option value="Clinic / Health Facility">Clinic / Health Facility</option>
+                            <option value="Police Station">Police Station</option>
+                            <option value="CeSHHAR / STI Clinic">CeSHHAR / STI Clinic</option>
+                            <option value="School Headmaster">School Headmaster</option>
+                            <option value="DSD / Social Welfare">DSD / Social Welfare</option>
+                            <option value="Civil Court">Civil Court</option>
+                            <option value="VFU (Victim Support)">VFU (Victim Support)</option>
+                            <option value="YALEP Programme">YALEP Programme</option>
                         </select>
                     </div>
                 </div>

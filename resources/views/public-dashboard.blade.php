@@ -96,14 +96,14 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
 /* KPI grid */
 .kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .kpi{flex:1;min-width:110px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.kpi-icon{font-size:16px;margin-bottom:6px}
+.kpi-icon{margin-bottom:6px;display:flex;align-items:center}.kpi-icon img{width:28px;height:28px}
 .kpi-val{font-size:22px;font-weight:800;color:#0f172a;line-height:1}
 .kpi-lbl{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
 .svc-kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
 .svc-kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .svc-kpi-title{font-weight:700;font-size:14px;color:#1e293b;margin-bottom:14px}
 .svc-kpi-body{display:flex;align-items:center;gap:14px}
-.svc-kpi-icon{width:48px;height:48px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.svc-kpi-icon{width:48px;height:48px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}.svc-kpi-icon img{width:30px;height:30px}
 .svc-kpi-num{font-size:28px;font-weight:900;color:#6366f1;letter-spacing:-1px;line-height:1}
 .svc-kpi-foot{margin-top:16px;padding-top:12px;border-top:2px solid #f97316;display:flex;align-items:center;justify-content:space-between}
 .svc-kpi-foot-lbl{font-size:11px;color:#64748b;font-weight:600}
@@ -706,7 +706,7 @@ tr:hover td{background:#f8fafc}
     <div class="svc-kpi-card">
       <div class="svc-kpi-title">Services Requested</div>
       <div class="svc-kpi-body">
-        <div class="svc-kpi-icon">🏥</div>
+        <div class="svc-kpi-icon"><img src="https://img.icons8.com/fluency/48/hospital.png" alt="Services"></div>
         <div class="svc-kpi-num" id="svc-kpi-services">0</div>
       </div>
       <div class="svc-kpi-foot">
@@ -717,7 +717,7 @@ tr:hover td{background:#f8fafc}
     <div class="svc-kpi-card">
       <div class="svc-kpi-title">Referred Cases</div>
       <div class="svc-kpi-body">
-        <div class="svc-kpi-icon">👥</div>
+        <div class="svc-kpi-icon"><img src="https://img.icons8.com/fluency/48/conference-call.png" alt="Referred"></div>
         <div class="svc-kpi-num" id="svc-kpi-referred">0</div>
       </div>
       <div class="svc-kpi-foot">
@@ -728,7 +728,7 @@ tr:hover td{background:#f8fafc}
     <div class="svc-kpi-card">
       <div class="svc-kpi-title">Confirmed Uptake</div>
       <div class="svc-kpi-body">
-        <div class="svc-kpi-icon">✅</div>
+        <div class="svc-kpi-icon"><img src="https://img.icons8.com/fluency/48/checked.png" alt="Uptake"></div>
         <div class="svc-kpi-num" id="svc-kpi-uptake">0</div>
       </div>
       <div class="svc-kpi-foot">
@@ -792,12 +792,12 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-icon">📞</div><div class="kpi-val" id="c-total">0</div><div class="kpi-lbl">Total Calls</div></div>
-    <div class="kpi"><div class="kpi-icon">📥</div><div class="kpi-val" id="c-inbound">0</div><div class="kpi-lbl">Inbound</div></div>
-    <div class="kpi"><div class="kpi-icon">📤</div><div class="kpi-val" id="c-outbound">0</div><div class="kpi-lbl">Outbound</div></div>
-    <div class="kpi"><div class="kpi-icon">🚨</div><div class="kpi-val" id="c-missed">{{ number_format($urgentOpen) }}</div><div class="kpi-lbl">Urgent Cases</div></div>
-    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="c-answered">0</div><div class="kpi-lbl">Answered</div></div>
-    <div class="kpi"><div class="kpi-icon">⏱️</div><div class="kpi-val" id="c-avgdur">0s</div><div class="kpi-lbl">Avg Duration</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/phone.png" alt=""></div><div class="kpi-val" id="c-total">0</div><div class="kpi-lbl">Total Calls</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/incoming-call.png" alt=""></div><div class="kpi-val" id="c-inbound">0</div><div class="kpi-lbl">Inbound</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/outgoing-call.png" alt=""></div><div class="kpi-val" id="c-outbound">0</div><div class="kpi-lbl">Outbound</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/high-priority.png" alt=""></div><div class="kpi-val" id="c-missed">{{ number_format($urgentOpen) }}</div><div class="kpi-lbl">Urgent Cases</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/ok.png" alt=""></div><div class="kpi-val" id="c-answered">0</div><div class="kpi-lbl">Answered</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/timer.png" alt=""></div><div class="kpi-val" id="c-avgdur">0s</div><div class="kpi-lbl">Avg Duration</div></div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1210,12 +1210,12 @@ tr:hover td{background:#f8fafc}
 
   <!-- KPI row -->
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-icon">🎯</div><div class="kpi-val" id="tgt-period-target">—</div><div class="kpi-lbl">Period Target</div></div>
-    <div class="kpi"><div class="kpi-icon">📞</div><div class="kpi-val" id="tgt-period-calls">—</div><div class="kpi-lbl">Calls Made</div></div>
-    <div class="kpi"><div class="kpi-icon">📊</div><div class="kpi-val" id="tgt-coverage">—</div><div class="kpi-lbl">Coverage</div></div>
-    <div class="kpi"><div class="kpi-icon">👥</div><div class="kpi-val" id="tgt-active-agents">—</div><div class="kpi-lbl">Active Agents</div></div>
-    <div class="kpi"><div class="kpi-icon">📅</div><div class="kpi-val" id="tgt-today-required">—</div><div class="kpi-lbl">Today Required</div></div>
-    <div class="kpi"><div class="kpi-icon">✅</div><div class="kpi-val" id="tgt-today-calls">—</div><div class="kpi-lbl">Today's Calls</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/goal.png" alt=""></div><div class="kpi-val" id="tgt-period-target">—</div><div class="kpi-lbl">Period Target</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/phone.png" alt=""></div><div class="kpi-val" id="tgt-period-calls">—</div><div class="kpi-lbl">Calls Made</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/combo-chart.png" alt=""></div><div class="kpi-val" id="tgt-coverage">—</div><div class="kpi-lbl">Coverage</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/team.png" alt=""></div><div class="kpi-val" id="tgt-active-agents">—</div><div class="kpi-lbl">Active Agents</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/calendar.png" alt=""></div><div class="kpi-val" id="tgt-today-required">—</div><div class="kpi-lbl">Today Required</div></div>
+    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/checked.png" alt=""></div><div class="kpi-val" id="tgt-today-calls">—</div><div class="kpi-lbl">Today's Calls</div></div>
   </div>
 
   <!-- Agent performance chart -->
@@ -1246,22 +1246,22 @@ tr:hover td{background:#f8fafc}
   <!-- KPI cards -->
   <div class="kpi-row" style="margin-bottom:16px">
     <div class="kpi">
-      <div class="kpi-icon">🤖</div>
+      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/bot.png" alt=""></div>
       <div class="kpi-val" id="bot-total">{{ number_format($uchat['total_bot_users'] ?? 0) }}</div>
       <div class="kpi-lbl">Total Bot Users</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon">✨</div>
+      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/add-user-male.png" alt=""></div>
       <div class="kpi-val" id="bot-new">{{ number_format($uchat['new_bot_users'] ?? 0) }}</div>
       <div class="kpi-lbl">New Bot Users (30d)</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon">⚡</div>
+      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/flash-on.png" alt=""></div>
       <div class="kpi-val" id="bot-active">{{ number_format($uchat['active_today'] ?? 0) }}</div>
       <div class="kpi-lbl">Active (Last 24h)</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon">📊</div>
+      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/bar-chart.png" alt=""></div>
       <div class="kpi-val" id="bot-avg">{{ $uchat['new_bot_users'] > 0 ? round(($uchat['new_bot_users'] ?? 0) / 30, 1) : '—' }}</div>
       <div class="kpi-lbl">Avg New / Day (30d)</div>
     </div>

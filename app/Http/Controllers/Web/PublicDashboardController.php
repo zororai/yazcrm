@@ -160,7 +160,7 @@ class PublicDashboardController extends Controller
         $byMode     = (clone $base)->whereNotNull('mode_of_communication')->where('mode_of_communication', '!=', '')->select('mode_of_communication', DB::raw('count(*) as cnt'))->groupBy('mode_of_communication')->orderByDesc('cnt')->get();
         $byPurpose  = (clone $base)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get();
         $byService  = (clone $base)->whereNotNull('services_requested')->where('services_requested', '!=', '')->select('services_requested', DB::raw('count(*) as cnt'))->groupBy('services_requested')->orderByDesc('cnt')->limit(10)->get();
-        $byReferral = (clone $base)->whereNotNull('referred_to')->where('referred_to', '!=', '')->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get();
+        $byReferral = (clone $base)->whereNotNull('referred_to')->where('referred_to', '!=', '')->whereRaw("UPPER(TRIM(referred_to)) NOT REGEXP '^N[^A-Z]*A?$'")->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get();
         $byKeyPops  = (clone $base)->whereNotNull('key_pops')->where('key_pops', '!=', '')->select('key_pops', DB::raw('count(*) as cnt'))->groupBy('key_pops')->orderByDesc('cnt')->limit(8)->get();
         $byMarital  = (clone $base)->whereNotNull('caller_marital_status')->where('caller_marital_status', '!=', '')->select('caller_marital_status', DB::raw('count(*) as cnt'))->groupBy('caller_marital_status')->orderByDesc('cnt')->get();
         $byValidity = (clone $base)->whereNotNull('call_validity')->select('call_validity', DB::raw('count(*) as cnt'))->groupBy('call_validity')->pluck('cnt', 'call_validity');
@@ -335,7 +335,7 @@ class PublicDashboardController extends Controller
                     ->orderByDesc('cnt')
                     ->get()
                     ->map(fn ($r) => ['type' => $r->psychosocial_type, 'total' => (int)$r->cnt, 'uptake' => (int)$r->uptake]),
-                'by_referral'        => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->referred_to, $r->cnt]),
+                'by_referral'        => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->whereRaw("UPPER(TRIM(referred_to)) NOT REGEXP '^N[^A-Z]*A?$'")->select('referred_to', DB::raw('count(*) as cnt'))->groupBy('referred_to')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->referred_to, $r->cnt]),
                 'by_purpose'         => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')->select('purpose_of_call', DB::raw('count(*) as cnt'))->groupBy('purpose_of_call')->orderByDesc('cnt')->limit(10)->get()->map(fn ($r) => [$r->purpose_of_call, $r->cnt]),
                 'by_age_gender'      => (clone $pb)
                     ->whereNotNull('caller_gender')->where('caller_gender', '!=', '')
