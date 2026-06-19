@@ -32,7 +32,9 @@
       "Bash(php -r \"echo phpversion\\(\\);\")",
       "PowerShell(cd \"c:\\\\Users\\\\Mazarura\\\\Documents\\\\GitHub\\\\yazcrm\"; php artisan tinker --execute=\"use App\\\\Models\\\\Extension; $ext = Extension::where\\('extension_number', '707'\\)->first\\(\\); echo $ext ? json_encode\\(['id'=>$ext->id,'ext'=>$ext->extension_number,'user_id'=>$ext->user_id,'has_sip_password'=>!empty\\($ext->sip_password\\),'sip_domain'=>$ext->sip_domain]\\) : 'Extension 707 not found';\")",
       "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" fix_referrals.php)",
-      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" check_provinces.php)"
+      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" check_provinces.php)",
+      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate)",
+      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate --force)"
     ]
   }
 }

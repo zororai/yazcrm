@@ -9,6 +9,7 @@ const props = defineProps({
     records:     Object,
     counts:      Object,
     sheet:       String,
+    source:      String,
     filters:     Object,
     lastSync:    String,
     hasTemplate: Boolean,
@@ -65,8 +66,14 @@ const syncing  = ref(false);
 
 const SHEETS = ['SBC Signups', 'Certificates To Process'];
 
+const SOURCE_TABS = [
+    { key: '',        label: 'All',       countKey: 'Certificates To Process' },
+    { key: 'chatbot', label: 'Chatbot',   countKey: 'cert_chatbot' },
+    { key: 'import',  label: 'Imported',  countKey: 'cert_import' },
+];
+
 const debouncedSearch = debounce(() => {
-    router.get('/sbc', { sheet: props.sheet, search: search.value || undefined }, {
+    router.get('/sbc', { sheet: props.sheet, source: props.source || undefined, search: search.value || undefined }, {
         preserveState: true, replace: true,
     });
 }, 350);
@@ -76,6 +83,11 @@ watch(search, debouncedSearch);
 function switchTab(s) {
     search.value = '';
     router.get('/sbc', { sheet: s }, { preserveState: true, replace: true });
+}
+
+function switchSource(src) {
+    search.value = '';
+    router.get('/sbc', { sheet: props.sheet, source: src || undefined }, { preserveState: true, replace: true });
 }
 
 function sync() {
@@ -106,11 +118,17 @@ const genderColor = {
         </template>
         <template #subtitle>{{ isAdmin ? 'Data synced from Google Sheets' : 'Generate certificates for YALeP programme participants' }}</template>
         <template #header-actions>
-            <!-- Import names button (Certificates tab) -->
+            <!-- Import names button (Certificates tab — visible to all) -->
             <button v-if="sheet === 'Certificates To Process'"
                 @click="showImport = true"
                 class="btn-primary btn-sm inline-flex items-center gap-1.5">
                 <ArrowUpTrayIcon class="h-4 w-4" /> Import Names
+            </button>
+
+            <!-- Sync from Sheets (Certificates tab — visible to all) -->
+            <button v-if="sheet === 'Certificates To Process'" @click="sync" :disabled="syncing" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': syncing }" />
+                {{ syncing ? 'Syncing…' : 'Sync from Sheets' }}
             </button>
 
             <!-- Template upload (admin only) -->
@@ -122,8 +140,8 @@ const genderColor = {
                     @change="e => { templateFile = e.target.files[0]; uploadTemplate(); }" />
             </label>
 
-            <!-- Sync button (admin only) -->
-            <button v-if="isAdmin" @click="sync" :disabled="syncing" class="btn-secondary btn-sm">
+            <!-- Sync button on SBC Signups tab (admin only) -->
+            <button v-if="isAdmin && sheet !== 'Certificates To Process'" @click="sync" :disabled="syncing" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
                 <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': syncing }" />
                 {{ syncing ? 'Syncing…' : 'Sync from Sheets' }}
             </button>
@@ -150,6 +168,22 @@ const genderColor = {
             <span class="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full font-bold">
                 {{ counts['Certificates To Process'] ?? 0 }}
             </span>
+        </div>
+
+        <!-- Source sub-tabs (Certificates To Process only) -->
+        <div v-if="sheet === 'Certificates To Process'" class="flex gap-1 mb-4 bg-gray-100 rounded-xl p-1 w-fit border border-gray-200">
+            <button
+                v-for="tab in SOURCE_TABS" :key="tab.key"
+                @click="switchSource(tab.key)"
+                :class="['px-4 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2',
+                    source === tab.key ? 'bg-white shadow text-gray-900 border border-gray-200' : 'text-gray-500 hover:text-gray-700']"
+            >
+                {{ tab.label }}
+                <span :class="['text-xs px-1.5 py-0.5 rounded-full font-bold',
+                    source === tab.key ? 'bg-brand-100 text-brand-700' : 'bg-gray-200 text-gray-500']">
+                    {{ counts[tab.countKey] ?? 0 }}
+                </span>
+            </button>
         </div>
 
         <!-- Last sync info (admin only) -->

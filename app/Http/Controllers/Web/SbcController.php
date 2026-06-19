@@ -24,8 +24,13 @@ class SbcController extends Controller
     {
         $search = trim($request->get('search', ''));
         $sheet  = $request->get('sheet', 'SBC Signups');
+        $source = $request->get('source', ''); // '' = all, 'chatbot', 'import'
 
         $query = SbcSignup::where('sheet', $sheet)->orderByDesc('date')->orderBy('first_name');
+
+        if ($source && $sheet === 'Certificates To Process') {
+            $query->where('source', $source);
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -42,6 +47,8 @@ class SbcController extends Controller
         $counts = [
             'SBC Signups'             => SbcSignup::where('sheet', 'SBC Signups')->count(),
             'Certificates To Process' => SbcSignup::where('sheet', 'Certificates To Process')->count(),
+            'cert_chatbot'            => SbcSignup::where('sheet', 'Certificates To Process')->where('source', 'chatbot')->count(),
+            'cert_import'             => SbcSignup::where('sheet', 'Certificates To Process')->where('source', 'import')->count(),
         ];
 
         // Last sync time
@@ -51,6 +58,7 @@ class SbcController extends Controller
             'records'         => $records,
             'counts'          => $counts,
             'sheet'           => $sheet,
+            'source'          => $source,
             'filters'         => ['search' => $search],
             'lastSync'        => $lastSync,
             'hasTemplate'     => file_exists(storage_path('app/private/certificates/template.pdf')),
@@ -239,6 +247,7 @@ class SbcController extends Controller
             try {
                 SbcSignup::create([
                     'sheet'        => 'Certificates To Process',
+                    'source'       => 'import',
                     'first_name'   => $firstName,
                     'surname'      => $surname,
                     'phone_number' => $phone ?: null,
