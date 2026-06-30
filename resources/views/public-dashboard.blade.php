@@ -99,7 +99,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
 .kpi-icon{margin-bottom:6px;display:flex;align-items:center}.kpi-icon img{width:28px;height:28px}
 .kpi-val{font-size:22px;font-weight:800;color:#0f172a;line-height:1}
 .kpi-lbl{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
-.svc-kpi-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.svc-kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .svc-kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .svc-kpi-title{font-weight:700;font-size:14px;color:#1e293b;margin-bottom:14px}
 .svc-kpi-body{display:flex;align-items:center;gap:14px}
@@ -703,17 +703,7 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
   <div class="svc-kpi-row">
-    <div class="svc-kpi-card">
-      <div class="svc-kpi-title">Services Requested</div>
-      <div class="svc-kpi-body">
-        <div class="svc-kpi-icon"><img src="https://img.icons8.com/fluency/48/hospital.png" alt="Services"></div>
-        <div class="svc-kpi-num" id="svc-kpi-services">0</div>
-      </div>
-      <div class="svc-kpi-foot">
-        <span class="svc-kpi-foot-lbl">Uptake Rate</span>
-        <span class="svc-kpi-rate" id="svc-kpi-svc-rate">0%</span>
-      </div>
-    </div>
+    {{-- Services Requested card hidden --}}
     <div class="svc-kpi-card">
       <div class="svc-kpi-title">Referred Cases</div>
       <div class="svc-kpi-body">
@@ -737,8 +727,8 @@ tr:hover td{background:#f8fafc}
       </div>
     </div>
   </div>
-  <div class="g3">
-    <div class="s-card"><h3>Top Services Requested</h3><div class="ch220"><canvas id="svcServiceChart"></canvas></div></div>
+  <div class="g2">
+    {{-- <div class="s-card"><h3>Top Services Requested</h3><div class="ch220"><canvas id="svcServiceChart"></canvas></div></div> --}}
     <div class="s-card"><h3>Top Referral Destinations</h3><div class="ch220"><canvas id="svcReferralChart"></canvas></div></div>
     <div class="s-card"><h3>Call Group by Gender &amp; Age</h3><div style="height:280px"><canvas id="svcKeyPopsChart"></canvas></div></div>
   </div>
@@ -1743,14 +1733,15 @@ function updateServices(p) {
   const d = periodData[p];
 
   // KPI cards
-  const refCount = d.referral_count ?? 0;
-  const svcCount = d.service_count  ?? 0;
-  const uptake   = d.uptake         ?? 0;
-  const total    = d.total          ?? 0;
+  const refCount    = d.referral_count  ?? 0;
+  const refUptake   = d.referral_uptake ?? 0;
+  const svcCount    = d.service_count   ?? 0;
+  const uptake      = d.uptake          ?? 0;
+  const total       = d.total           ?? 0;
   document.getElementById('svc-kpi-referred').textContent    = fmt(refCount);
-  document.getElementById('svc-kpi-ref-rate').textContent    = (refCount ? Math.round(uptake / refCount * 100) : 0) + '%';
-  document.getElementById('svc-kpi-services').textContent    = fmt(svcCount);
-  document.getElementById('svc-kpi-svc-rate').textContent    = (svcCount ? Math.round(uptake / svcCount * 100) : 0) + '%';
+  document.getElementById('svc-kpi-ref-rate').textContent    = (refCount ? Math.round(refUptake / refCount * 100) : 0) + '%';
+  const svcServicesEl = document.getElementById('svc-kpi-services'); if (svcServicesEl) svcServicesEl.textContent = fmt(svcCount);
+  const svcSvcRateEl  = document.getElementById('svc-kpi-svc-rate');  if (svcSvcRateEl)  svcSvcRateEl.textContent  = (svcCount ? Math.round(uptake / svcCount * 100) : 0) + '%';
   document.getElementById('svc-kpi-uptake').textContent      = fmt(Math.max(0, uptake - DISPLAY_UPTAKE_OFFSET));
   document.getElementById('svc-kpi-uptake-rate').textContent = (total  ? Math.round(uptake / total  * 100) : 0) + '%';
 
@@ -1790,7 +1781,7 @@ function updateServices(p) {
     }
   }
 
-  rc('svcServiceChart',  'bar', d.by_service.map(r  => r[0]), d.by_service.map(r  => r[1]), { single:'#0d9488', legend:false, indexAxis:'y' });
+  if (document.getElementById('svcServiceChart')) rc('svcServiceChart', 'bar', d.by_service.map(r => r[0]), d.by_service.map(r => r[1]), { single:'#0d9488', legend:false, indexAxis:'y' });
   rc('svcReferralChart', 'bar', d.by_referral.map(r => r[0]), d.by_referral.map(r => r[1]), { single:'#fbbf24', legend:false, indexAxis:'y' });
   const ageBands2 = ['10-14','15-19','20-25','25+'];
   const agGender2 = d.by_age_gender ?? {};

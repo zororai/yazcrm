@@ -309,6 +309,7 @@ class PublicDashboardController extends Controller
                 'by_marital'         => (clone $pb)->whereNotNull('caller_marital_status')->where('caller_marital_status', '!=', '')->select('caller_marital_status', DB::raw('count(*) as cnt'))->groupBy('caller_marital_status')->orderByDesc('cnt')->get()->map(fn ($r) => [$r->caller_marital_status, $r->cnt]),
                 'by_key_pops'        => (clone $pb)->whereNotNull('key_pops')->where('key_pops', '!=', '')->select('key_pops', DB::raw('count(*) as cnt'))->groupBy('key_pops')->orderByDesc('cnt')->limit(8)->get()->map(fn ($r) => [$r->key_pops, $r->cnt]),
                 'referral_count'     => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->count(),
+                'referral_uptake'    => (clone $pb)->whereNotNull('referred_to')->where('referred_to', '!=', '')->where('uptake_confirmed', 1)->count(),
                 'service_count'      => (clone $pb)->whereNotNull('services_requested')->where('services_requested', '!=', '')->count(),
                 'by_service'         => DB::table('tickets as t2')
                     ->whereNull('t2.deleted_at')
