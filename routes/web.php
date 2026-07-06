@@ -161,6 +161,8 @@ Route::middleware('auth')->group(function () {
 
         Route::post('calls/sync', [Web\CallController::class, 'sync'])->name('calls.sync');
 
+        Route::get('recordings', [Web\RecordingController::class, 'index'])->name('recordings.index');
+
         Route::get('yeastar-settings', [Web\YeastarSettingsController::class, 'index'])->name('yeastar-settings.index');
         Route::post('yeastar-settings', [Web\YeastarSettingsController::class, 'update'])->name('yeastar-settings.update');
         Route::post('yeastar-settings/test', [Web\YeastarSettingsController::class, 'testConnection'])->name('yeastar-settings.test');
