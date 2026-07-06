@@ -11,7 +11,15 @@
       "Bash(xxd)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" artisan *)",
+      "Bash(/c/Users/Mazarura/.config/herd/bin/php.bat artisan tinker '--execute= *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_cdr.php)",
+      "Bash(rm -f check_cdr.php check_cdr2.php check_cdr3.php)",
+      "Bash(/c/Users/Mazarura/.config/herd/bin/php.bat -r ' *)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_sync.php)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_sync2.php)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Mazarura\\.config\\herd\\bin\\php84"

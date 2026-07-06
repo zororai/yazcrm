@@ -341,8 +341,16 @@ class YeastarService
 
     public function getRecordingDownloadUrl(string $filename): ?string
     {
-        $data = $this->request('get', 'recording/download', ['file_name' => $filename]);
-        return $data['data']['url'] ?? null;
+        $data = $this->request('get', 'recording/download', ['file' => $filename]);
+        $path = $data['download_resource_url'] ?? null;
+        if (!$path) {
+            return null;
+        }
+
+        $host = parse_url($this->baseUrl, PHP_URL_SCHEME) . '://' . parse_url($this->baseUrl, PHP_URL_HOST)
+            . (($port = parse_url($this->baseUrl, PHP_URL_PORT)) ? ":{$port}" : '');
+
+        return $host . $path;
     }
 
     // --------------------------------------------------------- webhook register

@@ -34,7 +34,13 @@
       "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" fix_referrals.php)",
       "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" check_provinces.php)",
       "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate)",
-      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate --force)"
+      "PowerShell(& \"C:\\\\Users\\\\Mazarura\\\\.config\\\\herd\\\\bin\\\\php84\\\\php.exe\" artisan migrate --force)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_sync3.php)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_download.php)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_download2.php)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_download3.php)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_download4.php)",
+      "Bash(\"/c/Users/Mazarura/.config/herd/bin/php.bat\" check_download5.php)"
     ]
   }
 }

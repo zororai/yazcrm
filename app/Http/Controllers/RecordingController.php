@@ -7,6 +7,8 @@ use App\Models\Recording;
 use App\Services\YeastarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Http;
 
 class RecordingController extends Controller
 {
@@ -17,20 +19,29 @@ class RecordingController extends Controller
         return response()->json($recording->load('call'));
     }
 
-    public function download(Recording $recording): JsonResponse
+    // The PBX's download link requires an Authorization header, which a plain
+    // <audio>/<a> tag can't send — so we fetch it server-side and stream the bytes.
+    public function download(Recording $recording): JsonResponse|Response
     {
-        $url = $recording->file_url
-            ?? $this->yeastar->getRecordingDownloadUrl($recording->file_name);
+        $url = $this->yeastar->getRecordingDownloadUrl($recording->file_name);
 
         if (!$url) {
             return response()->json(['message' => 'Recording not available.'], 404);
         }
 
-        if (!$recording->file_url && $url) {
-            $recording->update(['file_url' => $url]);
+        $recording->update(['file_url' => $url]);
+
+        $token = $this->yeastar->getAccessToken();
+        $audio = Http::withoutVerifying()->withHeaders(['Authorization' => $token])->get($url);
+
+        if (!$audio->successful()) {
+            return response()->json(['message' => 'Failed to fetch recording from PBX.'], 502);
         }
 
-        return response()->json(['url' => $url]);
+        return response($audio->body(), 200, [
+            'Content-Type'        => $audio->header('Content-Type') ?: 'audio/wav',
+            'Content-Disposition' => 'inline; filename="' . $recording->file_name . '"',
+        ]);
     }
 
     public function aiNotes(Recording $recording): JsonResponse
