@@ -21,7 +21,7 @@ class RecordingController extends Controller
 
     // The PBX's download link requires an Authorization header, which a plain
     // <audio>/<a> tag can't send — so we fetch it server-side and stream the bytes.
-    public function download(Recording $recording): JsonResponse|Response
+    public function download(Request $request, Recording $recording): JsonResponse|Response
     {
         $url = $this->yeastar->getRecordingDownloadUrl($recording->file_name);
 
@@ -38,9 +38,11 @@ class RecordingController extends Controller
             return response()->json(['message' => 'Failed to fetch recording from PBX.'], 502);
         }
 
+        $disposition = $request->boolean('download') ? 'attachment' : 'inline';
+
         return response($audio->body(), 200, [
             'Content-Type'        => $audio->header('Content-Type') ?: 'audio/wav',
-            'Content-Disposition' => 'inline; filename="' . $recording->file_name . '"',
+            'Content-Disposition' => $disposition . '; filename="' . $recording->file_name . '"',
         ]);
     }
 

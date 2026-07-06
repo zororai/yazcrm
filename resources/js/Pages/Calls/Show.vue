@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, LinkIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, LinkIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ call: Object, clients: Array });
 
@@ -76,8 +76,14 @@ const statusColor = {
 
             <!-- Recording -->
             <div v-if="call.recording" class="card">
-                <h3 class="font-semibold text-gray-800 mb-3">Recording</h3>
-                <audio controls class="w-full" :src="`/recordings/${call.recording.id}/download`" />
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-gray-800">Recording</h3>
+                    <a :href="`/api/recordings/${call.recording.id}/download?download=1`" download
+                        class="inline-flex items-center gap-1 text-sm text-brand-600 hover:underline">
+                        <ArrowDownTrayIcon class="h-4 w-4" /> Download
+                    </a>
+                </div>
+                <audio controls class="w-full" :src="`/api/recordings/${call.recording.id}/download`" />
             </div>
 
             <!-- Related ticket -->

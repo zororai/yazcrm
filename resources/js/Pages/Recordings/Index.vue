@@ -81,11 +81,11 @@ function statusColor(s) {
                             <span :class="['badge', statusColor(r.transcription_status)]">{{ r.transcription_status }}</span>
                         </td>
                         <td class="px-4 py-2.5">
-                            <audio controls class="h-8 max-w-[220px]" :src="`/recordings/${r.id}/download`" />
+                            <audio controls class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
                         </td>
                         <td class="px-4 py-2.5 text-right">
                             <div class="flex gap-2 justify-end">
-                                <a :href="`/recordings/${r.id}/download`" download class="text-gray-400 hover:text-gray-700" title="Download">
+                                <a :href="`/api/recordings/${r.id}/download?download=1`" download class="text-gray-400 hover:text-gray-700" title="Download">
                                     <ArrowDownTrayIcon class="h-4 w-4" />
                                 </a>
                                 <Link v-if="r.call" :href="`/calls/${r.call.id}`" class="text-brand-600 hover:underline text-xs font-medium">
