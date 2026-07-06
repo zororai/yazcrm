@@ -272,6 +272,7 @@ class TicketController extends Controller
             'status'         => 'nullable|in:open,in_progress,closed,resolved,ongoing',
             'classification' => 'nullable|array',
             ...$this->crmRules,
+            'contact_number' => 'required|string|max:50',
         ]);
 
         // Coerce boolean fields so null from an unselected dropdown becomes false

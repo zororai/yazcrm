@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 
 class AssetRegisterController extends Controller
@@ -45,7 +45,7 @@ class AssetRegisterController extends Controller
         ]);
     }
 
-    public function export(): Response
+    public function export(): StreamedResponse
     {
         $assets = Asset::orderBy('asset_tag')->get();
 

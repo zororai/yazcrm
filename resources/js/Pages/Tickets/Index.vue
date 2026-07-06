@@ -74,13 +74,26 @@ async function submitRequest() {
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
             body: JSON.stringify(reqForm.value),
         });
-        const data = await res.json();
+
+        if (res.status === 419) {
+            reqError.value = 'Your session has expired. Please refresh the page and try again.';
+            return;
+        }
+
+        let data;
+        try {
+            data = await res.json();
+        } catch {
+            reqError.value = `Unexpected server response (status ${res.status}).`;
+            return;
+        }
+
         if (res.status >= 400) { reqError.value = data.message || Object.values(data.errors ?? {})[0]?.[0] || 'Error.'; return; }
         showReqForm.value = false;
         reqForm.value = { name: '', numbers: '', limit_type: 'inbound' };
         loadRequests();
     } catch {
-        reqError.value = 'Network error.';
+        reqError.value = 'Network error. Check your internet connection and try again.';
     } finally {
         reqSaving.value = false;
     }
@@ -672,15 +685,17 @@ const statusColor = {
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="relative">
-                                    <label class="label">Contact Number</label>
+                                    <label class="label">Contact Number *</label>
                                     <input
                                         v-model="addForm.contact_number"
                                         @input="onContactInput"
                                         @focus="showContactDrop = true"
                                         @blur="() => setTimeout(() => showContactDrop = false, 150)"
                                         class="input"
+                                        :class="{ 'border-red-500': addForm.errors.contact_number }"
                                         placeholder="Type or search number…"
                                         autocomplete="off"
+                                        required
                                     />
                                     <ul v-if="showContactDrop && contactResults.length"
                                         class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -692,6 +707,7 @@ const statusColor = {
                                             </button>
                                         </li>
                                     </ul>
+                                    <p v-if="addForm.errors.contact_number" class="mt-1 text-xs text-red-600">{{ addForm.errors.contact_number }}</p>
                                 </div>
                                 <div>
                                     <label class="label">Sisters Number</label>
