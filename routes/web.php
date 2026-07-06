@@ -26,11 +26,21 @@ Route::middleware('auth')->group(function () {
     Route::get('dialer',           fn() => inertia('Dialer/Index'))->name('dialer');
     Route::get('dialer/sip-config', [Web\ExtensionController::class, 'mySipConfig'])->name('dialer.sip-config');
 
+    // Service Directory — visible to all authenticated users; edits admin-only
+    Route::get('service-directory', [Web\ServiceProviderController::class, 'index'])->name('service-providers.index');
+    Route::middleware('admin')->group(function () {
+        Route::post('service-directory', [Web\ServiceProviderController::class, 'store'])->name('service-providers.store');
+        Route::put('service-directory/{serviceProvider}', [Web\ServiceProviderController::class, 'update'])->name('service-providers.update');
+        Route::delete('service-directory/{serviceProvider}', [Web\ServiceProviderController::class, 'destroy'])->name('service-providers.destroy');
+    });
+
     // Calls
     Route::get('calls', [Web\CallController::class, 'index'])->name('calls.index');
     Route::get('calls/number-search', [Web\TicketController::class, 'searchNumbers'])->name('calls.number-search');
     Route::get('calls/{call}', [Web\CallController::class, 'show'])->name('calls.show');
     Route::post('calls/{call}/link-client', [Web\CallController::class, 'linkClient'])->name('calls.link-client');
+
+    Route::get('recordings', [Web\RecordingController::class, 'index'])->name('recordings.index');
 
     // Clients
     Route::get('clients', [Web\ClientController::class, 'index'])->name('clients.index');
@@ -160,8 +170,6 @@ Route::middleware('auth')->group(function () {
         Route::post('extensions/{extension}/assign-user', [Web\ExtensionController::class, 'assignUser'])->name('extensions.assign-user');
 
         Route::post('calls/sync', [Web\CallController::class, 'sync'])->name('calls.sync');
-
-        Route::get('recordings', [Web\RecordingController::class, 'index'])->name('recordings.index');
 
         Route::get('yeastar-settings', [Web\YeastarSettingsController::class, 'index'])->name('yeastar-settings.index');
         Route::post('yeastar-settings', [Web\YeastarSettingsController::class, 'update'])->name('yeastar-settings.update');

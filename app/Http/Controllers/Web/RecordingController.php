@@ -15,6 +15,16 @@ class RecordingController extends Controller
         $query = Recording::with(['call.client:id,name', 'call.agent:id,name'])
             ->orderByDesc('created_at');
 
+        // Agents only see recordings of calls to their own assigned extension
+        if ($request->user()->role !== 'admin') {
+            $extNumber = \App\Models\Extension::where('user_id', $request->user()->id)->value('extension_number');
+            if ($extNumber) {
+                $query->whereHas('call', fn ($q) => $q->where('extension_number', $extNumber));
+            } else {
+                $query->whereRaw('0 = 1');
+            }
+        }
+
         if ($search = $request->string('search')->trim()->toString()) {
             $query->whereHas('call', function ($q) use ($search) {
                 $q->where('caller', 'like', "%{$search}%")

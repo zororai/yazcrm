@@ -25,7 +25,63 @@ const repeatCaller   = ref(props.filters.repeat_caller  ?? '');
 const callDirection  = ref(props.filters.call_direction ?? '');
 const ageGroup       = ref(props.filters.age_group      ?? '');
 const showFilters    = ref(false);
-const showAdd  = ref(false);
+const showAdd        = ref(false);
+
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+    if (search.value)       params.set('search',        search.value);
+    if (status.value)       params.set('status',        status.value);
+    if (priority.value)     params.set('priority',      priority.value);
+    if (agentId.value)      params.set('agent_id',      agentId.value);
+    if (gender.value)       params.set('gender',        gender.value);
+    if (service.value)      params.set('service',       service.value);
+    if (project.value)      params.set('project',       project.value);
+    if (province.value)     params.set('province',      province.value);
+    if (district.value)     params.set('district',      district.value);
+    if (location.value)     params.set('location',      location.value);
+    if (referredTo.value)   params.set('referred_to',   referredTo.value);
+    if (repeatCaller.value) params.set('repeat_caller', repeatCaller.value);
+    if (callDirection.value)params.set('call_direction',callDirection.value);
+    if (ageGroup.value)     params.set('age_group',     ageGroup.value);
+    const qs = params.toString();
+    return '/tickets/export' + (qs ? '?' + qs : '');
+});
+
+const activeFilterCount = computed(() =>
+    [agentId, gender, service, project, province, district, location, referredTo, repeatCaller, callDirection, ageGroup]
+        .filter(r => r.value).length
+);
+
+function apply() {
+    router.get('/tickets', {
+        search:          search.value         || undefined,
+        status:          status.value         || undefined,
+        priority:        priority.value       || undefined,
+        agent_id:        agentId.value        || undefined,
+        gender:          gender.value         || undefined,
+        service:         service.value        || undefined,
+        project:         project.value        || undefined,
+        province:        province.value       || undefined,
+        district:        district.value       || undefined,
+        location:        location.value       || undefined,
+        referred_to:     referredTo.value     || undefined,
+        repeat_caller:   repeatCaller.value   || undefined,
+        call_direction:  callDirection.value  || undefined,
+        age_group:       ageGroup.value       || undefined,
+    }, { preserveState: true, replace: true });
+}
+
+function clearFilters() {
+    agentId.value = gender.value = service.value = project.value =
+    province.value = district.value = location.value = referredTo.value =
+    repeatCaller.value = callDirection.value = ageGroup.value = '';
+    apply();
+}
+
+const debouncedApply = debounce(apply, 350);
+watch(search, debouncedApply);
+watch([status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup], apply);
+watch([location, district], debounce(apply, 350));
 
 // ── Blocked Numbers ──────────────────────────────────────────────────────────
 const showBlocked       = ref(false);
@@ -202,6 +258,7 @@ async function deleteBlocked(id) {
     else alert(data.message || 'Delete failed.');
 }
 
+
 const showContactDrop = ref(false);
 const contactResults  = ref([]);
 
@@ -245,6 +302,11 @@ function closeReferredToDrop() {
     setTimeout(() => { showReferredToDrop.value = false; }, 150);
 }
 
+function openAdd() {
+    addForm.reset();
+    showAdd.value = true;
+}
+
 const addForm = useForm({
     subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', status: 'in_progress', follow_up_date: '',
     // CRM fields
@@ -272,62 +334,6 @@ const addForm = useForm({
     classification:           {},
     psychosocial_type:        '',
 });
-
-const exportUrl = computed(() => {
-    const params = new URLSearchParams();
-    if (search.value)       params.set('search',        search.value);
-    if (status.value)       params.set('status',        status.value);
-    if (priority.value)     params.set('priority',      priority.value);
-    if (agentId.value)      params.set('agent_id',      agentId.value);
-    if (gender.value)       params.set('gender',        gender.value);
-    if (service.value)      params.set('service',       service.value);
-    if (project.value)      params.set('project',       project.value);
-    if (province.value)     params.set('province',      province.value);
-    if (district.value)     params.set('district',      district.value);
-    if (location.value)     params.set('location',      location.value);
-    if (referredTo.value)   params.set('referred_to',   referredTo.value);
-    if (repeatCaller.value) params.set('repeat_caller', repeatCaller.value);
-    if (callDirection.value)params.set('call_direction',callDirection.value);
-    if (ageGroup.value)     params.set('age_group',     ageGroup.value);
-    const qs = params.toString();
-    return '/tickets/export' + (qs ? '?' + qs : '');
-});
-
-const activeFilterCount = computed(() =>
-    [agentId, gender, service, project, province, district, location, referredTo, repeatCaller, callDirection, ageGroup]
-        .filter(r => r.value).length
-);
-
-function apply() {
-    router.get('/tickets', {
-        search:          search.value         || undefined,
-        status:          status.value         || undefined,
-        priority:        priority.value       || undefined,
-        agent_id:        agentId.value        || undefined,
-        gender:          gender.value         || undefined,
-        service:         service.value        || undefined,
-        project:         project.value        || undefined,
-        province:        province.value       || undefined,
-        district:        district.value       || undefined,
-        location:        location.value       || undefined,
-        referred_to:     referredTo.value     || undefined,
-        repeat_caller:   repeatCaller.value   || undefined,
-        call_direction:  callDirection.value  || undefined,
-        age_group:       ageGroup.value       || undefined,
-    }, { preserveState: true, replace: true });
-}
-
-function clearFilters() {
-    agentId.value = gender.value = service.value = project.value =
-    province.value = district.value = location.value = referredTo.value =
-    repeatCaller.value = callDirection.value = ageGroup.value = '';
-    apply();
-}
-
-const debouncedApply = debounce(apply, 350);
-watch(search, debouncedApply);
-watch([status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup], apply);
-watch([location, district], debounce(apply, 350));
 
 function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
@@ -419,7 +425,7 @@ const statusColor = {
             <Link v-if="isAdmin" href="/tickets/import" class="btn-secondary btn-sm">
                 <ArrowUpTrayIcon class="h-4 w-4" /> Import
             </Link>
-            <button @click="showAdd = true" class="btn-primary btn-sm">
+            <button @click="openAdd" class="btn-primary btn-sm">
                 <PlusIcon class="h-4 w-4" /> New Ticket
             </button>
         </template>
