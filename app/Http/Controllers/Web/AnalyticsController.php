@@ -19,19 +19,28 @@ class AnalyticsController extends Controller
         $since = now()->subDays($days);
 
         $overview = [
-            'total_calls'     => Call::where('started_at', '>=', $since)->count(),
-            'answered_calls'  => Call::where('started_at', '>=', $since)->where('status', 'answered')->count(),
-            'missed_calls'    => Call::where('started_at', '>=', $since)->where('status', 'missed')->count(),
-            'avg_duration'    => (int) Call::where('started_at', '>=', $since)->where('status', 'answered')->avg('duration'),
-            'total_tickets'   => Ticket::where('created_at', '>=', $since)->count(),
-            'resolved_tickets'=> Ticket::where('created_at', '>=', $since)->where('status', 'resolved')->count(),
+            'total_calls'      => Call::where('started_at', '>=', $since)->count(),
+            'answered_calls'   => Call::where('started_at', '>=', $since)->where('status', 'answered')->count(),
+            'busy_calls'       => Call::where('started_at', '>=', $since)->where('status', 'busy')->count(),
+            'failed_calls'     => Call::where('started_at', '>=', $since)->where('status', 'failed')->count(),
+            'avg_duration'     => (int) Call::where('started_at', '>=', $since)->where('status', 'answered')->avg('duration'),
+            'total_tickets'    => Ticket::where('created_at', '>=', $since)->count(),
+            'resolved_tickets' => Ticket::where('created_at', '>=', $since)->where('status', 'resolved')->count(),
+            'repeat_callers'   => Call::where('started_at', '>=', $since)
+                ->where('direction', 'inbound')
+                ->select('caller')
+                ->groupBy('caller')
+                ->havingRaw('COUNT(*) >= 2')
+                ->get()
+                ->count(),
         ];
 
         $callTrend = Call::select(
                 DB::raw('DATE(started_at) as date'),
                 DB::raw('COUNT(*) as total'),
                 DB::raw('SUM(status = "answered") as answered'),
-                DB::raw('SUM(status = "missed") as missed')
+                DB::raw('SUM(status = "busy") as busy'),
+                DB::raw('SUM(status = "failed") as failed')
             )
             ->where('started_at', '>=', $since)
             ->groupBy('date')
@@ -43,7 +52,8 @@ class AnalyticsController extends Controller
                 'users.name',
                 DB::raw('COUNT(DISTINCT calls.id) as total_calls'),
                 DB::raw('SUM(calls.status = "answered") as answered_calls'),
-                DB::raw('SUM(calls.status = "missed") as missed_calls'),
+                DB::raw('SUM(calls.status = "busy") as busy_calls'),
+                DB::raw('SUM(calls.status = "failed") as failed_calls'),
                 DB::raw('(SELECT COUNT(*) FROM tickets WHERE tickets.agent_id = users.id AND tickets.status = "open") as open_tickets')
             )
             ->leftJoin('extensions', 'extensions.user_id', '=', 'users.id')

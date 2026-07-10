@@ -30,7 +30,8 @@ const trendData = {
     datasets: [
         { label: 'Total',    data: props.callTrend.map(d => d.total),    borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)', fill: true, tension: 0.3 },
         { label: 'Answered', data: props.callTrend.map(d => d.answered), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)',   fill: true, tension: 0.3 },
-        { label: 'Missed',   data: props.callTrend.map(d => d.missed),   borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)',   fill: true, tension: 0.3 },
+        { label: 'Missed Call', data: props.callTrend.map(d => d.busy), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.08)', fill: true, tension: 0.3 },
+        { label: 'Failed', data: props.callTrend.map(d => d.failed), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)',  fill: true, tension: 0.3 },
     ],
 };
 const trendOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } };
@@ -62,18 +63,18 @@ const ticketResolutionRate = props.overview.total_tickets
         </template>
 
         <!-- Overview cards -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            <div class="card text-center p-4">
-                <p class="text-2xl font-bold text-gray-900">{{ overview.total_calls }}</p>
-                <p class="text-xs text-gray-500 mt-1">Total Calls</p>
-            </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
             <div class="card text-center p-4">
                 <p class="text-2xl font-bold text-green-600">{{ overview.answered_calls }}</p>
                 <p class="text-xs text-gray-500 mt-1">Answered</p>
             </div>
             <div class="card text-center p-4">
-                <p class="text-2xl font-bold text-red-600">{{ overview.missed_calls }}</p>
-                <p class="text-xs text-gray-500 mt-1">Missed</p>
+                <p class="text-2xl font-bold text-amber-600">{{ overview.busy_calls }}</p>
+                <p class="text-xs text-gray-500 mt-1">Missed Call</p>
+            </div>
+            <div class="card text-center p-4">
+                <p class="text-2xl font-bold text-red-600">{{ overview.failed_calls }}</p>
+                <p class="text-xs text-gray-500 mt-1">Failed</p>
             </div>
             <div class="card text-center p-4">
                 <p class="text-2xl font-bold text-brand-600">{{ answerRate }}%</p>
@@ -86,6 +87,10 @@ const ticketResolutionRate = props.overview.total_tickets
             <div class="card text-center p-4">
                 <p class="text-2xl font-bold text-purple-600">{{ ticketResolutionRate }}%</p>
                 <p class="text-xs text-gray-500 mt-1">Ticket Resolution</p>
+            </div>
+            <div class="card text-center p-4">
+                <p class="text-2xl font-bold text-blue-600">{{ overview.repeat_callers }}</p>
+                <p class="text-xs text-gray-500 mt-1">Repeat Callers</p>
             </div>
         </div>
 
@@ -108,20 +113,22 @@ const ticketResolutionRate = props.overview.total_tickets
                         <th class="table-th">Agent</th>
                         <th class="table-th">Total Calls</th>
                         <th class="table-th">Answered</th>
-                        <th class="table-th">Missed</th>
+                        <th class="table-th">Missed Call</th>
+                        <th class="table-th">Failed</th>
                         <th class="table-th">Answer Rate</th>
                         <th class="table-th">Open Tickets</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-if="!agentPerformance.length">
-                        <td colspan="6" class="py-8 text-center text-sm text-gray-400">No data.</td>
+                        <td colspan="7" class="py-8 text-center text-sm text-gray-400">No data.</td>
                     </tr>
                     <tr v-for="agent in agentPerformance" :key="agent.id" class="hover:bg-gray-50">
                         <td class="table-td font-medium">{{ agent.name }}</td>
                         <td class="table-td">{{ agent.total_calls }}</td>
                         <td class="table-td text-green-700">{{ agent.answered_calls }}</td>
-                        <td class="table-td text-red-600">{{ agent.missed_calls }}</td>
+                        <td class="table-td text-amber-600">{{ agent.busy_calls }}</td>
+                        <td class="table-td text-red-600">{{ agent.failed_calls }}</td>
                         <td class="table-td">
                             <div class="flex items-center gap-2">
                                 <div class="flex-1 bg-gray-200 rounded-full h-1.5">
