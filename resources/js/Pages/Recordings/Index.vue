@@ -81,7 +81,7 @@ function statusColor(s) {
                             <span :class="['badge', statusColor(r.transcription_status)]">{{ r.transcription_status }}</span>
                         </td>
                         <td class="px-4 py-2.5">
-                            <audio controls class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
+                            <audio controls preload="none" class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
                         </td>
                         <td class="px-4 py-2.5 text-right">
                             <div class="flex gap-2 justify-end">

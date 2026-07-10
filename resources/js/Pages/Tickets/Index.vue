@@ -24,6 +24,8 @@ const referredTo     = ref(props.filters.referred_to    ?? '');
 const repeatCaller   = ref(props.filters.repeat_caller  ?? '');
 const callDirection  = ref(props.filters.call_direction ?? '');
 const ageGroup       = ref(props.filters.age_group      ?? '');
+const dateFrom       = ref(props.filters.date_from      ?? '');
+const dateTo         = ref(props.filters.date_to        ?? '');
 const showFilters    = ref(false);
 const showAdd        = ref(false);
 
@@ -43,12 +45,14 @@ const exportUrl = computed(() => {
     if (repeatCaller.value) params.set('repeat_caller', repeatCaller.value);
     if (callDirection.value)params.set('call_direction',callDirection.value);
     if (ageGroup.value)     params.set('age_group',     ageGroup.value);
+    if (dateFrom.value)     params.set('date_from',     dateFrom.value);
+    if (dateTo.value)       params.set('date_to',       dateTo.value);
     const qs = params.toString();
     return '/tickets/export' + (qs ? '?' + qs : '');
 });
 
 const activeFilterCount = computed(() =>
-    [agentId, gender, service, project, province, district, location, referredTo, repeatCaller, callDirection, ageGroup]
+    [agentId, gender, service, project, province, district, location, referredTo, repeatCaller, callDirection, ageGroup, dateFrom, dateTo]
         .filter(r => r.value).length
 );
 
@@ -68,19 +72,22 @@ function apply() {
         repeat_caller:   repeatCaller.value   || undefined,
         call_direction:  callDirection.value  || undefined,
         age_group:       ageGroup.value       || undefined,
+        date_from:       dateFrom.value       || undefined,
+        date_to:         dateTo.value         || undefined,
     }, { preserveState: true, replace: true });
 }
 
 function clearFilters() {
     agentId.value = gender.value = service.value = project.value =
     province.value = district.value = location.value = referredTo.value =
-    repeatCaller.value = callDirection.value = ageGroup.value = '';
+    repeatCaller.value = callDirection.value = ageGroup.value =
+    dateFrom.value = dateTo.value = '';
     apply();
 }
 
 const debouncedApply = debounce(apply, 350);
 watch(search, debouncedApply);
-watch([status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup], apply);
+watch([status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup, dateFrom, dateTo], apply);
 watch([location, district], debounce(apply, 350));
 
 // ── Blocked Numbers ──────────────────────────────────────────────────────────
@@ -492,6 +499,15 @@ const statusColor = {
                         <option value="">All Agents</option>
                         <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
                     </select>
+                </div>
+                <!-- Date range -->
+                <div>
+                    <label class="label">Date From</label>
+                    <input type="date" v-model="dateFrom" class="input" />
+                </div>
+                <div>
+                    <label class="label">Date To</label>
+                    <input type="date" v-model="dateTo" class="input" />
                 </div>
                 <!-- Gender -->
                 <div>

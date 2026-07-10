@@ -39,6 +39,8 @@ class TicketController extends Controller
         if ($request->filled('location'))        { $query->where('location',            'like', "%{$request->location}%"); }
         if ($request->filled('referred_to'))     { $query->where('referred_to',         $request->referred_to); }
         if ($request->filled('repeat_caller'))   { $query->where('is_repeat_caller',   $request->repeat_caller); }
+        if ($request->filled('date_from'))       { $query->whereDate('created_at', '>=', $request->date_from); }
+        if ($request->filled('date_to'))         { $query->whereDate('created_at', '<=', $request->date_to); }
         if ($request->filled('call_direction'))  {
             // inbound/outbound mapped via mode_of_communication or joined calls table
             if ($request->call_direction === 'inbound') {
@@ -78,6 +80,7 @@ class TicketController extends Controller
                 'agent_id', 'gender', 'service', 'project',
                 'province', 'district', 'location', 'referred_to',
                 'repeat_caller', 'call_direction', 'age_group',
+                'date_from', 'date_to',
             ]),
             'keyPops'             => LookupItem::where('type', 'key_pops')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'modesOfCommunication' => LookupItem::where('type', 'mode_of_communication')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
@@ -109,6 +112,8 @@ class TicketController extends Controller
         if ($request->filled('location'))       { $query->where('location',           'like', "%{$request->location}%"); }
         if ($request->filled('referred_to'))    { $query->where('referred_to',        $request->referred_to); }
         if ($request->filled('repeat_caller'))  { $query->where('is_repeat_caller',   $request->repeat_caller); }
+        if ($request->filled('date_from'))      { $query->whereDate('created_at', '>=', $request->date_from); }
+        if ($request->filled('date_to'))        { $query->whereDate('created_at', '<=', $request->date_to); }
         if ($request->filled('age_group')) {
             match ($request->age_group) {
                 'under_18' => $query->whereBetween('caller_age', [1,  17]),
