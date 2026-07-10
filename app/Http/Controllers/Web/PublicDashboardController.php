@@ -9,6 +9,7 @@ use App\Models\UrgentCase;
 use App\Services\UchatService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class PublicDashboardController extends Controller
@@ -92,6 +93,23 @@ class PublicDashboardController extends Controller
     }
 
     private function buildData(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = ''): array
+    {
+        // The full breakdown below runs ~60 queries against a remote DB host,
+        // repeated on every filter change / auto-refresh of the live dashboard.
+        // Cache per unique filter combination for a short window so rapid
+        // refreshes and repeated filter picks don't re-pay that cost each time.
+        $cacheKey = 'public_dashboard:' . md5(implode('|', [
+            $serviceFilter, $selectedYear, $selectedMonth, $projectFilter,
+            $dateFrom, $dateTo, $genderFilter, $ageFilter,
+        ]));
+
+        return Cache::remember($cacheKey, 30, fn () => $this->buildDataUncached(
+            $serviceFilter, $selectedYear, $selectedMonth, $projectFilter,
+            $dateFrom, $dateTo, $genderFilter, $ageFilter
+        ));
+    }
+
+    private function buildDataUncached(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = ''): array
     {
         // ── All-time scalars ─────────────────────────────────────────────────
         // Always build unfiltered list of services for the dropdown
