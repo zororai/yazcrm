@@ -656,6 +656,9 @@ const statusColor = {
                         <td class="table-td">
                             <div class="flex items-center gap-1.5">
                                 <Link :href="`/tickets/${t.id}`" class="btn-secondary btn-sm">View</Link>
+                                <Link v-if="t.contact_number" :href="`/recordings?search=${t.contact_number}`" class="text-brand-600 hover:underline text-xs font-medium" title="Find recordings for this number">
+                                    Recordings
+                                </Link>
                                 <button v-if="isAdmin"
                                     @click="deleteTicket(t)"
                                     class="btn-sm inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
