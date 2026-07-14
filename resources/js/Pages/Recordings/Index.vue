@@ -35,7 +35,7 @@ function openTicketModal(r) {
     };
 }
 
-function onTicketCreated() {
+function closeTicketModal() {
     ticketModalCall.value = null;
     router.reload({ only: ['recordings'] });
 }
@@ -155,8 +155,7 @@ function statusColor(s) {
         <CallTicketModal
             v-if="ticketModalCall"
             :call="ticketModalCall"
-            @close="ticketModalCall = null"
-            @created="onTicketCreated"
+            @close="closeTicketModal"
         />
     </AppLayout>
 </template>
