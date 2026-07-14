@@ -2,7 +2,8 @@
 import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { MagnifyingGlassIcon, ArrowDownTrayIcon, MicrophoneIcon } from '@heroicons/vue/24/outline';
+import CallTicketModal from '@/Components/CallTicketModal.vue';
+import { MagnifyingGlassIcon, ArrowDownTrayIcon, MicrophoneIcon, TicketIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props = defineProps({ recordings: Object, filters: Object });
@@ -17,6 +18,27 @@ const runFilter = debounce(() => {
         replace: true,
     });
 }, 400);
+
+// ── Attach ticket to a recorded call ─────────────────────────────────────────
+const ticketModalCall = ref(null);
+
+function openTicketModal(r) {
+    if (!r.call) return;
+    ticketModalCall.value = {
+        call_id:      r.call.id,
+        caller:       r.call.caller,
+        callee:       r.call.callee,
+        duration:     r.duration,
+        direction:    r.call.direction,
+        client:       r.call.client ?? null,
+        recording_id: r.id,
+    };
+}
+
+function onTicketCreated() {
+    ticketModalCall.value = null;
+    router.reload({ only: ['recordings'] });
+}
 
 function fmtDuration(s) {
     if (!s) return '—';
@@ -84,10 +106,21 @@ function statusColor(s) {
                             <audio controls preload="none" class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
                         </td>
                         <td class="px-4 py-2.5 text-right">
-                            <div class="flex gap-2 justify-end">
+                            <div class="flex gap-2 justify-end items-center">
                                 <a :href="`/api/recordings/${r.id}/download?download=1`" download class="text-gray-400 hover:text-gray-700" title="Download">
                                     <ArrowDownTrayIcon class="h-4 w-4" />
                                 </a>
+                                <button
+                                    v-if="r.call && !r.call.ticket"
+                                    @click="openTicketModal(r)"
+                                    class="text-gray-400 hover:text-brand-600"
+                                    title="Attach ticket"
+                                >
+                                    <TicketIcon class="h-4 w-4" />
+                                </button>
+                                <Link v-if="r.call?.ticket" :href="`/tickets/${r.call.ticket.id}`" class="text-green-600 hover:underline text-xs font-medium">
+                                    Ticket #{{ r.call.ticket.id }}
+                                </Link>
                                 <Link v-if="r.call" :href="`/calls/${r.call.id}`" class="text-brand-600 hover:underline text-xs font-medium">
                                     View call
                                 </Link>
@@ -118,5 +151,12 @@ function statusColor(s) {
                 </div>
             </div>
         </div>
+
+        <CallTicketModal
+            v-if="ticketModalCall"
+            :call="ticketModalCall"
+            @close="ticketModalCall = null"
+            @created="onTicketCreated"
+        />
     </AppLayout>
 </template>

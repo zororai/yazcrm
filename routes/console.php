@@ -13,3 +13,7 @@ Schedule::command('yeastar:sync-calls --minutes=1')->everySecond();
 
 // Full hourly backfill to catch any missed calls
 Schedule::command('yeastar:sync-calls --hours=2')->hourly();
+
+// Deep daily backfill — safety net in case schedule:run stops firing
+// (e.g. cron/Task Scheduler outage) for an extended period.
+Schedule::command('yeastar:sync-calls --hours=100')->daily();

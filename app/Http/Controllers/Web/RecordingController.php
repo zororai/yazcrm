@@ -12,7 +12,7 @@ class RecordingController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Recording::with(['call.client:id,name', 'call.agent:id,name'])
+        $query = Recording::with(['call.client:id,name', 'call.agent:id,name', 'call.ticket:id,call_id'])
             ->orderByDesc('created_at');
 
         // Agents only see recordings of calls to their own assigned extension
