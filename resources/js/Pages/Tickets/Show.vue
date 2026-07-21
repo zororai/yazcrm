@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
-import { ArrowLeftIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PencilSquareIcon, XMarkIcon, MicrophoneIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     ticket:                Object,
@@ -99,6 +99,10 @@ function label(val) {
                     <ArrowLeftIcon class="h-4 w-4" /> Back to tickets
                 </Link>
                 <div class="flex gap-2">
+                    <Link v-if="ticket.contact_number" :href="`/recordings?search=${ticket.contact_number}`"
+                        class="btn-secondary btn-sm inline-flex items-center gap-1">
+                        <MicrophoneIcon class="h-4 w-4" /> Recordings
+                    </Link>
                     <button v-if="!editing" @click="editing = true"
                         class="btn-primary btn-sm inline-flex items-center gap-1">
                         <PencilSquareIcon class="h-4 w-4" /> Edit Case
