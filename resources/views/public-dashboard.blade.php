@@ -1,4 +1,30 @@
-﻿<!DOCTYPE html>
+﻿@php
+// Self-contained icon set (replaces img.icons8.com <img> tags) so this page
+// never depends on an external CDN being reachable — see incident where the
+// server's outbound network/DNS was down and every icon + chart broke.
+$dashIcons = [
+    'phone'          => '<path d="M4 5c0-1 1-2 2-2h2l2 5-2 2c1 3 3 5 6 6l2-2 5 2v2c0 1-1 2-2 2-8 0-15-7-15-15Z"/>',
+    'incoming-call'  => '<path d="M17 7 7 17M7 9V17H15"/>',
+    'outgoing-call'  => '<path d="M7 17 17 7M9 7H17V15"/>',
+    'high-priority'  => '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/>',
+    'ok'             => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    'checked'        => '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    'timer'          => '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M10 2h4"/>',
+    'conference-call'=> '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 6-6s6 2.7 6 6M10 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>',
+    'goal'           => '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/>',
+    'combo-chart'    => '<path d="M3 20V10M9 20V4M15 20v-7M21 20V8"/>',
+    'bar-chart'      => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    'team'           => '<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="18" cy="9" r="2.5"/><path d="M16.5 14c2.8.3 4.5 2.3 4.5 5"/>',
+    'calendar'       => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    'bot'            => '<rect x="4" y="8" width="16" height="12" rx="2"/><circle cx="9" cy="14" r="1.3"/><circle cx="15" cy="14" r="1.3"/><path d="M12 8V4M9 4h6"/>',
+    'add-user-male'  => '<circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.6 3.1-6.5 7-6.5s7 2.9 7 6.5M18 8v6M15 11h6"/>',
+    'flash-on'       => '<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>',
+];
+$dashIcon = fn (string $name, string $color = '#3b82f6') =>
+    '<svg viewBox="0 0 24 24" fill="none" stroke="'.$color.'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+    . ($dashIcons[$name] ?? '') . '</svg>';
+@endphp
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,12 +33,11 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Helpline Analytics</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="{{ asset('vendor/chart.umd.min.js') }}"></script>
+<script src="{{ asset('vendor/lucide.min.js') }}"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Inter',sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
   background:radial-gradient(ellipse 60% 50% at 10% 10%,rgba(219,234,254,.8) 0%,transparent 60%),
              radial-gradient(ellipse 50% 40% at 90% 90%,rgba(209,250,229,.5) 0%,transparent 60%);
@@ -96,14 +121,14 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
 /* KPI grid */
 .kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .kpi{flex:1;min-width:110px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
-.kpi-icon{margin-bottom:6px;display:flex;align-items:center}.kpi-icon img{width:28px;height:28px}
+.kpi-icon{margin-bottom:6px;display:flex;align-items:center}.kpi-icon img,.kpi-icon svg{width:28px;height:28px}
 .kpi-val{font-size:22px;font-weight:800;color:#0f172a;line-height:1}
 .kpi-lbl{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
 .svc-kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .svc-kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
 .svc-kpi-title{font-weight:700;font-size:14px;color:#1e293b;margin-bottom:14px}
 .svc-kpi-body{display:flex;align-items:center;gap:14px}
-.svc-kpi-icon{width:48px;height:48px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}.svc-kpi-icon img{width:30px;height:30px}
+.svc-kpi-icon{width:48px;height:48px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}.svc-kpi-icon img,.svc-kpi-icon svg{width:30px;height:30px}
 .svc-kpi-num{font-size:28px;font-weight:900;color:#6366f1;letter-spacing:-1px;line-height:1}
 .svc-kpi-foot{margin-top:16px;padding-top:12px;border-top:2px solid #f97316;display:flex;align-items:center;justify-content:space-between}
 .svc-kpi-foot-lbl{font-size:11px;color:#64748b;font-weight:600}
@@ -707,7 +732,7 @@ tr:hover td{background:#f8fafc}
     <div class="svc-kpi-card">
       <div class="svc-kpi-title">Referred Cases</div>
       <div class="svc-kpi-body">
-        <div class="svc-kpi-icon"><img src="https://img.icons8.com/fluency/48/conference-call.png" alt="Referred"></div>
+        <div class="svc-kpi-icon">{!! $dashIcon('conference-call') !!}</div>
         <div class="svc-kpi-num" id="svc-kpi-referred">0</div>
       </div>
       <div class="svc-kpi-foot">
@@ -718,7 +743,7 @@ tr:hover td{background:#f8fafc}
     <div class="svc-kpi-card">
       <div class="svc-kpi-title">Confirmed Uptake</div>
       <div class="svc-kpi-body">
-        <div class="svc-kpi-icon"><img src="https://img.icons8.com/fluency/48/checked.png" alt="Uptake"></div>
+        <div class="svc-kpi-icon">{!! $dashIcon('checked') !!}</div>
         <div class="svc-kpi-num" id="svc-kpi-uptake">0</div>
       </div>
       <div class="svc-kpi-foot">
@@ -782,12 +807,12 @@ tr:hover td{background:#f8fafc}
     </div>
   </div>
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/phone.png" alt=""></div><div class="kpi-val" id="c-total">0</div><div class="kpi-lbl">Total Calls</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/incoming-call.png" alt=""></div><div class="kpi-val" id="c-inbound">0</div><div class="kpi-lbl">Inbound</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/outgoing-call.png" alt=""></div><div class="kpi-val" id="c-outbound">0</div><div class="kpi-lbl">Outbound</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/high-priority.png" alt=""></div><div class="kpi-val" id="c-missed">{{ number_format($urgentOpen) }}</div><div class="kpi-lbl">Urgent Cases</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/ok.png" alt=""></div><div class="kpi-val" id="c-answered">0</div><div class="kpi-lbl">Answered</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/timer.png" alt=""></div><div class="kpi-val" id="c-avgdur">0s</div><div class="kpi-lbl">Avg Duration</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('phone') !!}</div><div class="kpi-val" id="c-total">0</div><div class="kpi-lbl">Total Calls</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('incoming-call') !!}</div><div class="kpi-val" id="c-inbound">0</div><div class="kpi-lbl">Inbound</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('outgoing-call') !!}</div><div class="kpi-val" id="c-outbound">0</div><div class="kpi-lbl">Outbound</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('high-priority', '#ef4444') !!}</div><div class="kpi-val" id="c-missed">{{ number_format($urgentOpen) }}</div><div class="kpi-lbl">Urgent Cases</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('ok', '#22c55e') !!}</div><div class="kpi-val" id="c-answered">0</div><div class="kpi-lbl">Answered</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('timer') !!}</div><div class="kpi-val" id="c-avgdur">0s</div><div class="kpi-lbl">Avg Duration</div></div>
   </div>
   <div class="s-card" style="margin-bottom:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1200,12 +1225,12 @@ tr:hover td{background:#f8fafc}
 
   <!-- KPI row -->
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/goal.png" alt=""></div><div class="kpi-val" id="tgt-period-target">—</div><div class="kpi-lbl">Period Target</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/phone.png" alt=""></div><div class="kpi-val" id="tgt-period-calls">—</div><div class="kpi-lbl">Calls Made</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/combo-chart.png" alt=""></div><div class="kpi-val" id="tgt-coverage">—</div><div class="kpi-lbl">Coverage</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/team.png" alt=""></div><div class="kpi-val" id="tgt-active-agents">—</div><div class="kpi-lbl">Active Agents</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/calendar.png" alt=""></div><div class="kpi-val" id="tgt-today-required">—</div><div class="kpi-lbl">Today Required</div></div>
-    <div class="kpi"><div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/checked.png" alt=""></div><div class="kpi-val" id="tgt-today-calls">—</div><div class="kpi-lbl">Today's Calls</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('goal') !!}</div><div class="kpi-val" id="tgt-period-target">—</div><div class="kpi-lbl">Period Target</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('phone') !!}</div><div class="kpi-val" id="tgt-period-calls">—</div><div class="kpi-lbl">Calls Made</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('combo-chart') !!}</div><div class="kpi-val" id="tgt-coverage">—</div><div class="kpi-lbl">Coverage</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('team') !!}</div><div class="kpi-val" id="tgt-active-agents">—</div><div class="kpi-lbl">Active Agents</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('calendar') !!}</div><div class="kpi-val" id="tgt-today-required">—</div><div class="kpi-lbl">Today Required</div></div>
+    <div class="kpi"><div class="kpi-icon">{!! $dashIcon('checked', '#22c55e') !!}</div><div class="kpi-val" id="tgt-today-calls">—</div><div class="kpi-lbl">Today's Calls</div></div>
   </div>
 
   <!-- Agent performance chart -->
@@ -1236,22 +1261,22 @@ tr:hover td{background:#f8fafc}
   <!-- KPI cards -->
   <div class="kpi-row" style="margin-bottom:16px">
     <div class="kpi">
-      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/bot.png" alt=""></div>
+      <div class="kpi-icon">{!! $dashIcon('bot') !!}</div>
       <div class="kpi-val" id="bot-total">{{ number_format($uchat['total_bot_users'] ?? 0) }}</div>
       <div class="kpi-lbl">Total Bot Users</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/add-user-male.png" alt=""></div>
+      <div class="kpi-icon">{!! $dashIcon('add-user-male') !!}</div>
       <div class="kpi-val" id="bot-new">{{ number_format($uchat['new_bot_users'] ?? 0) }}</div>
       <div class="kpi-lbl">New Bot Users (30d)</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/flash-on.png" alt=""></div>
+      <div class="kpi-icon">{!! $dashIcon('flash-on', '#f59e0b') !!}</div>
       <div class="kpi-val" id="bot-active">{{ number_format($uchat['active_today'] ?? 0) }}</div>
       <div class="kpi-lbl">Active (Last 24h)</div>
     </div>
     <div class="kpi">
-      <div class="kpi-icon"><img src="https://img.icons8.com/fluency/48/bar-chart.png" alt=""></div>
+      <div class="kpi-icon">{!! $dashIcon('bar-chart') !!}</div>
       <div class="kpi-val" id="bot-avg">{{ $uchat['new_bot_users'] > 0 ? round(($uchat['new_bot_users'] ?? 0) / 30, 1) : '—' }}</div>
       <div class="kpi-lbl">Avg New / Day (30d)</div>
     </div>

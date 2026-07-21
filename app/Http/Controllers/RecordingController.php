@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class RecordingController extends Controller
 {
@@ -32,7 +33,13 @@ class RecordingController extends Controller
         $recording->update(['file_url' => $url]);
 
         $token = $this->yeastar->getAccessToken();
-        $audio = Http::withoutVerifying()->withHeaders(['Authorization' => $token])->get($url);
+
+        try {
+            $audio = Http::withoutVerifying()->withHeaders(['Authorization' => $token])->get($url);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Recording download failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Could not reach the PBX to fetch this recording.'], 502);
+        }
 
         if (!$audio->successful()) {
             return response()->json(['message' => 'Failed to fetch recording from PBX.'], 502);
