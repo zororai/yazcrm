@@ -24,10 +24,10 @@ class YeastarSettingsController extends Controller
                 'app_id'      => Setting::get('yeastar_app_id',     config('yeastar.app_id')),
                 'app_secret'  => Setting::get('yeastar_app_secret', config('yeastar.app_secret')),
                 'webhook_url' => Setting::get('yeastar_webhook_url', $defaultWebhookUrl),
-                'db_host'     => env('DB_YEASTAR_HOST', ''),
-                'db_port'     => env('DB_YEASTAR_PORT', '15023'),
-                'db_database' => env('DB_YEASTAR_DATABASE', 'asterisk'),
-                'db_username' => env('DB_YEASTAR_USERNAME', ''),
+                'db_host'     => config('database.connections.yeastar.host', ''),
+                'db_port'     => config('database.connections.yeastar.port', '15023'),
+                'db_database' => config('database.connections.yeastar.database', 'asterisk'),
+                'db_username' => config('database.connections.yeastar.username', ''),
             ],
             'webhook_registered' => (bool) Setting::get('yeastar_webhook_registered', false),
             'db_connected'       => $this->testDbConnection(),
@@ -54,7 +54,7 @@ class YeastarSettingsController extends Controller
 
     private function testDbConnection(): bool
     {
-        if (empty(env('DB_YEASTAR_HOST'))) return false;
+        if (empty(config('database.connections.yeastar.host'))) return false;
         try {
             DB::connection('yeastar')->getPdo();
             return true;

@@ -160,7 +160,11 @@ class YeastarService
 
     private function hasDirectDb(): bool
     {
-        return !empty(env('DB_YEASTAR_HOST'));
+        // Must read via config(), not env() directly — once config is cached
+        // (php artisan config:cache, common in production), env() calls outside
+        // config/*.php silently return null even though the connection itself
+        // (defined in config/database.php) still resolves correctly.
+        return !empty(config('database.connections.yeastar.host'));
     }
 
     public function syncCalls(?string $startTime = null, ?string $endTime = null): int
