@@ -570,10 +570,11 @@ tr:hover td{background:#f8fafc}
   </div>
   <div style="height:160px"><canvas id="ovTrendChart"></canvas></div>
   <!-- Call KPIs from PBX -->
+  @php($ovCallStats = $callStats[$callDefaultPeriod] ?? ['total'=>0,'inbound'=>0,'outbound'=>0,'answered'=>0])
   <div style="display:flex;gap:0;border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px">
-    @foreach([['📞','Total Cases','ov-c-total',$total - $displayTotalOffset],['✅','Valid','ov-c-inbound',$validTotal],
-              ['🔁','Repeat','ov-c-outbound',$repeatTotal],['🚨','Urgent','ov-c-urgent',$urgentOpen],
-              ['📋','Resolved','ov-c-answered',$resolvedTotal]] as [$ico,$lbl,$id,$val])
+    @foreach([['📞','Total Calls','ov-c-total',$ovCallStats['total']],['📥','Inbound','ov-c-inbound',$ovCallStats['inbound']],
+              ['📤','Outbound','ov-c-outbound',$ovCallStats['outbound']],['🚨','Urgent','ov-c-urgent',$urgentOpen],
+              ['✅','Answered','ov-c-answered',$ovCallStats['answered']]] as [$ico,$lbl,$id,$val])
     <div style="flex:1;text-align:center;border-right:1px solid #f3f4f6;padding:0 8px">
       <div style="font-size:16px">{{ $ico }}</div>
       <div style="font-size:16px;font-weight:800;color:#1f2937" id="{{ $id }}">{{ is_numeric($val) ? number_format($val) : $val }}</div>
@@ -1597,13 +1598,12 @@ function updateOverview(p) {
   if (femArc) femArc.setAttribute('stroke-dasharray', `${OV_CIRC * Math.min(fPct, 100) / 100} ${OV_CIRC}`);
   if (femTxt) femTxt.textContent = fPct + '%';
 
-  // ── Call Activity strip (ticket-based) ───────────────────────────────────
-  document.getElementById('ov-c-total').textContent    = fmt(Math.max(0, d.total - DISPLAY_OFFSET));
-  document.getElementById('ov-c-inbound').textContent  = fmt(d.valid);
-  document.getElementById('ov-c-outbound').textContent = fmt(d.repeat);
+  // ── Call Activity strip (real call data, from the calls table) ───────────
+  document.getElementById('ov-c-total').textContent    = fmt(s.total);
+  document.getElementById('ov-c-inbound').textContent  = fmt(s.inbound);
+  document.getElementById('ov-c-outbound').textContent = fmt(s.outbound);
   document.getElementById('ov-c-urgent').textContent   = fmt(urgentOpen);
-  const statusMap2 = {}; (d.by_status ?? []).forEach(([k,v]) => statusMap2[k]=v);
-  document.getElementById('ov-c-answered').textContent = fmt((statusMap2['resolved']??0) + (statusMap2['closed']??0));
+  document.getElementById('ov-c-answered').textContent = fmt(s.answered);
 
   // ── Trend chart ───────────────────────────────────────────────────────────
   const ctkeys = Object.keys(s.trend);
