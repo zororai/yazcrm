@@ -65,7 +65,7 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
   border-radius:14px;display:flex;align-items:center;justify-content:center;
   margin-bottom:8px;flex-shrink:0;
 }
-.sb-logo svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sb-logo svg{width:22px;height:18px}
 .sb-btn{
   width:40px;height:40px;border:none;background:transparent;
   border-radius:14px;display:flex;align-items:center;justify-content:center;
@@ -269,6 +269,14 @@ tr:hover td{background:#f8fafc}
 @media(min-width:901px){
   .sb-btn i{display:flex;align-items:center;justify-content:center;width:18px;height:18px}
 }
+@media print{
+  /* Sections already hidden via inline style="display:none" (set by showSection())
+     stay hidden — only the currently active tab is visible and prints. */
+  .sidebar,#print-dashboard-btn,.period-wrap,#svc-filter-clear,.live-pill{display:none!important}
+  .main{padding:16px!important}
+  body{background:#fff!important}
+  body::before{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -293,8 +301,13 @@ tr:hover td{background:#f8fafc}
 
 <!-- ── Floating Sidebar ── -->
 <aside class="sidebar">
-  <div class="sb-logo">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+  <div class="sb-logo" title="Youth Advocates">
+    <!-- Youth Advocates mark (same as the login page): two overlapping rounded-pill arms + teardrop -->
+    <svg width="22" height="18" viewBox="0 0 130 108" xmlns="http://www.w3.org/2000/svg">
+      <rect x="12" y="0" width="28" height="82" rx="14" fill="#e8512a" transform="rotate(34 26 66)"/>
+      <rect x="90" y="0" width="28" height="82" rx="14" fill="#6835a2" transform="rotate(-34 104 66)"/>
+      <ellipse cx="65" cy="14" rx="11" ry="14" fill="#ffffff"/>
+    </svg>
   </div>
 
   <button class="sb-btn active" onclick="showSection('overview',this)" title="Overview">
@@ -410,6 +423,11 @@ tr:hover td{background:#f8fafc}
     </div>
     <div class="live-pill"><span class="live-dot" id="live-dot"></span> Live &mdash; <span id="live-updated">now</span></div>
     <div class="total-pill"><div class="tv" id="hdr-total">{{ number_format($total - $displayTotalOffset) }}</div><div class="tl">{{ $projectFilter || $serviceFilter || $genderFilter || $ageFilter ? 'Filtered Cases' : 'All-time Interactions' }}</div></div>
+    <button id="print-dashboard-btn" onclick="printCurrentTab()"
+      style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:8px 14px;border-radius:16px;border:1px solid #e2e8f0;background:#fff;color:#374151;cursor:pointer;white-space:nowrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Download
+    </button>
   </div>
 </div>
 
@@ -570,7 +588,7 @@ tr:hover td{background:#f8fafc}
   </div>
   <div style="height:160px"><canvas id="ovTrendChart"></canvas></div>
   <!-- Call KPIs from PBX -->
-  @php($ovCallStats = $callStats[$callDefaultPeriod] ?? ['total'=>0,'inbound'=>0,'outbound'=>0,'answered'=>0])
+  @php $ovCallStats = $callStats[$callDefaultPeriod] ?? ['total'=>0,'inbound'=>0,'outbound'=>0,'answered'=>0]; @endphp
   <div style="display:flex;gap:0;border-top:1px solid #f3f4f6;margin-top:12px;padding-top:10px">
     @foreach([['📞','Total Calls','ov-c-total',$ovCallStats['total']],['📥','Inbound','ov-c-inbound',$ovCallStats['inbound']],
               ['📤','Outbound','ov-c-outbound',$ovCallStats['outbound']],['🚨','Urgent','ov-c-urgent',$urgentOpen],
@@ -2316,6 +2334,17 @@ function showSection(name, btn) {
     const activeSel = document.querySelector(`#sec-${name} .period-select.active-period`);
     if (activeSel) activeSel.dispatchEvent(new Event('change'));
   }
+}
+
+// ── Download / print the currently active tab ────────────────────────────────
+function printCurrentTab() {
+  const visibleSec = [...document.querySelectorAll('.section')].find(s => s.style.display !== 'none');
+  const label = visibleSec?.querySelector('.sec-title')?.textContent?.trim() || 'Dashboard';
+  const originalTitle = document.title;
+  const stamp = new Date().toISOString().slice(0, 10);
+  document.title = `Helpline Analytics — ${label} — ${stamp}`;
+  window.print();
+  setTimeout(() => { document.title = originalTitle; }, 500);
 }
 
 // ── PHP-determined defaults (server guarantees these periods have data) ───
