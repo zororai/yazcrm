@@ -347,9 +347,12 @@ tr:hover td{background:#f8fafc}
 
 <!-- Header -->
 <div class="page-hdr">
-  <div>
-    <div class="page-title">Helpline Analytics</div>
-    <div class="page-sub">National Youth Helpline &middot; {{ $lastUpdated ? \Carbon\Carbon::parse($lastUpdated)->format('d M Y, H:i') : 'N/A' }}</div>
+  <div style="display:flex;align-items:center;gap:18px">
+    <img src="{{ asset('logo.png') }}" alt="Youth Advocates" style="height:84px;width:auto;flex-shrink:0">
+    <div>
+      <div class="page-title">Helpline Analytics</div>
+      <div class="page-sub">National Youth Helpline &middot; {{ $lastUpdated ? \Carbon\Carbon::parse($lastUpdated)->format('d M Y, H:i') : 'N/A' }}</div>
+    </div>
   </div>
   <div class="hdr-right">
     <div style="display:flex;align-items:center;gap:6px">
