@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     // Calls
     Route::get('calls', [Web\CallController::class, 'index'])->name('calls.index');
     Route::get('calls/number-search', [Web\TicketController::class, 'searchNumbers'])->name('calls.number-search');
+    Route::get('calls/export', [Web\CallController::class, 'export'])->name('calls.export');
     Route::get('calls/{call}', [Web\CallController::class, 'show'])->name('calls.show');
     Route::post('calls/{call}/link-client', [Web\CallController::class, 'linkClient'])->name('calls.link-client');
 

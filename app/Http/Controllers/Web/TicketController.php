@@ -133,7 +133,7 @@ class TicketController extends Controller
         }
 
         $csvHeaders = [
-            'ID', 'Date', 'Agent', 'Client', 'Contact Number', 'Subject',
+            'ID', 'Date', 'Agent', 'Client', 'Contact Number', 'Subject', "Counsellor's Notes",
             'Purpose of Call', 'Mode of Communication', 'Status', 'Priority',
             'Gender', 'Age', 'Marital Status', 'Key Pops',
             'Province', 'District', 'Location',
@@ -155,6 +155,7 @@ class TicketController extends Controller
                     $t->client?->name ?? '',
                     $t->contact_number ?? '',
                     $t->subject ?? '',
+                    $t->description ?? '',
                     $t->purpose_of_call ?? '',
                     $t->mode_of_communication ?? '',
                     $t->status ?? '',

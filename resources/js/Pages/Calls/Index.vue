@@ -1,8 +1,8 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { MagnifyingGlassIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, ArrowPathIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props = defineProps({
@@ -26,6 +26,17 @@ function apply() {
         date_to:    dateTo.value || undefined,
     }, { preserveState: true, replace: true });
 }
+
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+    if (search.value)    params.set('search',    search.value);
+    if (direction.value) params.set('direction', direction.value);
+    if (status.value)    params.set('status',    status.value);
+    if (dateFrom.value)  params.set('date_from', dateFrom.value);
+    if (dateTo.value)    params.set('date_to',   dateTo.value);
+    const qs = params.toString();
+    return '/calls/export' + (qs ? '?' + qs : '');
+});
 
 const debouncedApply = debounce(apply, 350);
 watch(search, debouncedApply);
@@ -92,6 +103,11 @@ function fmt(s) {
             <div>
                 <label class="label">To</label>
                 <input v-model="dateTo" type="date" class="input w-36" />
+            </div>
+            <div class="flex items-end">
+                <a :href="exportUrl" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                    <ArrowDownTrayIcon class="h-4 w-4" /> Export CSV
+                </a>
             </div>
         </div>
 
