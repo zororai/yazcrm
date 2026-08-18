@@ -105,6 +105,18 @@ Route::middleware('auth')->group(function () {
     Route::get('appraisals/{appraisal}/review',     [Web\AppraisalController::class, 'review'])->name('appraisals.review.show');
     Route::put('appraisals/{appraisal}/review',     [Web\AppraisalController::class, 'updateReview'])->name('appraisals.review.update');
 
+    // ─── Activity Reports (compile → review → approve, scoped) ───────────────
+    Route::get('activity-reports',                          [Web\ActivityReportController::class, 'index'])->name('activity-reports.index');
+    Route::post('activity-reports',                         [Web\ActivityReportController::class, 'store'])->name('activity-reports.store');
+    Route::get('activity-reports/{activityReport}',         [Web\ActivityReportController::class, 'show'])->name('activity-reports.show');
+    Route::put('activity-reports/{activityReport}',         [Web\ActivityReportController::class, 'update'])->name('activity-reports.update');
+    Route::put('activity-reports/{activityReport}/viewers', [Web\ActivityReportController::class, 'updateViewers'])->name('activity-reports.viewers');
+    Route::post('activity-reports/{activityReport}/submit',  [Web\ActivityReportController::class, 'submit'])->name('activity-reports.submit');
+    Route::post('activity-reports/{activityReport}/review',  [Web\ActivityReportController::class, 'review'])->name('activity-reports.review');
+    Route::post('activity-reports/{activityReport}/approve', [Web\ActivityReportController::class, 'approve'])->name('activity-reports.approve');
+    Route::post('activity-reports/{activityReport}/reopen',  [Web\ActivityReportController::class, 'reopen'])->name('activity-reports.reopen');
+    Route::delete('activity-reports/{activityReport}',       [Web\ActivityReportController::class, 'destroy'])->name('activity-reports.destroy');
+
     // ─── SBC / YALeP — all authenticated users ───────────────────────────────
     Route::get('sbc',                         [Web\SbcController::class, 'index'])->name('sbc.index');
     Route::post('sbc/import',                 [Web\SbcController::class, 'import'])->name('sbc.import');
