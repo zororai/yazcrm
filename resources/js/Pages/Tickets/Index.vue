@@ -115,6 +115,19 @@ const rejectingId   = ref(null);
 const rejectReason  = ref('');
 const pendingCount  = computed(() => reqList.value.filter(r => r.status === 'pending').length);
 
+const SESSION_EXPIRED_MESSAGE = 'Your session has expired. The page will refresh automatically.';
+
+function csrfHeader() {
+    return { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content };
+}
+
+// Handles a stale/expired CSRF token uniformly: shows a message, then reloads
+// so the user gets a fresh token instead of the request silently failing.
+function handleExpiredSession(setError) {
+    setError(SESSION_EXPIRED_MESSAGE);
+    setTimeout(() => window.location.reload(), 1500);
+}
+
 async function loadRequests() {
     reqLoading.value = true;
     reqError.value   = '';
@@ -134,12 +147,12 @@ async function submitRequest() {
     try {
         const res  = await fetch('/blocked-number-requests', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            headers: { 'Content-Type': 'application/json', ...csrfHeader() },
             body: JSON.stringify(reqForm.value),
         });
 
         if (res.status === 419) {
-            reqError.value = 'Your session has expired. Please refresh the page and try again.';
+            handleExpiredSession(v => reqError.value = v);
             return;
         }
 
@@ -163,33 +176,48 @@ async function submitRequest() {
 }
 
 async function approveRequest(id) {
-    const res  = await fetch(`/blocked-number-requests/${id}/approve`, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-    });
-    const data = await res.json();
-    if (data.ok) loadRequests();
-    else alert(data.message || 'Approve failed.');
+    try {
+        const res = await fetch(`/blocked-number-requests/${id}/approve`, {
+            method: 'POST',
+            headers: csrfHeader(),
+        });
+        if (res.status === 419) { handleExpiredSession(v => reqError.value = v); return; }
+        const data = await res.json();
+        if (data.ok) loadRequests();
+        else alert(data.message || 'Approve failed.');
+    } catch {
+        reqError.value = 'Network error. Check your internet connection and try again.';
+    }
 }
 
 async function rejectRequest(id) {
-    const res  = await fetch(`/blocked-number-requests/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-        body: JSON.stringify({ reason: rejectReason.value }),
-    });
-    const data = await res.json();
-    if (data.ok) { rejectingId.value = null; rejectReason.value = ''; loadRequests(); }
-    else alert(data.message || 'Reject failed.');
+    try {
+        const res = await fetch(`/blocked-number-requests/${id}/reject`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...csrfHeader() },
+            body: JSON.stringify({ reason: rejectReason.value }),
+        });
+        if (res.status === 419) { handleExpiredSession(v => reqError.value = v); return; }
+        const data = await res.json();
+        if (data.ok) { rejectingId.value = null; rejectReason.value = ''; loadRequests(); }
+        else alert(data.message || 'Reject failed.');
+    } catch {
+        reqError.value = 'Network error. Check your internet connection and try again.';
+    }
 }
 
 async function deleteRequest(id) {
     if (!confirm('Delete this request?')) return;
-    await fetch(`/blocked-number-requests/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-    });
-    loadRequests();
+    try {
+        const res = await fetch(`/blocked-number-requests/${id}`, {
+            method: 'DELETE',
+            headers: csrfHeader(),
+        });
+        if (res.status === 419) { handleExpiredSession(v => reqError.value = v); return; }
+        loadRequests();
+    } catch {
+        reqError.value = 'Network error. Check your internet connection and try again.';
+    }
 }
 
 async function loadBlocked() {
@@ -240,9 +268,10 @@ async function saveBlocked() {
         const method = editingBlocked.value ? 'PUT' : 'POST';
         const res    = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            headers: { 'Content-Type': 'application/json', ...csrfHeader() },
             body: JSON.stringify(blockedForm.value),
         });
+        if (res.status === 419) { handleExpiredSession(v => blockedError.value = v); return; }
         const data = await res.json();
         if (!data.ok) { blockedError.value = data.message || 'Error saving.'; return; }
         showBlockedForm.value = false;
@@ -256,13 +285,18 @@ async function saveBlocked() {
 
 async function deleteBlocked(id) {
     if (!confirm('Delete this blocked number rule?')) return;
-    const res  = await fetch(`/blocked-numbers/${id}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-    });
-    const data = await res.json();
-    if (data.ok) loadBlocked();
-    else alert(data.message || 'Delete failed.');
+    try {
+        const res = await fetch(`/blocked-numbers/${id}`, {
+            method: 'DELETE',
+            headers: csrfHeader(),
+        });
+        if (res.status === 419) { handleExpiredSession(v => blockedError.value = v); return; }
+        const data = await res.json();
+        if (data.ok) loadBlocked();
+        else alert(data.message || 'Delete failed.');
+    } catch {
+        blockedError.value = 'Network error.';
+    }
 }
 
 
