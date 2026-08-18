@@ -10,6 +10,16 @@ const props = defineProps({
 });
 
 const PERM_LABELS = {
+    dashboard:   'Dashboard',
+    dialer:      'Dialer',
+    calls:       'Calls',
+    recordings:  'Recordings',
+    callbacks:   'Callbacks',
+    tickets:     'Tickets',
+    urgent:      'Urgent Cases',
+    directory:   'Service Directory',
+    appraisals:  'Appraisals',
+    appraisal_reviews: 'Appraisal Reviews',
     extensions:  'Extensions',
     analytics:   'Analytics',
     targets:     'Call Targets',
@@ -21,6 +31,8 @@ const PERM_LABELS = {
     yalep:       'YALeP Students',
     registry:    'Asset Register',
     risk:        'Risk Register',
+    sbc:         'SBC Signups',
+    roles:       'Roles & Permissions',
 };
 
 // ── Create ────────────────────────────────────────────────────────────────────
@@ -128,7 +140,7 @@ function destroy(role) {
                         </div>
                     </template>
                     <template v-else>
-                        <span class="text-xs text-gray-400">Dashboard, Calls, Tickets, Urgent only</span>
+                        <span class="text-xs text-gray-400 italic">No sidebar sections selected</span>
                     </template>
                 </div>
             </div>
@@ -156,9 +168,9 @@ function destroy(role) {
                     <div>
                         <label class="label">Nav Permissions</label>
                         <p class="text-xs text-gray-400 mb-2">
-                            Dashboard, Calls, Callbacks, Tickets and Urgent are always included.
+                            Choose exactly which sidebar sections this role can see.
                         </p>
-                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50 max-h-80 overflow-y-auto">
                             <label v-for="key in validPerms" :key="key"
                                 class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 py-1">
                                 <input type="checkbox"
@@ -196,9 +208,9 @@ function destroy(role) {
                     <div v-if="editRole.name !== 'admin'">
                         <label class="label">Nav Permissions</label>
                         <p class="text-xs text-gray-400 mb-2">
-                            Dashboard, Calls, Callbacks, Tickets and Urgent are always included.
+                            Choose exactly which sidebar sections this role can see.
                         </p>
-                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50 max-h-80 overflow-y-auto">
                             <label v-for="key in validPerms" :key="key"
                                 class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 py-1">
                                 <input type="checkbox"

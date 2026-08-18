@@ -15,12 +15,27 @@ const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav
 const resetForm = useForm({ password: '', password_confirmation: '' });
 
 const NAV_ITEMS = [
+    { key: 'dashboard',   label: 'Dashboard' },
+    { key: 'dialer',      label: 'Dialer' },
+    { key: 'calls',       label: 'Calls' },
+    { key: 'recordings',  label: 'Recordings' },
+    { key: 'callbacks',   label: 'Callbacks' },
+    { key: 'tickets',     label: 'Tickets' },
+    { key: 'urgent',      label: 'Urgent Cases' },
+    { key: 'directory',   label: 'Service Directory' },
+    { key: 'appraisals',  label: 'Appraisals' },
+    { key: 'appraisal_reviews', label: 'Appraisal Reviews' },
     { key: 'extensions',  label: 'Extensions' },
     { key: 'analytics',   label: 'Analytics' },
     { key: 'targets',     label: 'Call Targets' },
     { key: 'by_project',  label: 'By Project (Stats)' },
     { key: 'domains',     label: 'Distress Domains' },
     { key: 'bot_contacts',label: 'Bot Contacts' },
+    { key: 'registry',    label: 'Asset Register' },
+    { key: 'risk',        label: 'Risk Register' },
+    { key: 'sbc',         label: 'SBC Signups' },
+    { key: 'yalep',       label: 'YALeP Students' },
+    { key: 'roles',       label: 'Roles & Permissions' },
     { key: 'users',       label: 'Users Management' },
     { key: 'yeastar',     label: 'Yeastar Settings' },
 ];
@@ -222,10 +237,9 @@ const roleColor = {
                         </p>
                         <template v-else>
                             <p class="text-xs text-gray-500 mb-3">
-                                Choose which sections this user can see in the sidebar.
-                                Dashboard, Calls, Callbacks, Tickets and Urgent are always visible.
+                                Choose exactly which sections this user can see in the sidebar.
                             </p>
-                            <div class="grid grid-cols-2 gap-2">
+                            <div class="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
                                 <label
                                     v-for="item in NAV_ITEMS"
                                     :key="item.key"

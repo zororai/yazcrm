@@ -18,7 +18,6 @@ const page  = usePage();
 const user  = computed(() => page.props.auth.user);
 const flash = computed(() => page.props.flash);
 const isAdmin = computed(() => user.value?.role === 'admin');
-const canReviewAppraisals = computed(() => ['admin', 'director', 'supervisor'].includes(user.value?.role));
 
 // nav_permissions: null on admins (full access), array of keys on agents/supervisors
 const can = (key) => isAdmin.value || (user.value?.nav_permissions ?? []).includes(key);
@@ -141,16 +140,16 @@ onUnmounted(() => {
 });
 
 const navigation = computed(() => [
-    { name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon },
-    { name: 'Dialer',    href: '/dialer',       icon: PhoneArrowUpRightIcon },
-    { name: 'Calls',     href: '/calls',        icon: PhoneIcon },
-    { name: 'Recordings', href: '/recordings',  icon: MicrophoneIcon },
-    { name: 'Callbacks',  href: '/callbacks',    icon: QueueListIcon },
-    { name: 'Tickets',    href: '/tickets',      icon: TicketIcon },
-    { name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount },
-    { name: 'Directory',  href: '/service-directory', icon: BookOpenIcon },
-    { name: 'Appraisals', href: '/appraisals',   icon: ClipboardDocumentCheckIcon },
-    ...(canReviewAppraisals.value ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
+    ...(can('dashboard')    ? [{ name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon }] : []),
+    ...(can('dialer')       ? [{ name: 'Dialer',     href: '/dialer',      icon: PhoneArrowUpRightIcon }] : []),
+    ...(can('calls')        ? [{ name: 'Calls',      href: '/calls',       icon: PhoneIcon }] : []),
+    ...(can('recordings')   ? [{ name: 'Recordings', href: '/recordings',  icon: MicrophoneIcon }] : []),
+    ...(can('callbacks')    ? [{ name: 'Callbacks',  href: '/callbacks',   icon: QueueListIcon }] : []),
+    ...(can('tickets')      ? [{ name: 'Tickets',    href: '/tickets',     icon: TicketIcon }] : []),
+    ...(can('urgent')       ? [{ name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount }] : []),
+    ...(can('directory')    ? [{ name: 'Directory',  href: '/service-directory', icon: BookOpenIcon }] : []),
+    ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),
+    ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
     ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
     ...(can('targets')      ? [{ name: 'Targets',     href: '/call-targets',                     icon: FlagIcon }] : []),
@@ -159,9 +158,9 @@ const navigation = computed(() => [
     ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
     ...(isAdmin.value || can('registry') ? [{ name: 'Asset Register', href: '/registry', icon: ServerStackIcon }] : []),
     ...(isAdmin.value || can('risk')     ? [{ name: 'Risk Register',  href: '/risk',     icon: ShieldExclamationIcon }] : []),
-    ...(isAdmin.value       ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
+    ...(can('sbc')          ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
     ...(can('yalep') ? [{ name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon }] : []),
-    ...(isAdmin.value       ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
+    ...(can('roles')        ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
     ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);

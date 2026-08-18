@@ -45,7 +45,13 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $roleNames = Role::pluck('name')->implode(',');
-        $valid = ['extensions','analytics','targets','by_project','domains','bot_contacts','users','yeastar'];
+        $valid = [
+            'dashboard','dialer','calls','recordings','callbacks','tickets',
+            'urgent','directory','appraisals','appraisal_reviews',
+            'extensions','analytics','targets','by_project',
+            'domains','bot_contacts','users','yeastar','yalep',
+            'registry','risk','sbc','roles',
+        ];
 
         if ($request->supervisor_id === '') {
             $request->merge(['supervisor_id' => null]);
