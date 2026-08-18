@@ -12,7 +12,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
+        'name', 'email', 'password', 'role', 'supervisor_id', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -52,5 +52,20 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function supervisor()
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'supervisor_id');
+    }
+
+    public function appraisals()
+    {
+        return $this->hasMany(Appraisal::class);
     }
 }

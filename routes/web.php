@@ -90,6 +90,17 @@ Route::middleware('auth')->group(function () {
     Route::post('blocked-number-requests/{blockedNumberRequest}/reject',  [Web\BlockedNumberRequestController::class, 'reject'])->name('blocked-number-requests.reject');
     Route::delete('blocked-number-requests/{blockedNumberRequest}', [Web\BlockedNumberRequestController::class, 'destroy'])->name('blocked-number-requests.destroy');
 
+    // ─── Staff Performance Appraisals (all authenticated users, scoped) ──────
+    Route::get('appraisals',                    [Web\AppraisalController::class, 'index'])->name('appraisals.index');
+    Route::post('appraisals',                   [Web\AppraisalController::class, 'store'])->name('appraisals.store');
+    Route::get('appraisals/{appraisal}',        [Web\AppraisalController::class, 'show'])->name('appraisals.show');
+    Route::put('appraisals/{appraisal}',        [Web\AppraisalController::class, 'update'])->name('appraisals.update');
+    Route::post('appraisals/{appraisal}/submit',  [Web\AppraisalController::class, 'submit'])->name('appraisals.submit');
+    Route::put('appraisals/{appraisal}/review',   [Web\AppraisalController::class, 'updateReview'])->name('appraisals.review');
+    Route::post('appraisals/{appraisal}/complete', [Web\AppraisalController::class, 'complete'])->name('appraisals.complete');
+    Route::post('appraisals/{appraisal}/reopen',   [Web\AppraisalController::class, 'reopen'])->name('appraisals.reopen');
+    Route::delete('appraisals/{appraisal}',        [Web\AppraisalController::class, 'destroy'])->name('appraisals.destroy');
+
     // ─── SBC / YALeP — all authenticated users ───────────────────────────────
     Route::get('sbc',                         [Web\SbcController::class, 'index'])->name('sbc.index');
     Route::post('sbc/import',                 [Web\SbcController::class, 'import'])->name('sbc.import');

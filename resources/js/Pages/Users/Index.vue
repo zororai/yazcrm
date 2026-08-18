@@ -11,7 +11,7 @@ const editUser = ref(null);
 const resetUser = ref(null);
 
 const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent' });
-const editForm = useForm({ name: '', email: '', role: '', nav_permissions: [] });
+const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [] });
 const resetForm = useForm({ password: '', password_confirmation: '' });
 
 const NAV_ITEMS = [
@@ -32,6 +32,7 @@ function openEdit(user) {
     editForm.name            = user.name;
     editForm.email           = user.email;
     editForm.role            = user.role;
+    editForm.supervisor_id   = user.supervisor_id ?? '';
     editForm.nav_permissions = user.nav_permissions ?? [];
 }
 
@@ -198,6 +199,16 @@ const roleColor = {
                             </option>
                         </select>
                         <p class="mt-1 text-xs text-gray-400">Changing the role automatically updates permissions below.</p>
+                    </div>
+                    <div>
+                        <label class="label">Supervisor</label>
+                        <select v-model="editForm.supervisor_id" class="input">
+                            <option value="">— None —</option>
+                            <option v-for="u in users.filter(u => u.id !== editUser.id)" :key="u.id" :value="u.id">
+                                {{ u.name }}
+                            </option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">Used to route this staff member's performance appraisals for review.</p>
                     </div>
 
                     <!-- Nav permissions (hidden for admins — they get everything) -->

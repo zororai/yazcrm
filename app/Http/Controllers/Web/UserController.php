@@ -26,10 +26,11 @@ class UserController extends Controller
         $roleNames = Role::pluck('name')->implode(',');
 
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'role'     => "required|in:{$roleNames}",
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'password'      => 'required|string|min:8|confirmed',
+            'role'          => "required|in:{$roleNames}",
+            'supervisor_id' => 'nullable|exists:users,id',
         ]);
 
         // Auto-apply the role's nav_permissions
@@ -46,10 +47,15 @@ class UserController extends Controller
         $roleNames = Role::pluck('name')->implode(',');
         $valid = ['extensions','analytics','targets','by_project','domains','bot_contacts','users','yeastar'];
 
+        if ($request->supervisor_id === '') {
+            $request->merge(['supervisor_id' => null]);
+        }
+
         $data = $request->validate([
             'name'              => 'sometimes|string|max:255',
             'email'             => "sometimes|email|unique:users,email,{$user->id}",
             'role'              => "sometimes|in:{$roleNames}",
+            'supervisor_id'     => "sometimes|nullable|exists:users,id|not_in:{$user->id}",
             'nav_permissions'   => 'sometimes|nullable|array',
             'nav_permissions.*' => 'string|in:' . implode(',', $valid),
         ]);
