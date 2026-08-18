@@ -74,13 +74,48 @@ class AppraisalController extends Controller
         return Inertia::render('Appraisals/Show', [
             'appraisal' => $appraisal->load(['user:id,name', 'supervisor:id,name']),
             'staff'     => $this->isManager($user) ? User::orderBy('name')->get(['id', 'name']) : [],
-            'can'       => [
-                'editSelf'   => $this->canEditSelf($user, $appraisal),
-                'editReview' => $this->canEditReview($user, $appraisal),
-                'manage'     => $this->isManager($user),
-                'delete'     => $user->role === 'admin',
-            ],
+            'can'       => $this->permissionsFor($user, $appraisal),
         ]);
+    }
+
+    // Supervisor/admin/director landing page — appraisals awaiting or completed review
+    public function reviewIndex(Request $request): Response
+    {
+        $user = $request->user();
+
+        $query = Appraisal::with(['user:id,name', 'supervisor:id,name'])
+            ->where('status', '!=', 'draft')
+            ->orderByRaw("FIELD(status,'submitted','completed')")
+            ->latest();
+
+        if (! $this->isManager($user)) {
+            $query->where('supervisor_id', $user->id);
+        }
+
+        return Inertia::render('Appraisals/ReviewIndex', [
+            'appraisals' => $query->get(),
+        ]);
+    }
+
+    public function review(Request $request, Appraisal $appraisal): Response
+    {
+        $user = $request->user();
+        $this->authorizeView($user, $appraisal);
+
+        return Inertia::render('Appraisals/Review', [
+            'appraisal' => $appraisal->load(['user:id,name', 'supervisor:id,name']),
+            'can'       => $this->permissionsFor($user, $appraisal),
+        ]);
+    }
+
+    private function permissionsFor(User $user, Appraisal $appraisal): array
+    {
+        return [
+            'editSelf'   => $this->canEditSelf($user, $appraisal),
+            'editReview' => $this->canEditReview($user, $appraisal),
+            'manage'     => $this->isManager($user),
+            'delete'     => $user->role === 'admin',
+        ];
     }
 
     public function update(Request $request, Appraisal $appraisal): RedirectResponse

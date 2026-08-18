@@ -18,6 +18,7 @@ const page  = usePage();
 const user  = computed(() => page.props.auth.user);
 const flash = computed(() => page.props.flash);
 const isAdmin = computed(() => user.value?.role === 'admin');
+const canReviewAppraisals = computed(() => ['admin', 'director', 'supervisor'].includes(user.value?.role));
 
 // nav_permissions: null on admins (full access), array of keys on agents/supervisors
 const can = (key) => isAdmin.value || (user.value?.nav_permissions ?? []).includes(key);
@@ -149,6 +150,7 @@ const navigation = computed(() => [
     { name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount },
     { name: 'Directory',  href: '/service-directory', icon: BookOpenIcon },
     { name: 'Appraisals', href: '/appraisals',   icon: ClipboardDocumentCheckIcon },
+    ...(canReviewAppraisals.value ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
     ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
     ...(can('targets')      ? [{ name: 'Targets',     href: '/call-targets',                     icon: FlagIcon }] : []),
