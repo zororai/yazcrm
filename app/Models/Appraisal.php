@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Appraisal extends Model
 {
@@ -35,5 +36,10 @@ class Appraisal extends Model
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function activityLogs(): HasMany
+    {
+        return $this->hasMany(AppraisalActivityLog::class)->latest('created_at');
     }
 }

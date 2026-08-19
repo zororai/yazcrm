@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Appraisal;
 use App\Models\User;
+use App\Services\AppraisalWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,6 +13,10 @@ use Inertia\Response;
 
 class AppraisalController extends Controller
 {
+    public function __construct(private readonly AppraisalWorkflowService $workflow)
+    {
+    }
+
     private function isManager(User $user): bool
     {
         return in_array($user->role, ['admin', 'director'], true);
@@ -48,6 +53,7 @@ class AppraisalController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $user = $request->user();
+        $this->authorize('create', Appraisal::class);
 
         $data = $request->validate([
             'user_id' => 'nullable|exists:users,id',
@@ -57,10 +63,9 @@ class AppraisalController extends Controller
         $targetId = ($this->isManager($user) && ! empty($data['user_id'])) ? $data['user_id'] : $user->id;
         $target   = User::findOrFail($targetId);
 
-        $appraisal = Appraisal::create([
+        $appraisal = $this->workflow->create($user, [
             'user_id'       => $target->id,
             'supervisor_id' => $target->supervisor_id,
-            'status'        => 'draft',
         ]);
 
         return redirect()->route('appraisals.show', $appraisal)->with('success', 'Appraisal started.');
@@ -69,12 +74,15 @@ class AppraisalController extends Controller
     public function show(Request $request, Appraisal $appraisal): Response
     {
         $user = $request->user();
-        $this->authorizeView($user, $appraisal);
+        $this->authorize('view', $appraisal);
 
         return Inertia::render('Appraisals/Show', [
             'appraisal' => $appraisal->load(['user:id,name', 'supervisor:id,name']),
             'staff'     => $this->isManager($user) ? User::orderBy('name')->get(['id', 'name']) : [],
-            'can'       => $this->permissionsFor($user, $appraisal),
+            'can'       => $this->permissionsFor($request, $appraisal),
+            'activityLogs' => $user->can('manage', $appraisal)
+                ? $appraisal->activityLogs()->with('user:id,name')->get()
+                : [],
         ]);
     }
 
@@ -85,7 +93,7 @@ class AppraisalController extends Controller
 
         $query = Appraisal::with(['user:id,name', 'supervisor:id,name'])
             ->where('status', '!=', 'draft')
-            ->orderByRaw("FIELD(status,'submitted','completed')")
+            ->orderByRaw("CASE status WHEN 'submitted' THEN 0 WHEN 'completed' THEN 1 ELSE 2 END")
             ->latest();
 
         if (! $this->isManager($user)) {
@@ -100,30 +108,33 @@ class AppraisalController extends Controller
     public function review(Request $request, Appraisal $appraisal): Response
     {
         $user = $request->user();
-        $this->authorizeView($user, $appraisal);
+        $this->authorize('view', $appraisal);
 
         return Inertia::render('Appraisals/Review', [
             'appraisal' => $appraisal->load(['user:id,name', 'supervisor:id,name']),
-            'can'       => $this->permissionsFor($user, $appraisal),
+            'can'       => $this->permissionsFor($request, $appraisal),
+            'activityLogs' => $user->can('manage', $appraisal)
+                ? $appraisal->activityLogs()->with('user:id,name')->get()
+                : [],
         ]);
     }
 
-    private function permissionsFor(User $user, Appraisal $appraisal): array
+    private function permissionsFor(Request $request, Appraisal $appraisal): array
     {
+        $user = $request->user();
+
         return [
-            'editSelf'   => $this->canEditSelf($user, $appraisal),
-            'editReview' => $this->canEditReview($user, $appraisal),
-            'manage'     => $this->isManager($user),
-            'delete'     => $user->role === 'admin',
+            'editSelf'   => $user->can('update', $appraisal),
+            'editReview' => $user->can('review', $appraisal),
+            'manage'     => $user->can('manage', $appraisal),
+            'delete'     => $user->can('delete', $appraisal),
         ];
     }
 
     public function update(Request $request, Appraisal $appraisal): RedirectResponse
     {
         $user = $request->user();
-        if (! $this->canEditSelf($user, $appraisal)) {
-            abort(403);
-        }
+        $this->authorize('update', $appraisal);
 
         $this->nullifyBlank($request, ['start_date', 'supervisor_id']);
 
@@ -141,7 +152,7 @@ class AppraisalController extends Controller
             unset($data['supervisor_id']);
         }
 
-        $appraisal->update($data);
+        $this->workflow->update($appraisal, $user, $data, 'updated');
 
         return back()->with('success', 'Saved.');
     }
@@ -149,15 +160,9 @@ class AppraisalController extends Controller
     public function submit(Request $request, Appraisal $appraisal): RedirectResponse
     {
         $user = $request->user();
-        if (! $this->canEditSelf($user, $appraisal) || $appraisal->status !== 'draft') {
-            abort(403);
-        }
+        $this->authorize('submit', $appraisal);
 
-        $appraisal->update([
-            'status'             => 'submitted',
-            'submitted_at'       => now(),
-            'employee_signed_at' => now(),
-        ]);
+        $this->workflow->submit($appraisal, $user);
 
         return back()->with('success', 'Appraisal submitted to your supervisor.');
     }
@@ -165,9 +170,7 @@ class AppraisalController extends Controller
     public function updateReview(Request $request, Appraisal $appraisal): RedirectResponse
     {
         $user = $request->user();
-        if (! $this->canEditReview($user, $appraisal)) {
-            abort(403);
-        }
+        $this->authorize('review', $appraisal);
 
         $this->nullifyBlank($request, ['date_of_review', 'next_review_date', 'overall_rating']);
 
@@ -178,7 +181,7 @@ class AppraisalController extends Controller
             'supervisor_responses'  => 'nullable|array',
         ]);
 
-        $appraisal->update($data);
+        $this->workflow->update($appraisal, $user, $data, 'review_updated');
 
         return back()->with('success', 'Saved.');
     }
@@ -186,15 +189,9 @@ class AppraisalController extends Controller
     public function complete(Request $request, Appraisal $appraisal): RedirectResponse
     {
         $user = $request->user();
-        if (! $this->canEditReview($user, $appraisal) || $appraisal->status !== 'submitted') {
-            abort(403);
-        }
+        $this->authorize('complete', $appraisal);
 
-        $appraisal->update([
-            'status'                => 'completed',
-            'completed_at'          => now(),
-            'supervisor_signed_at'  => now(),
-        ]);
+        $this->workflow->complete($appraisal, $user);
 
         return back()->with('success', 'Appraisal completed.');
     }
@@ -202,55 +199,23 @@ class AppraisalController extends Controller
     public function reopen(Request $request, Appraisal $appraisal): RedirectResponse
     {
         $user = $request->user();
-        if (! $this->isManager($user)) {
-            abort(403);
-        }
+        $this->authorize('reopen', $appraisal);
 
-        $appraisal->update([
-            'status'       => $appraisal->status === 'completed' ? 'submitted' : 'draft',
-            'completed_at' => null,
+        $data = $request->validate([
+            'reason' => 'required|string|max:1000',
         ]);
+
+        $this->workflow->reopen($appraisal, $user, $data['reason']);
 
         return back()->with('success', 'Appraisal reopened.');
     }
 
     public function destroy(Request $request, Appraisal $appraisal): RedirectResponse
     {
-        if ($request->user()->role !== 'admin') {
-            abort(403);
-        }
+        $this->authorize('delete', $appraisal);
 
         $appraisal->delete();
 
         return back()->with('success', 'Appraisal deleted.');
-    }
-
-    private function authorizeView(User $user, Appraisal $appraisal): void
-    {
-        if ($this->isManager($user)) {
-            return;
-        }
-        if ($appraisal->user_id === $user->id || $appraisal->supervisor_id === $user->id) {
-            return;
-        }
-        abort(403);
-    }
-
-    private function canEditSelf(User $user, Appraisal $appraisal): bool
-    {
-        if ($this->isManager($user)) {
-            return true;
-        }
-
-        return $appraisal->user_id === $user->id && $appraisal->status === 'draft';
-    }
-
-    private function canEditReview(User $user, Appraisal $appraisal): bool
-    {
-        if ($this->isManager($user)) {
-            return true;
-        }
-
-        return $appraisal->supervisor_id === $user->id && $appraisal->status === 'submitted';
     }
 }
