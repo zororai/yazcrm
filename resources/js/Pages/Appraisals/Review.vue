@@ -4,7 +4,7 @@ import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PrinterIcon, ArrowUturnLeftIcon, TrashIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ appraisal: Object, can: Object });
+const props = defineProps({ appraisal: Object, can: Object, activityLogs: { type: Array, default: () => [] } });
 
 const SUPERVISOR_RATED_FIELDS = [
     { key: 'key_strengths',          label: '1a. Key Strengths and Accomplishments' },
@@ -65,8 +65,9 @@ function completeAppraisal() {
 }
 
 function reopenAppraisal() {
-    if (!confirm('Reopen this appraisal for editing?')) return;
-    router.post(`/appraisals/${props.appraisal.id}/reopen`);
+    const reason = prompt('Why are you reopening this appraisal?');
+    if (!reason) return;
+    router.post(`/appraisals/${props.appraisal.id}/reopen`, { reason });
 }
 
 function deleteAppraisal() {
@@ -185,6 +186,19 @@ function printDoc() {
                     <p class="text-xs text-gray-400">{{ appraisal.employee_signed_at ? `Signed ${new Date(appraisal.employee_signed_at).toLocaleString()}` : 'Not yet signed' }}</p>
                 </div>
             </div>
+
+            <details v-if="can.manage && activityLogs.length" class="card no-print">
+                <summary class="font-semibold text-gray-900 cursor-pointer">History</summary>
+                <ul class="mt-3 space-y-2 text-sm text-gray-600">
+                    <li v-for="log in activityLogs" :key="log.id">
+                        <span class="font-medium text-gray-900">{{ log.user?.name ?? 'Unknown' }}</span>
+                        {{ log.action }}
+                        <span v-if="log.old_status && log.new_status">({{ log.old_status }} → {{ log.new_status }})</span>
+                        <span class="text-gray-400">— {{ new Date(log.created_at).toLocaleString() }}</span>
+                        <p v-if="log.reason" class="text-xs text-gray-500 italic">Reason: {{ log.reason }}</p>
+                    </li>
+                </ul>
+            </details>
         </div>
     </AppLayout>
 </template>
