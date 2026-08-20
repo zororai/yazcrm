@@ -10,6 +10,10 @@ use RuntimeException;
 
 class AppraisalWorkflowService
 {
+    public function __construct(private readonly AppraisalTaskGenerator $taskGenerator)
+    {
+    }
+
     private const TRANSITIONS = [
         'submit'   => ['draft' => 'submitted'],
         'complete' => ['submitted' => 'completed'],
@@ -54,10 +58,17 @@ class AppraisalWorkflowService
 
     public function complete(Appraisal $appraisal, User $actor): Appraisal
     {
-        return $this->transition($appraisal, $actor, 'complete', [
+        $appraisal = $this->transition($appraisal, $actor, 'complete', [
             'completed_at'         => now(),
             'supervisor_signed_at' => now(),
         ]);
+
+        // Runs after the appraisal transaction has committed — task creation
+        // has its own transactional/audit-log handling and shouldn't be
+        // nested inside (or able to roll back) the appraisal's own write.
+        $this->taskGenerator->generate($appraisal, $actor);
+
+        return $appraisal;
     }
 
     public function reopen(Appraisal $appraisal, User $actor, string $reason): Appraisal

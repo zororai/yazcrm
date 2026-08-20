@@ -17,7 +17,7 @@ class Task extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'board_id', 'group_id', 'parent_id', 'created_by',
+        'board_id', 'group_id', 'parent_id', 'appraisal_id', 'created_by',
         'title', 'description', 'status', 'priority',
         'start_date', 'due_date', 'completed_at',
         'position', 'is_archived',
@@ -50,6 +50,11 @@ class Task extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Task::class, 'parent_id');
+    }
+
+    public function appraisal(): BelongsTo
+    {
+        return $this->belongsTo(Appraisal::class);
     }
 
     public function subtasks(): HasMany

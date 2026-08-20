@@ -83,6 +83,7 @@ class AppraisalController extends Controller
             'activityLogs' => $user->can('manage', $appraisal)
                 ? $appraisal->activityLogs()->with('user:id,name')->get()
                 : [],
+            'tasks' => $appraisal->tasks()->get(['id', 'title', 'status']),
         ]);
     }
 
@@ -116,6 +117,7 @@ class AppraisalController extends Controller
             'activityLogs' => $user->can('manage', $appraisal)
                 ? $appraisal->activityLogs()->with('user:id,name')->get()
                 : [],
+            'tasks' => $appraisal->tasks()->get(['id', 'title', 'status']),
         ]);
     }
 

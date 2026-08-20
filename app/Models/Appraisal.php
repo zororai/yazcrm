@@ -42,4 +42,9 @@ class Appraisal extends Model
     {
         return $this->hasMany(AppraisalActivityLog::class)->latest('created_at');
     }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
+    }
 }

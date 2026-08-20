@@ -3,7 +3,7 @@ import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PrinterIcon, ArrowUturnLeftIcon, TrashIcon, ClipboardDocumentCheckIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ appraisal: Object, staff: Array, can: Object, activityLogs: { type: Array, default: () => [] } });
+const props = defineProps({ appraisal: Object, staff: Array, can: Object, activityLogs: { type: Array, default: () => [] }, tasks: { type: Array, default: () => [] } });
 
 const EMPLOYEE_FIELDS = [
     { key: 'job_description',  label: '1. Job Descriptions/Responsibilities (paste your JDs and KPIs)', rows: 4 },
@@ -154,6 +154,17 @@ function printDoc() {
                     <p>{{ appraisal.user?.name }}</p>
                     <p class="text-xs text-gray-400">{{ appraisal.employee_signed_at ? `Signed ${new Date(appraisal.employee_signed_at).toLocaleString()}` : 'Not yet signed' }}</p>
                 </div>
+            </div>
+
+            <div v-if="tasks.length" class="card no-print">
+                <h3 class="font-semibold text-gray-900 mb-2">Development Tasks</h3>
+                <p class="text-xs text-gray-500 mb-3">Generated from the supervisor's review when this appraisal was completed.</p>
+                <ul class="space-y-1 text-sm">
+                    <li v-for="t in tasks" :key="t.id">
+                        <a :href="`/tasks/${t.id}`" class="text-blue-600 hover:underline">{{ t.title }}</a>
+                        <span class="text-xs text-gray-400"> — {{ t.status.replace('_', ' ') }}</span>
+                    </li>
+                </ul>
             </div>
 
             <details v-if="can.manage && activityLogs.length" class="card no-print">
