@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StoreStock extends Model
 {
+    protected $table = 'store_stock';
+
     protected $fillable = ['store_id', 'item_id', 'quantity', 'reserved_quantity'];
 
     protected $appends = ['available_quantity'];
