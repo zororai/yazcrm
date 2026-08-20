@@ -138,6 +138,34 @@ Route::middleware('auth')->group(function () {
 
     Route::get('team/tasks', [Web\TeamTaskController::class, 'index'])->name('team.tasks');
 
+    // ─── Stores & Assets Management — Phase 1 (foundation) ───────────────────
+    Route::get('departments',              [Web\DepartmentController::class, 'index'])->name('departments.index');
+    Route::post('departments',             [Web\DepartmentController::class, 'store'])->name('departments.store');
+    Route::put('departments/{department}', [Web\DepartmentController::class, 'update'])->name('departments.update');
+    Route::delete('departments/{department}', [Web\DepartmentController::class, 'destroy'])->name('departments.destroy');
+
+    Route::get('locations',            [Web\LocationController::class, 'index'])->name('locations.index');
+    Route::post('locations',           [Web\LocationController::class, 'store'])->name('locations.store');
+    Route::put('locations/{location}', [Web\LocationController::class, 'update'])->name('locations.update');
+    Route::delete('locations/{location}', [Web\LocationController::class, 'destroy'])->name('locations.destroy');
+
+    Route::get('stores',         [Web\StoreController::class, 'index'])->name('stores.index');
+    Route::post('stores',        [Web\StoreController::class, 'store'])->name('stores.store');
+    Route::get('stores/{store}', [Web\StoreController::class, 'show'])->name('stores.show');
+    Route::put('stores/{store}', [Web\StoreController::class, 'update'])->name('stores.update');
+    Route::delete('stores/{store}', [Web\StoreController::class, 'destroy'])->name('stores.destroy');
+
+    Route::get('item-categories',                  [Web\ItemCategoryController::class, 'index'])->name('item-categories.index');
+    Route::post('item-categories',                 [Web\ItemCategoryController::class, 'store'])->name('item-categories.store');
+    Route::put('item-categories/{itemCategory}',    [Web\ItemCategoryController::class, 'update'])->name('item-categories.update');
+    Route::delete('item-categories/{itemCategory}', [Web\ItemCategoryController::class, 'destroy'])->name('item-categories.destroy');
+
+    Route::get('items',        [Web\ItemController::class, 'index'])->name('items.index');
+    Route::post('items',       [Web\ItemController::class, 'store'])->name('items.store');
+    Route::get('items/{item}', [Web\ItemController::class, 'show'])->name('items.show');
+    Route::put('items/{item}', [Web\ItemController::class, 'update'])->name('items.update');
+    Route::delete('items/{item}', [Web\ItemController::class, 'destroy'])->name('items.destroy');
+
     // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
     Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read',   [Web\NotificationController::class, 'markRead'])->name('notifications.read');

@@ -27,6 +27,7 @@ const NAV_ITEMS = [
     { key: 'appraisal_reviews', label: 'Appraisal Reviews' },
     { key: 'activity_reports', label: 'Activity Reports' },
     { key: 'work_management', label: 'Work Management' },
+    { key: 'stores', label: 'Stores & Assets' },
     { key: 'extensions',  label: 'Extensions' },
     { key: 'analytics',   label: 'Analytics' },
     { key: 'targets',     label: 'Call Targets' },

@@ -156,6 +156,14 @@ const navigation = computed(() => [
     ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
     ...(can('work_management') && (isAdmin.value || user.value?.role === 'director' || (user.value?.subordinates_count ?? 0) > 0)
         ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
+    ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
+    ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
+    ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
+        ? [{ name: 'Departments', href: '/departments', icon: FolderOpenIcon }] : []),
+    ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
+        ? [{ name: 'Locations', href: '/locations', icon: TagIcon }] : []),
+    ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
+        ? [{ name: 'Item Categories', href: '/item-categories', icon: FolderOpenIcon }] : []),
     ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
     ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
     ...(can('targets')      ? [{ name: 'Targets',     href: '/call-targets',                     icon: FlagIcon }] : []),
