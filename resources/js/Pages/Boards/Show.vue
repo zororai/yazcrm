@@ -2,9 +2,27 @@
 import { ref, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, Cog6ToothIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ board: Object, groups: Array, tasks: Array, counts: Object, users: Array, can: Object });
+
+const showGroups = ref(false);
+const groupForm = useForm({ name: '', color: '' });
+
+function createGroup() {
+    groupForm.post(`/boards/${props.board.id}/groups`, { onSuccess: () => groupForm.reset() });
+}
+
+function renameGroup(group) {
+    const name = prompt('Group name', group.name);
+    if (!name || name === group.name) return;
+    router.put(`/boards/${props.board.id}/groups/${group.id}`, { name });
+}
+
+function deleteGroup(group) {
+    if (!confirm(`Delete group "${group.name}"? Tasks in it will become ungrouped.`)) return;
+    router.delete(`/boards/${props.board.id}/groups/${group.id}`);
+}
 
 const filters = ref({ status: '', priority: '', assignee: '', search: '', overdue: false });
 
@@ -33,6 +51,31 @@ function open(task) {
     router.get(`/tasks/${task.id}`);
 }
 
+const viewMode = ref('list');
+
+const KANBAN_COLUMNS = ['not_started', 'in_progress', 'blocked', 'completed', 'cancelled'];
+const STATUS_LABELS = {
+    not_started: 'Not Started',
+    in_progress: 'In Progress',
+    blocked:     'Blocked',
+    completed:   'Completed',
+    cancelled:   'Cancelled',
+};
+
+const draggedTaskId = ref(null);
+
+function onDragStart(task) {
+    draggedTaskId.value = task.id;
+}
+
+function onDrop(status) {
+    if (!draggedTaskId.value) return;
+    const task = props.tasks.find(t => t.id === draggedTaskId.value);
+    draggedTaskId.value = null;
+    if (!task || task.status === status) return;
+    router.post(`/tasks/${task.id}/status`, { status }, { preserveScroll: true });
+}
+
 const statusColor = {
     not_started: 'bg-gray-100 text-gray-700',
     in_progress: 'bg-blue-100 text-blue-800',
@@ -53,9 +96,24 @@ const priorityColor = {
     <AppLayout>
         <template #title>{{ board.name }}</template>
         <template #header-actions>
-            <button @click="showNew = true" class="btn-primary btn-sm">
-                <PlusIcon class="h-4 w-4" /> New Task
-            </button>
+            <div class="flex gap-2">
+                <div class="flex rounded-lg border border-gray-200 overflow-hidden">
+                    <button
+                        @click="viewMode = 'list'"
+                        :class="['px-3 py-1.5 text-sm', viewMode === 'list' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600']"
+                    >List</button>
+                    <button
+                        @click="viewMode = 'kanban'"
+                        :class="['px-3 py-1.5 text-sm', viewMode === 'kanban' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600']"
+                    >Kanban</button>
+                </div>
+                <button v-if="can.manageGroups" @click="showGroups = true" class="btn-secondary btn-sm">
+                    <Cog6ToothIcon class="h-4 w-4" /> Manage Groups
+                </button>
+                <button @click="showNew = true" class="btn-primary btn-sm">
+                    <PlusIcon class="h-4 w-4" /> New Task
+                </button>
+            </div>
         </template>
 
         <div class="grid grid-cols-5 gap-3 mb-4">
@@ -119,7 +177,7 @@ const priorityColor = {
             </label>
         </div>
 
-        <div class="card p-0 overflow-hidden">
+        <div v-if="viewMode === 'list'" class="card p-0 overflow-hidden">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
@@ -147,6 +205,38 @@ const priorityColor = {
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <div v-else class="flex gap-3 overflow-x-auto pb-2">
+            <div
+                v-for="col in KANBAN_COLUMNS"
+                :key="col"
+                class="flex-shrink-0 w-64 bg-gray-50 rounded-lg border border-gray-100"
+                @dragover.prevent
+                @drop="onDrop(col)"
+            >
+                <div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-700">{{ STATUS_LABELS[col] }}</span>
+                    <span class="text-xs text-gray-400">{{ tasks.filter(t => t.status === col).length }}</span>
+                </div>
+                <div class="p-2 space-y-2 min-h-[80px]">
+                    <div
+                        v-for="t in tasks.filter(t => t.status === col)"
+                        :key="t.id"
+                        draggable="true"
+                        @dragstart="onDragStart(t)"
+                        @click="open(t)"
+                        class="bg-white rounded-lg border border-gray-200 p-3 text-sm cursor-move hover:shadow-sm"
+                    >
+                        <p class="font-medium text-gray-900 mb-1">{{ t.title }}</p>
+                        <div class="flex items-center justify-between">
+                            <span :class="['badge', priorityColor[t.priority]]">{{ t.priority }}</span>
+                            <span v-if="t.due_date" class="text-xs text-gray-400">{{ new Date(t.due_date).toLocaleDateString() }}</span>
+                        </div>
+                    </div>
+                    <p v-if="!tasks.filter(t => t.status === col).length" class="text-xs text-gray-400 text-center py-4">Empty</p>
+                </div>
+            </div>
         </div>
 
         <div v-if="showNew" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -182,6 +272,29 @@ const priorityColor = {
                         <button type="submit" class="btn-primary" :disabled="newForm.processing">Create</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div v-if="showGroups" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Groups</h3>
+                <ul class="space-y-1 mb-4">
+                    <li v-for="g in groups" :key="g.id" class="flex items-center justify-between text-sm py-1">
+                        <span>{{ g.name }}</span>
+                        <span class="flex gap-2">
+                            <button @click="renameGroup(g)" class="text-xs text-blue-600 hover:underline">Rename</button>
+                            <button @click="deleteGroup(g)" class="text-gray-400 hover:text-red-600"><TrashIcon class="h-4 w-4" /></button>
+                        </span>
+                    </li>
+                    <li v-if="!groups.length" class="text-sm text-gray-400">No groups yet.</li>
+                </ul>
+                <form @submit.prevent="createGroup" class="flex gap-2">
+                    <input v-model="groupForm.name" class="input flex-1" placeholder="New group name…" required />
+                    <button type="submit" class="btn-primary btn-sm" :disabled="groupForm.processing">Add</button>
+                </form>
+                <div class="flex justify-end pt-4">
+                    <button type="button" @click="showGroups = false" class="btn-secondary">Close</button>
+                </div>
             </div>
         </div>
     </AppLayout>

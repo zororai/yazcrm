@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\TaskActivityLog;
 use App\Models\TaskComment;
 use App\Models\User;
+use App\Notifications\TaskAssignedNotification;
 use App\Support\Tasks\TaskStatus;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -56,7 +57,15 @@ class TaskWorkflowService
                 $this->log($task, $actor, 'unassigned', changedFields: array_values($removed));
             }
 
-            return $task->fresh();
+            $task = $task->fresh();
+
+            if ($added) {
+                User::whereIn('id', $added)->get()->each(
+                    fn (User $u) => $u->notify(new TaskAssignedNotification($task, $actor))
+                );
+            }
+
+            return $task;
         });
     }
 

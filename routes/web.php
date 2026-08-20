@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::redirect('/', '/dashboard');
 
     Route::get('dashboard', [Web\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('my-work',   [Web\MyWorkController::class, 'index'])->name('my-work');
     Route::get('dialer',           fn() => inertia('Dialer/Index'))->name('dialer');
     Route::get('dialer/sip-config', [Web\ExtensionController::class, 'mySipConfig'])->name('dialer.sip-config');
 
@@ -134,6 +135,13 @@ Route::middleware('auth')->group(function () {
     Route::post('tasks/{task}/archive',         [Web\TaskController::class, 'archive'])->name('tasks.archive');
     Route::post('tasks/{task}/restore',         [Web\TaskController::class, 'restore'])->name('tasks.restore');
     Route::post('tasks/{task}/comments',        [Web\TaskController::class, 'comment'])->name('tasks.comments.store');
+
+    Route::get('team/tasks', [Web\TeamTaskController::class, 'index'])->name('team.tasks');
+
+    // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
+    Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('notifications/{id}/read',   [Web\NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::post('notifications/read-all',    [Web\NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     // ─── Activity Reports (compile → review → approve, scoped) ───────────────
     Route::get('activity-reports',                          [Web\ActivityReportController::class, 'index'])->name('activity-reports.index');

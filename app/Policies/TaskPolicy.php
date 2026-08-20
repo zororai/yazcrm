@@ -22,6 +22,11 @@ class TaskPolicy
         return $task->watchers()->where('users.id', $user->id)->exists();
     }
 
+    private function isSupervisorOfAssignee(User $user, Task $task): bool
+    {
+        return $task->assignees()->where('users.supervisor_id', $user->id)->exists();
+    }
+
     public function viewAny(User $user): bool
     {
         return true;
@@ -33,7 +38,8 @@ class TaskPolicy
             || $task->created_by === $user->id
             || $task->board->owner_id === $user->id
             || $this->isAssignee($user, $task)
-            || $this->isWatcher($user, $task);
+            || $this->isWatcher($user, $task)
+            || $this->isSupervisorOfAssignee($user, $task);
     }
 
     public function create(User $user): bool

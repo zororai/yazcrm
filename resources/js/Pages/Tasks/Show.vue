@@ -9,7 +9,17 @@ const props = defineProps({
     progress: Number,
     can: Object,
     activityLogs: { type: Array, default: () => [] },
+    users: { type: Array, default: () => [] },
 });
+
+const showAssign = ref(false);
+const selectedAssignees = ref((props.task.assignees ?? []).map(a => a.id));
+
+function saveAssignees() {
+    router.post(`/tasks/${props.task.id}/assign`, { user_ids: selectedAssignees.value }, {
+        onSuccess: () => { showAssign.value = false; },
+    });
+}
 
 // Mirrors App\Support\Tasks\TaskStatus::TRANSITIONS — keep in sync.
 const STATUS_TRANSITIONS = {
@@ -192,7 +202,10 @@ const statusColor = {
                 </div>
 
                 <div class="card">
-                    <h3 class="font-semibold text-gray-900 mb-2 text-sm">Assignees</h3>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-semibold text-gray-900 text-sm">Assignees</h3>
+                        <button v-if="can.assign" @click="showAssign = true" class="text-xs text-blue-600 hover:underline">Edit</button>
+                    </div>
                     <ul class="text-sm text-gray-600 space-y-1">
                         <li v-for="a in task.assignees" :key="a.id">{{ a.name }}</li>
                         <li v-if="!task.assignees?.length" class="text-gray-400">Unassigned</li>
@@ -203,6 +216,22 @@ const statusColor = {
                     <p><span class="text-gray-400">Board:</span> {{ task.board?.name }}</p>
                     <p><span class="text-gray-400">Group:</span> {{ task.group?.name ?? '—' }}</p>
                     <p><span class="text-gray-400">Created by:</span> {{ task.creator?.name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showAssign" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Assignees</h3>
+                <div class="max-h-64 overflow-y-auto space-y-1 mb-4">
+                    <label v-for="u in users" :key="u.id" class="flex items-center gap-2 text-sm py-1">
+                        <input type="checkbox" :value="u.id" v-model="selectedAssignees" />
+                        {{ u.name }}
+                    </label>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button type="button" @click="showAssign = false" class="btn-secondary">Cancel</button>
+                    <button @click="saveAssignees" class="btn-primary">Save</button>
                 </div>
             </div>
         </div>

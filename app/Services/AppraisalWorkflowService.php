@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Appraisal;
 use App\Models\AppraisalActivityLog;
 use App\Models\User;
+use App\Notifications\AppraisalSubmittedNotification;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -50,10 +51,14 @@ class AppraisalWorkflowService
 
     public function submit(Appraisal $appraisal, User $actor): Appraisal
     {
-        return $this->transition($appraisal, $actor, 'submit', [
+        $appraisal = $this->transition($appraisal, $actor, 'submit', [
             'submitted_at'       => now(),
             'employee_signed_at' => now(),
         ]);
+
+        $appraisal->supervisor?->notify(new AppraisalSubmittedNotification($appraisal));
+
+        return $appraisal;
     }
 
     public function complete(Appraisal $appraisal, User $actor): Appraisal

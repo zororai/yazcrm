@@ -11,6 +11,7 @@ use App\Http\Requests\Tasks\StoreTaskCommentRequest;
 use App\Http\Requests\Tasks\StoreTaskRequest;
 use App\Http\Requests\Tasks\UpdateTaskRequest;
 use App\Models\Task;
+use App\Models\User;
 use App\Services\TaskWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,6 +59,7 @@ class TaskController extends Controller
             'activityLogs' => $user->can('manage', $task)
                 ? $task->activityLogs()->with('user:id,name')->get()
                 : [],
+            'users' => $user->can('assign', $task) ? User::orderBy('name')->get(['id', 'name']) : [],
         ]);
     }
 

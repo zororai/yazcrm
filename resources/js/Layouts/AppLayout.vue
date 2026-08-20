@@ -13,6 +13,7 @@ import {
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
 import Dialer from '@/Components/Dialer.vue';
+import NotificationBell from '@/Components/NotificationBell.vue';
 
 const page  = usePage();
 const user  = computed(() => page.props.auth.user);
@@ -141,6 +142,7 @@ onUnmounted(() => {
 
 const navigation = computed(() => [
     ...(can('dashboard')    ? [{ name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon }] : []),
+    { name: 'My Work', href: '/my-work', icon: ClipboardDocumentCheckIcon },
     ...(can('dialer')       ? [{ name: 'Dialer',     href: '/dialer',      icon: PhoneArrowUpRightIcon }] : []),
     ...(can('calls')        ? [{ name: 'Calls',      href: '/calls',       icon: PhoneIcon }] : []),
     ...(can('recordings')   ? [{ name: 'Recordings', href: '/recordings',  icon: MicrophoneIcon }] : []),
@@ -152,6 +154,8 @@ const navigation = computed(() => [
     ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('activity_reports') ? [{ name: 'Activity Reports', href: '/activity-reports', icon: DocumentTextIcon }] : []),
     ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
+    ...(can('work_management') && (isAdmin.value || user.value?.role === 'director' || (user.value?.subordinates_count ?? 0) > 0)
+        ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
     ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
     ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
     ...(can('targets')      ? [{ name: 'Targets',     href: '/call-targets',                     icon: FlagIcon }] : []),
@@ -284,7 +288,8 @@ function logout() {
                     </p>
                 </div>
                 <slot name="header-actions" />
-                <!-- Notification bell -->
+                <NotificationBell />
+                <!-- Urgent cases bell -->
                 <Link href="/urgent-cases"
                     :class="['relative p-2 rounded-lg transition-colors flex-shrink-0',
                              urgentCount > 0 ? 'text-red-400 hover:bg-red-900/30 animate-flicker' : 'text-gray-400 hover:bg-gray-800']"

@@ -109,6 +109,11 @@ class Task extends Model
         return $query->whereHas('assignees', fn ($q) => $q->where('users.id', $userId));
     }
 
+    public function scopeAssignedToAny(Builder $query, array $userIds): Builder
+    {
+        return $query->whereHas('assignees', fn ($q) => $q->whereIn('users.id', $userIds));
+    }
+
     public function scopeHighPriority(Builder $query): Builder
     {
         return $query->whereIn('priority', [TaskPriority::HIGH, TaskPriority::URGENT]);
