@@ -30,6 +30,13 @@ class Task extends Model
         'is_archived'  => 'boolean',
     ];
 
+    protected $appends = ['progress'];
+
+    public function getProgressAttribute(): int
+    {
+        return $this->progress();
+    }
+
     public function board(): BelongsTo
     {
         return $this->belongsTo(Board::class);
@@ -64,7 +71,7 @@ class Task extends Model
 
     public function watchers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'task_watchers')->withTimestamps();
+        return $this->belongsToMany(User::class, 'task_watchers')->withPivot('created_at');
     }
 
     public function comments(): HasMany

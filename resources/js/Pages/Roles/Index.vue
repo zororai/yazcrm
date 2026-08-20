@@ -21,6 +21,7 @@ const PERM_LABELS = {
     appraisals:  'Appraisals',
     appraisal_reviews: 'Appraisal Reviews',
     activity_reports: 'Activity Reports',
+    work_management: 'Work Management',
     extensions:  'Extensions',
     analytics:   'Analytics',
     targets:     'Call Targets',

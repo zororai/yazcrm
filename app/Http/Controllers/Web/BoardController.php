@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Boards\StoreBoardRequest;
 use App\Http\Requests\Boards\UpdateBoardRequest;
 use App\Models\Board;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -66,9 +67,11 @@ class BoardController extends Controller
                 'overdue'   => $board->tasks()->overdue()->count(),
                 'mine'      => $board->tasks()->assignedTo($request->user()->id)->count(),
             ],
+            'users'  => User::orderBy('name')->get(['id', 'name']),
             'can' => [
-                'update' => $request->user()->can('update', $board),
-                'delete' => $request->user()->can('delete', $board),
+                'update'       => $request->user()->can('update', $board),
+                'delete'       => $request->user()->can('delete', $board),
+                'manageGroups' => $request->user()->can('manageGroups', $board),
             ],
         ]);
     }

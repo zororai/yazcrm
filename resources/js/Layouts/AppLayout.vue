@@ -151,6 +151,7 @@ const navigation = computed(() => [
     ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('activity_reports') ? [{ name: 'Activity Reports', href: '/activity-reports', icon: DocumentTextIcon }] : []),
+    ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
     ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
     ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
     ...(can('targets')      ? [{ name: 'Targets',     href: '/call-targets',                     icon: FlagIcon }] : []),
