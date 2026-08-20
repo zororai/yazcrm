@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { TrashIcon, ArrowUturnLeftIcon, ArchiveBoxIcon } from '@heroicons/vue/24/outline';
@@ -10,6 +10,26 @@ const props = defineProps({
     can: Object,
     activityLogs: { type: Array, default: () => [] },
 });
+
+// Mirrors App\Support\Tasks\TaskStatus::TRANSITIONS — keep in sync.
+const STATUS_TRANSITIONS = {
+    not_started: ['in_progress', 'cancelled'],
+    in_progress: ['blocked', 'completed', 'cancelled'],
+    blocked:     ['in_progress', 'cancelled'],
+    completed:   ['in_progress'],
+    cancelled:   ['not_started'],
+};
+const STATUS_LABELS = {
+    not_started: 'Not Started',
+    in_progress: 'In Progress',
+    blocked:     'Blocked',
+    completed:   'Completed',
+    cancelled:   'Cancelled',
+};
+const statusOptions = computed(() => [
+    props.task.status,
+    ...(STATUS_TRANSITIONS[props.task.status] ?? []),
+]);
 
 const editForm = useForm({
     title:       props.task.title,
@@ -157,11 +177,7 @@ const statusColor = {
                     <div>
                         <label class="label">Status</label>
                         <select :value="task.status" @change="changeStatus" class="input" :disabled="!can.changeStatus">
-                            <option value="not_started">Not Started</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="blocked">Blocked</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option v-for="s in statusOptions" :key="s" :value="s">{{ STATUS_LABELS[s] }}</option>
                         </select>
                     </div>
                     <div>

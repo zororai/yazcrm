@@ -16,11 +16,23 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use RuntimeException;
 
 class TaskController extends Controller
 {
     public function __construct(private readonly TaskWorkflowService $workflow)
     {
+    }
+
+    private function runTransition(callable $transition, string $successMessage): RedirectResponse
+    {
+        try {
+            $transition();
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     public function show(Request $request, Task $task): Response
@@ -82,9 +94,10 @@ class TaskController extends Controller
 
     public function changeStatus(ChangeTaskStatusRequest $request, Task $task): RedirectResponse
     {
-        $this->workflow->changeStatus($task, $request->user(), $request->validated()['status']);
-
-        return back()->with('success', 'Status updated.');
+        return $this->runTransition(
+            fn () => $this->workflow->changeStatus($task, $request->user(), $request->validated()['status']),
+            'Status updated.'
+        );
     }
 
     public function changePriority(ChangeTaskPriorityRequest $request, Task $task): RedirectResponse
@@ -98,16 +111,18 @@ class TaskController extends Controller
     {
         $this->authorize('changeStatus', $task);
 
-        $this->workflow->complete($task, $request->user());
-
-        return back()->with('success', 'Task completed.');
+        return $this->runTransition(
+            fn () => $this->workflow->complete($task, $request->user()),
+            'Task completed.'
+        );
     }
 
     public function reopen(ReopenTaskRequest $request, Task $task): RedirectResponse
     {
-        $this->workflow->reopen($task, $request->user(), $request->validated()['reason']);
-
-        return back()->with('success', 'Task reopened.');
+        return $this->runTransition(
+            fn () => $this->workflow->reopen($task, $request->user(), $request->validated()['reason']),
+            'Task reopened.'
+        );
     }
 
     public function archive(Request $request, Task $task): RedirectResponse
