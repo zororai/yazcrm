@@ -105,6 +105,36 @@ Route::middleware('auth')->group(function () {
     Route::get('appraisals/{appraisal}/review',     [Web\AppraisalController::class, 'review'])->name('appraisals.review.show');
     Route::put('appraisals/{appraisal}/review',     [Web\AppraisalController::class, 'updateReview'])->name('appraisals.review.update');
 
+    // ─── Work Management (workspaces → boards → groups → tasks) ─────────────
+    Route::get('workspaces',                    [Web\WorkspaceController::class, 'index'])->name('workspaces.index');
+    Route::post('workspaces',                   [Web\WorkspaceController::class, 'store'])->name('workspaces.store');
+    Route::get('workspaces/{workspace}',        [Web\WorkspaceController::class, 'show'])->name('workspaces.show');
+    Route::put('workspaces/{workspace}',        [Web\WorkspaceController::class, 'update'])->name('workspaces.update');
+    Route::delete('workspaces/{workspace}',     [Web\WorkspaceController::class, 'destroy'])->name('workspaces.destroy');
+
+    Route::get('boards',                    [Web\BoardController::class, 'index'])->name('boards.index');
+    Route::post('boards',                   [Web\BoardController::class, 'store'])->name('boards.store');
+    Route::get('boards/{board}',            [Web\BoardController::class, 'show'])->name('boards.show');
+    Route::put('boards/{board}',            [Web\BoardController::class, 'update'])->name('boards.update');
+    Route::delete('boards/{board}',         [Web\BoardController::class, 'destroy'])->name('boards.destroy');
+
+    Route::post('boards/{board}/groups',                 [Web\TaskGroupController::class, 'store'])->name('boards.groups.store');
+    Route::put('boards/{board}/groups/{group}',           [Web\TaskGroupController::class, 'update'])->name('boards.groups.update');
+    Route::delete('boards/{board}/groups/{group}',        [Web\TaskGroupController::class, 'destroy'])->name('boards.groups.destroy');
+
+    Route::get('tasks/{task}',                  [Web\TaskController::class, 'show'])->name('tasks.show');
+    Route::post('tasks',                        [Web\TaskController::class, 'store'])->name('tasks.store');
+    Route::put('tasks/{task}',                  [Web\TaskController::class, 'update'])->name('tasks.update');
+    Route::delete('tasks/{task}',               [Web\TaskController::class, 'destroy'])->name('tasks.destroy');
+    Route::post('tasks/{task}/assign',          [Web\TaskController::class, 'assign'])->name('tasks.assign');
+    Route::post('tasks/{task}/status',          [Web\TaskController::class, 'changeStatus'])->name('tasks.status');
+    Route::post('tasks/{task}/priority',        [Web\TaskController::class, 'changePriority'])->name('tasks.priority');
+    Route::post('tasks/{task}/complete',        [Web\TaskController::class, 'complete'])->name('tasks.complete');
+    Route::post('tasks/{task}/reopen',          [Web\TaskController::class, 'reopen'])->name('tasks.reopen');
+    Route::post('tasks/{task}/archive',         [Web\TaskController::class, 'archive'])->name('tasks.archive');
+    Route::post('tasks/{task}/restore',         [Web\TaskController::class, 'restore'])->name('tasks.restore');
+    Route::post('tasks/{task}/comments',        [Web\TaskController::class, 'comment'])->name('tasks.comments.store');
+
     // ─── Activity Reports (compile → review → approve, scoped) ───────────────
     Route::get('activity-reports',                          [Web\ActivityReportController::class, 'index'])->name('activity-reports.index');
     Route::post('activity-reports',                         [Web\ActivityReportController::class, 'store'])->name('activity-reports.store');
