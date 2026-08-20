@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
+use App\Models\Item;
 use App\Models\Location;
 use App\Models\Store;
 use App\Models\User;
@@ -54,9 +56,11 @@ class StoreController extends Controller
     public function show(Request $request, Store $store): Response
     {
         return Inertia::render('Stores/Show', [
-            'store' => $store->load(['location:id,name', 'manager:id,name', 'storekeeper:id,name']),
-            'stock' => $store->stock()->with('item:id,item_code,name,unit_of_measure')->get(),
-            'isManager' => $this->isManager($request->user()),
+            'store'       => $store->load(['location:id,name', 'manager:id,name', 'storekeeper:id,name']),
+            'stock'       => $store->stock()->with('item:id,item_code,name,unit_of_measure')->get(),
+            'items'       => Item::where('is_active', true)->orderBy('name')->get(['id', 'item_code', 'name']),
+            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'isManager'   => $this->isManager($request->user()),
         ]);
     }
 

@@ -166,6 +166,24 @@ Route::middleware('auth')->group(function () {
     Route::put('items/{item}', [Web\ItemController::class, 'update'])->name('items.update');
     Route::delete('items/{item}', [Web\ItemController::class, 'destroy'])->name('items.destroy');
 
+    // ─── Stores & Assets Management — Phase 2 (stock movements) ──────────────
+    Route::post('stores/{store}/receipts', [Web\StockReceiptController::class, 'store'])->name('stores.receipts.store');
+    Route::post('stores/{store}/issues',   [Web\StockIssueController::class, 'store'])->name('stores.issues.store');
+    Route::post('stores/{store}/items/{item}/adjust', [Web\StockAdjustmentController::class, 'store'])->name('stores.items.adjust');
+
+    Route::get('stock-transfers',                    [Web\StockTransferController::class, 'index'])->name('stock-transfers.index');
+    Route::post('stock-transfers',                   [Web\StockTransferController::class, 'store'])->name('stock-transfers.store');
+    Route::get('stock-transfers/{stockTransfer}',     [Web\StockTransferController::class, 'show'])->name('stock-transfers.show');
+    Route::post('stock-transfers/{stockTransfer}/dispatch', [Web\StockTransferController::class, 'dispatch'])->name('stock-transfers.dispatch');
+    Route::post('stock-transfers/{stockTransfer}/receive',  [Web\StockTransferController::class, 'receive'])->name('stock-transfers.receive');
+    Route::post('stock-transfers/{stockTransfer}/cancel',   [Web\StockTransferController::class, 'cancel'])->name('stock-transfers.cancel');
+
+    Route::get('stocktakes',                  [Web\StocktakeController::class, 'index'])->name('stocktakes.index');
+    Route::post('stocktakes',                 [Web\StocktakeController::class, 'store'])->name('stocktakes.store');
+    Route::get('stocktakes/{stocktake}',      [Web\StocktakeController::class, 'show'])->name('stocktakes.show');
+    Route::put('stocktakes/{stocktake}',      [Web\StocktakeController::class, 'update'])->name('stocktakes.update');
+    Route::post('stocktakes/{stocktake}/complete', [Web\StocktakeController::class, 'complete'])->name('stocktakes.complete');
+
     // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
     Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read',   [Web\NotificationController::class, 'markRead'])->name('notifications.read');

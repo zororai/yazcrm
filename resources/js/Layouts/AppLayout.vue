@@ -8,7 +8,7 @@ import {
     Bars3Icon, XMarkIcon, BellIcon, FlagIcon, TagIcon, Cog6ToothIcon, ChevronDownIcon, FolderOpenIcon,
     ExclamationTriangleIcon, ChatBubbleLeftRightIcon, ShieldCheckIcon, TableCellsIcon,
     ServerStackIcon, ShieldExclamationIcon, PhoneArrowUpRightIcon, MicrophoneIcon, BookOpenIcon,
-    ClipboardDocumentCheckIcon, DocumentTextIcon,
+    ClipboardDocumentCheckIcon, DocumentTextIcon, TruckIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -158,6 +158,8 @@ const navigation = computed(() => [
         ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
     ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
+    ...(can('stores') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),
+    ...(can('stores') ? [{ name: 'Stocktakes', href: '/stocktakes', icon: QueueListIcon }] : []),
     ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Departments', href: '/departments', icon: FolderOpenIcon }] : []),
     ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
