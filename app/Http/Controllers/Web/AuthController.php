@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,6 +37,25 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended('/dashboard');
+    }
+
+    public function showChangePassword(): Response
+    {
+        return Inertia::render('Auth/ChangePassword');
+    }
+
+    public function changePassword(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $request->user()->update([
+            'password'              => Hash::make($data['password']),
+            'must_change_password'  => false,
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Password updated.');
     }
 
     public function logout(Request $request): RedirectResponse

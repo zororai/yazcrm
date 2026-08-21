@@ -14,7 +14,7 @@ const resetUser = ref(null);
 // below covers reporting lines now, so it's hidden here to avoid confusing the two.
 const selectableRoles = computed(() => props.roles.filter(r => r.name !== 'supervisor'));
 
-const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent', supervisor_id: '', nav_permissions: [] });
+const addForm  = useForm({ name: '', email: '', role: 'agent', supervisor_id: '', nav_permissions: [] });
 const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [] });
 const resetForm = useForm({ password: '', password_confirmation: '' });
 
@@ -212,13 +212,8 @@ const roleColor = {
                         </select>
                         <p class="mt-1 text-xs text-gray-400">Used to route this staff member's performance appraisals for review.</p>
                     </div>
-                    <div>
-                        <label class="label">Password</label>
-                        <input v-model="addForm.password" type="password" class="input" required />
-                    </div>
-                    <div>
-                        <label class="label">Confirm Password</label>
-                        <input v-model="addForm.password_confirmation" type="password" class="input" required />
+                    <div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                        New accounts start with the default password <span class="font-mono font-semibold">1234</span> and must set their own password on first login.
                     </div>
 
                     <!-- Nav permissions (hidden for admins — they get everything) -->

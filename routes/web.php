@@ -22,7 +22,13 @@ Route::middleware('auth')->group(function () {
     Route::post('logout', [Web\AuthController::class, 'logout'])->name('logout');
     Route::redirect('/', '/dashboard');
 
+    Route::get('change-password',  [Web\AuthController::class, 'showChangePassword'])->name('password.change');
+    Route::post('change-password', [Web\AuthController::class, 'changePassword'])->name('password.change.store');
+
+    Route::get('audit-log', [Web\AuditLogController::class, 'index'])->name('audit-log.index');
+
     Route::get('dashboard', [Web\DashboardController::class, 'index'])->name('dashboard');
+    Route::post('announcements', [Web\AnnouncementController::class, 'store'])->name('announcements.store');
     Route::get('my-work',   [Web\MyWorkController::class, 'index'])->name('my-work');
     Route::get('dialer',           fn() => inertia('Dialer/Index'))->name('dialer');
     Route::get('dialer/sip-config', [Web\ExtensionController::class, 'mySipConfig'])->name('dialer.sip-config');

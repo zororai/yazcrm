@@ -36,7 +36,6 @@ class UserController extends Controller
         $data = $request->validate([
             'name'               => 'required|string|max:255',
             'email'              => 'required|email|unique:users,email',
-            'password'           => 'required|string|min:8|confirmed',
             'role'               => "required|in:{$roleNames}",
             'supervisor_id'      => 'nullable|exists:users,id',
             'nav_permissions'    => 'sometimes|nullable|array',
@@ -52,7 +51,8 @@ class UserController extends Controller
             $data['nav_permissions'] = $role?->nav_permissions ?? [];
         }
 
-        User::create([...$data, 'password' => Hash::make($data['password'])]);
+        // New accounts start with a default password and must set their own on first login.
+        User::create([...$data, 'password' => Hash::make('1234'), 'must_change_password' => true]);
 
         return back()->with('success', 'User created.');
     }
@@ -108,7 +108,7 @@ class UserController extends Controller
     {
         $request->validate(['password' => 'required|string|min:8|confirmed']);
 
-        $user->update(['password' => Hash::make($request->password)]);
+        $user->update(['password' => Hash::make($request->password), 'must_change_password' => true]);
 
         return back()->with('success', 'Password reset.');
     }

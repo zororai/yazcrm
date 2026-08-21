@@ -13,15 +13,17 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'email', 'password', 'role', 'supervisor_id', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
+        'must_change_password',
     ];
 
     protected $hidden = ['password', 'remember_token'];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'last_login_at'     => 'datetime',
-        'is_active'         => 'boolean',
-        'nav_permissions'   => 'array',
+        'email_verified_at'    => 'datetime',
+        'last_login_at'        => 'datetime',
+        'is_active'             => 'boolean',
+        'nav_permissions'       => 'array',
+        'must_change_password' => 'boolean',
     ];
 
     public function extension()

@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Line, Bar, Doughnut } from 'vue-chartjs';
 import {
@@ -31,7 +31,18 @@ const props = defineProps({
     extension:      String,
     recentCalls:    Array,
     recentTickets:  Array,
+    canAnnounce:        { type: Boolean, default: false },
+    announceableUsers:  { type: Array, default: () => [] },
 });
+
+const showAnnounce = ref(false);
+const announceForm = useForm({ recipient: 'all', message: '' });
+
+function submitAnnounce() {
+    announceForm.post('/announcements', {
+        onSuccess: () => { showAnnounce.value = false; announceForm.reset(); },
+    });
+}
 
 const period = ref(props.period);
 
@@ -221,6 +232,13 @@ const qualityColor = computed(() => ({
         <template #title>Dashboard</template>
         <template #subtitle>Welcome back, {{ page.props.auth.user?.name }}! Here's what's happening today.</template>
         <template #header-actions>
+            <button
+                v-if="canAnnounce"
+                @click="showAnnounce = true"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium transition-colors"
+            >
+                <DocumentTextIcon class="h-3.5 w-3.5" /> Post Notification
+            </button>
             <!-- Date range display -->
             <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-xs text-gray-300">
                 <CalendarDaysIcon class="h-3.5 w-3.5 text-gray-400" />
@@ -599,6 +617,30 @@ const qualityColor = computed(() => ({
                 </div>
             </div>
 
+        </div>
+
+        <div v-if="showAnnounce" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Post Notification</h3>
+                <form @submit.prevent="submitAnnounce" class="space-y-3">
+                    <div>
+                        <label class="label">Send To</label>
+                        <select v-model="announceForm.recipient" class="input">
+                            <option value="all">Everyone</option>
+                            <option v-for="u in announceableUsers" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Message</label>
+                        <textarea v-model="announceForm.message" class="input" rows="4" required></textarea>
+                        <p v-if="announceForm.errors.message" class="mt-1 text-xs text-red-600">{{ announceForm.errors.message }}</p>
+                    </div>
+                    <div class="flex gap-2 justify-end pt-1">
+                        <button type="button" @click="showAnnounce = false" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" :disabled="announceForm.processing">Send</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </AppLayout>
 </template>

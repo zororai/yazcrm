@@ -133,6 +133,8 @@ class DashboardController extends Controller
         elseif ($user->role !== 'admin') $recentQuery->whereRaw('0 = 1');
         $recentCalls = $recentQuery->get();
 
+        $isManager = in_array($user->role, ['admin', 'director'], true);
+
         return Inertia::render('Dashboard/Index', [
             'stats'          => $stats,
             'prevStats'      => $prevStats,
@@ -143,6 +145,10 @@ class DashboardController extends Controller
             'extension'      => $extNumber,
             'recentCalls'    => $recentCalls,
             'recentTickets'  => $recentTickets,
+            'canAnnounce'    => $isManager,
+            'announceableUsers' => $isManager
+                ? \App\Models\User::where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                : [],
         ]);
     }
 
