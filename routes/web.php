@@ -106,6 +106,10 @@ Route::middleware('auth')->group(function () {
     Route::get('appraisals/{appraisal}/review',     [Web\AppraisalController::class, 'review'])->name('appraisals.review.show');
     Route::put('appraisals/{appraisal}/review',     [Web\AppraisalController::class, 'updateReview'])->name('appraisals.review.update');
 
+    // ─── Admin/Director archive — view & download every appraisal ────────────
+    Route::get('appraisal-archive',              [Web\AppraisalController::class, 'adminIndex'])->name('appraisals.archive');
+    Route::get('appraisals/{appraisal}/document', [Web\AppraisalController::class, 'document'])->name('appraisals.document');
+
     // ─── Work Management (workspaces → boards → groups → tasks) ─────────────
     Route::get('workspaces',                    [Web\WorkspaceController::class, 'index'])->name('workspaces.index');
     Route::post('workspaces',                   [Web\WorkspaceController::class, 'store'])->name('workspaces.store');

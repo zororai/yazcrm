@@ -80,11 +80,7 @@ function goToSelfAssessment() {
 }
 
 function printDoc() {
-    const stamp = new Date().toISOString().slice(0, 10);
-    const originalTitle = document.title;
-    document.title = `Appraisal Review - ${props.appraisal.user?.name ?? 'Staff'} - ${stamp}`;
-    window.print();
-    setTimeout(() => { document.title = originalTitle; }, 500);
+    router.get(`/appraisals/${props.appraisal.id}/document`);
 }
 </script>
 

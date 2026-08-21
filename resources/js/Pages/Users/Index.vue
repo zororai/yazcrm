@@ -10,7 +10,7 @@ const showAdd  = ref(false);
 const editUser = ref(null);
 const resetUser = ref(null);
 
-const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent' });
+const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent', supervisor_id: '' });
 const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [] });
 const resetForm = useForm({ password: '', password_confirmation: '' });
 
@@ -177,6 +177,14 @@ const roleColor = {
                                 {{ r.display_name }}
                             </option>
                         </select>
+                    </div>
+                    <div>
+                        <label class="label">Supervisor</label>
+                        <select v-model="addForm.supervisor_id" class="input">
+                            <option value="">— None —</option>
+                            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-400">Used to route this staff member's performance appraisals for review.</p>
                     </div>
                     <div>
                         <label class="label">Password</label>

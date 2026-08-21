@@ -87,6 +87,31 @@ class AppraisalController extends Controller
         ]);
     }
 
+    // Admin/director archive — every appraisal regardless of status, with a
+    // link into the combined single-document view/download for each.
+    public function adminIndex(Request $request): Response
+    {
+        $user = $request->user();
+        if (! $this->isManager($user)) {
+            abort(403);
+        }
+
+        return Inertia::render('Appraisals/AdminIndex', [
+            'appraisals' => Appraisal::with(['user:id,name', 'supervisor:id,name'])->latest()->get(),
+        ]);
+    }
+
+    // Combined self-assessment + supervisor review on one page, for a single
+    // printable/downloadable document (letterhead included).
+    public function document(Request $request, Appraisal $appraisal): Response
+    {
+        $this->authorize('view', $appraisal);
+
+        return Inertia::render('Appraisals/Document', [
+            'appraisal' => $appraisal->load(['user:id,name', 'supervisor:id,name']),
+        ]);
+    }
+
     // Supervisor/admin/director landing page — appraisals awaiting or completed review
     public function reviewIndex(Request $request): Response
     {

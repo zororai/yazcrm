@@ -60,11 +60,7 @@ function goToReview() {
 }
 
 function printDoc() {
-    const stamp = new Date().toISOString().slice(0, 10);
-    const originalTitle = document.title;
-    document.title = `Appraisal - ${props.appraisal.user?.name ?? 'Staff'} - ${stamp}`;
-    window.print();
-    setTimeout(() => { document.title = originalTitle; }, 500);
+    router.get(`/appraisals/${props.appraisal.id}/document`);
 }
 </script>
 
