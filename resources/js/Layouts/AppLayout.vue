@@ -152,8 +152,7 @@ const navigation = computed(() => [
     ...(can('directory')    ? [{ name: 'Directory',  href: '/service-directory', icon: BookOpenIcon }] : []),
     ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
-    ...(isAdmin.value || user.value?.role === 'director'
-        ? [{ name: 'Appraisal Archive', href: '/appraisal-archive', icon: DocumentTextIcon }] : []),
+    ...(can('appraisal_archive') ? [{ name: 'Appraisal Archive', href: '/appraisal-archive', icon: DocumentTextIcon }] : []),
     ...(can('activity_reports') ? [{ name: 'Activity Reports', href: '/activity-reports', icon: DocumentTextIcon }] : []),
     ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
     ...(can('work_management') && (isAdmin.value || user.value?.role === 'director' || (user.value?.subordinates_count ?? 0) > 0)

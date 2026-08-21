@@ -13,7 +13,7 @@ class RoleController extends Controller
 {
     private array $validPerms = [
         'dashboard','dialer','calls','recordings','callbacks','tickets',
-        'urgent','directory','appraisals','appraisal_reviews','activity_reports','work_management','stores',
+        'urgent','directory','appraisals','appraisal_reviews','appraisal_archive','activity_reports','work_management','stores',
         'extensions','analytics','targets','by_project',
         'domains','bot_contacts','users','yeastar','yalep',
         'registry','risk','sbc','roles',

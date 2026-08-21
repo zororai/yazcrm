@@ -10,6 +10,10 @@ const showAdd  = ref(false);
 const editUser = ref(null);
 const resetUser = ref(null);
 
+// "Supervisor" is a legacy job-title role — the separate Supervisor (manager) field
+// below covers reporting lines now, so it's hidden here to avoid confusing the two.
+const selectableRoles = computed(() => props.roles.filter(r => r.name !== 'supervisor'));
+
 const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent', supervisor_id: '' });
 const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [] });
 const resetForm = useForm({ password: '', password_confirmation: '' });
@@ -25,6 +29,7 @@ const NAV_ITEMS = [
     { key: 'directory',   label: 'Service Directory' },
     { key: 'appraisals',  label: 'Appraisals' },
     { key: 'appraisal_reviews', label: 'Appraisal Reviews' },
+    { key: 'appraisal_archive', label: 'Appraisal Archive' },
     { key: 'activity_reports', label: 'Activity Reports' },
     { key: 'work_management', label: 'Work Management' },
     { key: 'stores', label: 'Stores & Assets' },
@@ -173,7 +178,7 @@ const roleColor = {
                     <div>
                         <label class="label">Role</label>
                         <select v-model="addForm.role" class="input">
-                            <option v-for="r in roles" :key="r.name" :value="r.name">
+                            <option v-for="r in selectableRoles" :key="r.name" :value="r.name">
                                 {{ r.display_name }}
                             </option>
                         </select>
@@ -220,7 +225,7 @@ const roleColor = {
                     <div>
                         <label class="label">Role</label>
                         <select :value="editForm.role" @change="onEditRoleChange($event.target.value)" class="input">
-                            <option v-for="r in roles" :key="r.name" :value="r.name">
+                            <option v-for="r in selectableRoles" :key="r.name" :value="r.name">
                                 {{ r.display_name }}
                             </option>
                         </select>

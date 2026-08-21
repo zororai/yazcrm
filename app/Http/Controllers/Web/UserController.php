@@ -47,7 +47,7 @@ class UserController extends Controller
         $roleNames = Role::pluck('name')->implode(',');
         $valid = [
             'dashboard','dialer','calls','recordings','callbacks','tickets',
-            'urgent','directory','appraisals','appraisal_reviews','activity_reports','work_management','stores',
+            'urgent','directory','appraisals','appraisal_reviews','appraisal_archive','activity_reports','work_management','stores',
             'extensions','analytics','targets','by_project',
             'domains','bot_contacts','users','yeastar','yalep',
             'registry','risk','sbc','roles',

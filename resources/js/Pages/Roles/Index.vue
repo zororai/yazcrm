@@ -20,6 +20,7 @@ const PERM_LABELS = {
     directory:   'Service Directory',
     appraisals:  'Appraisals',
     appraisal_reviews: 'Appraisal Reviews',
+    appraisal_archive: 'Appraisal Archive',
     activity_reports: 'Activity Reports',
     work_management: 'Work Management',
     stores: 'Stores & Assets',
