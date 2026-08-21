@@ -24,6 +24,7 @@ const PERM_LABELS = {
     activity_reports: 'Activity Reports',
     work_management: 'Work Management',
     stores: 'Stores & Assets',
+    data_collection: 'Data Collection',
     extensions:  'Extensions',
     analytics:   'Analytics',
     targets:     'Call Targets',

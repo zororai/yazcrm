@@ -27,6 +27,30 @@ Route::middleware('auth')->group(function () {
 
     Route::get('audit-log', [Web\AuditLogController::class, 'index'])->name('audit-log.index');
 
+    // ─── Data Collection — Phase 1 (Projects, Forms, Form Versions) ──────────
+    Route::get('data-collection',                    [Web\DataCollectionProjectController::class, 'index'])->name('data-collection.projects.index');
+    Route::post('data-collection/projects',           [Web\DataCollectionProjectController::class, 'store'])->name('data-collection.projects.store');
+    Route::get('data-collection/projects/{project}',  [Web\DataCollectionProjectController::class, 'show'])->name('data-collection.projects.show');
+    Route::put('data-collection/projects/{project}',  [Web\DataCollectionProjectController::class, 'update'])->name('data-collection.projects.update');
+    Route::delete('data-collection/projects/{project}', [Web\DataCollectionProjectController::class, 'destroy'])->name('data-collection.projects.destroy');
+
+    Route::post('data-collection/projects/{project}/forms', [Web\DataCollectionFormController::class, 'store'])->name('data-collection.forms.store');
+    Route::get('data-collection/forms/{form}',        [Web\DataCollectionFormController::class, 'show'])->name('data-collection.forms.show');
+    Route::put('data-collection/forms/{form}',        [Web\DataCollectionFormController::class, 'update'])->name('data-collection.forms.update');
+    Route::delete('data-collection/forms/{form}',     [Web\DataCollectionFormController::class, 'destroy'])->name('data-collection.forms.destroy');
+
+    Route::post('data-collection/forms/{form}/versions', [Web\DataCollectionFormVersionController::class, 'store'])->name('data-collection.versions.store');
+    Route::put('data-collection/forms/{form}/versions/{version}', [Web\DataCollectionFormVersionController::class, 'update'])->name('data-collection.versions.update');
+    Route::post('data-collection/forms/{form}/versions/{version}/publish', [Web\DataCollectionFormVersionController::class, 'publish'])->name('data-collection.versions.publish');
+
+    Route::post('data-collection/forms/{form}/assignments', [Web\DataCollectionAssignmentController::class, 'store'])->name('data-collection.assignments.store');
+
+    Route::get('my-collection', [Web\DataCollectionSubmissionController::class, 'index'])->name('data-collection.my-collection');
+    Route::post('data-collection/assignments/{assignment}/start', [Web\DataCollectionSubmissionController::class, 'start'])->name('data-collection.submissions.start');
+    Route::get('data-collection/submissions/{submission}',        [Web\DataCollectionSubmissionController::class, 'show'])->name('data-collection.submissions.show');
+    Route::put('data-collection/submissions/{submission}',        [Web\DataCollectionSubmissionController::class, 'update'])->name('data-collection.submissions.update');
+    Route::post('data-collection/submissions/{submission}/submit', [Web\DataCollectionSubmissionController::class, 'submit'])->name('data-collection.submissions.submit');
+
     Route::get('dashboard', [Web\DashboardController::class, 'index'])->name('dashboard');
     Route::post('announcements', [Web\AnnouncementController::class, 'store'])->name('announcements.store');
     Route::get('my-work',   [Web\MyWorkController::class, 'index'])->name('my-work');

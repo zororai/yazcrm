@@ -33,6 +33,7 @@ const NAV_ITEMS = [
     { key: 'activity_reports', label: 'Activity Reports' },
     { key: 'work_management', label: 'Work Management' },
     { key: 'stores', label: 'Stores & Assets' },
+    { key: 'data_collection', label: 'Data Collection' },
     { key: 'extensions',  label: 'Extensions' },
     { key: 'analytics',   label: 'Analytics' },
     { key: 'targets',     label: 'Call Targets' },

@@ -153,10 +153,13 @@ const navigation = computed(() => [
     ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_archive') ? [{ name: 'Appraisal Archive', href: '/appraisal-archive', icon: DocumentTextIcon }] : []),
+    ...(isAdmin.value ? [{ name: 'Audit Trail', href: '/audit-log', icon: ShieldExclamationIcon }] : []),
     ...(can('activity_reports') ? [{ name: 'Activity Reports', href: '/activity-reports', icon: DocumentTextIcon }] : []),
     ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
     ...(can('work_management') && (isAdmin.value || user.value?.role === 'director' || (user.value?.subordinates_count ?? 0) > 0)
         ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
+    ...(can('data_collection') ? [{ name: 'Data Collection', href: '/data-collection', icon: ClipboardDocumentCheckIcon }] : []),
+    ...(can('data_collection') ? [{ name: 'My Collection', href: '/my-collection', icon: QueueListIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
     ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
     ...(can('stores') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),
