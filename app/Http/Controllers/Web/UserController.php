@@ -13,6 +13,14 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    private array $validPerms = [
+        'dashboard','dialer','calls','recordings','callbacks','tickets',
+        'urgent','directory','appraisals','appraisal_reviews','appraisal_archive','activity_reports','work_management','stores',
+        'extensions','analytics','targets','by_project',
+        'domains','bot_contacts','users','yeastar','yalep',
+        'registry','risk','sbc','roles',
+    ];
+
     public function index(): Response
     {
         $users = User::with('extension')->latest()->get();
@@ -26,16 +34,23 @@ class UserController extends Controller
         $roleNames = Role::pluck('name')->implode(',');
 
         $data = $request->validate([
-            'name'          => 'required|string|max:255',
-            'email'         => 'required|email|unique:users,email',
-            'password'      => 'required|string|min:8|confirmed',
-            'role'          => "required|in:{$roleNames}",
-            'supervisor_id' => 'nullable|exists:users,id',
+            'name'               => 'required|string|max:255',
+            'email'              => 'required|email|unique:users,email',
+            'password'           => 'required|string|min:8|confirmed',
+            'role'               => "required|in:{$roleNames}",
+            'supervisor_id'      => 'nullable|exists:users,id',
+            'nav_permissions'    => 'sometimes|nullable|array',
+            'nav_permissions.*'  => 'string|in:' . implode(',', $this->validPerms),
         ]);
 
-        // Auto-apply the role's nav_permissions
-        $role = Role::where('name', $data['role'])->first();
-        $data['nav_permissions'] = $role?->name === 'admin' ? null : ($role?->nav_permissions ?? []);
+        // Use the submitted checkboxes if any were sent, otherwise fall back
+        // to the chosen role's default nav_permissions.
+        if ($data['role'] === 'admin') {
+            $data['nav_permissions'] = null;
+        } elseif (! array_key_exists('nav_permissions', $data)) {
+            $role = Role::where('name', $data['role'])->first();
+            $data['nav_permissions'] = $role?->nav_permissions ?? [];
+        }
 
         User::create([...$data, 'password' => Hash::make($data['password'])]);
 
@@ -45,13 +60,6 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $roleNames = Role::pluck('name')->implode(',');
-        $valid = [
-            'dashboard','dialer','calls','recordings','callbacks','tickets',
-            'urgent','directory','appraisals','appraisal_reviews','appraisal_archive','activity_reports','work_management','stores',
-            'extensions','analytics','targets','by_project',
-            'domains','bot_contacts','users','yeastar','yalep',
-            'registry','risk','sbc','roles',
-        ];
 
         if ($request->supervisor_id === '') {
             $request->merge(['supervisor_id' => null]);
@@ -63,7 +71,7 @@ class UserController extends Controller
             'role'              => "sometimes|in:{$roleNames}",
             'supervisor_id'     => "sometimes|nullable|exists:users,id|not_in:{$user->id}",
             'nav_permissions'   => 'sometimes|nullable|array',
-            'nav_permissions.*' => 'string|in:' . implode(',', $valid),
+            'nav_permissions.*' => 'string|in:' . implode(',', $this->validPerms),
         ]);
 
         // When role changes, auto-apply that role's default permissions

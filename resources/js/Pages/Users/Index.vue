@@ -14,7 +14,7 @@ const resetUser = ref(null);
 // below covers reporting lines now, so it's hidden here to avoid confusing the two.
 const selectableRoles = computed(() => props.roles.filter(r => r.name !== 'supervisor'));
 
-const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent', supervisor_id: '' });
+const addForm  = useForm({ name: '', email: '', password: '', password_confirmation: '', role: 'agent', supervisor_id: '', nav_permissions: [] });
 const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [] });
 const resetForm = useForm({ password: '', password_confirmation: '' });
 
@@ -73,6 +73,24 @@ function onEditRoleChange(roleName) {
     if (roleName === 'admin') { editForm.nav_permissions = []; return; }
     const role = props.roles.find(r => r.name === roleName);
     editForm.nav_permissions = role?.nav_permissions ? [...role.nav_permissions] : [];
+}
+
+const addIsAdmin = computed(() => addForm.role === 'admin');
+
+function toggleAddPerm(key) {
+    const perms = [...addForm.nav_permissions];
+    const idx = perms.indexOf(key);
+    if (idx === -1) perms.push(key);
+    else perms.splice(idx, 1);
+    addForm.nav_permissions = perms;
+}
+
+// When role changes in the new-user form, auto-load that role's default permissions
+function onAddRoleChange(roleName) {
+    addForm.role = roleName;
+    if (roleName === 'admin') { addForm.nav_permissions = []; return; }
+    const role = props.roles.find(r => r.name === roleName);
+    addForm.nav_permissions = role?.nav_permissions ? [...role.nav_permissions] : [];
 }
 
 function store() {
@@ -162,9 +180,11 @@ const roleColor = {
 
         <!-- Add user modal -->
         <div v-if="showAdd" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-                <h3 class="font-semibold text-gray-900 mb-4">New User</h3>
-                <form @submit.prevent="store" class="space-y-3">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+                <div class="px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
+                    <h3 class="font-semibold text-gray-900">New User</h3>
+                </div>
+                <form @submit.prevent="store" class="overflow-y-auto flex-1 px-6 py-4 space-y-3">
                     <div>
                         <label class="label">Name</label>
                         <input v-model="addForm.name" class="input" required />
@@ -177,11 +197,12 @@ const roleColor = {
                     </div>
                     <div>
                         <label class="label">Role</label>
-                        <select v-model="addForm.role" class="input">
+                        <select :value="addForm.role" @change="onAddRoleChange($event.target.value)" class="input">
                             <option v-for="r in selectableRoles" :key="r.name" :value="r.name">
                                 {{ r.display_name }}
                             </option>
                         </select>
+                        <p class="mt-1 text-xs text-gray-400">Changing the role automatically updates permissions below.</p>
                     </div>
                     <div>
                         <label class="label">Supervisor</label>
@@ -199,11 +220,42 @@ const roleColor = {
                         <label class="label">Confirm Password</label>
                         <input v-model="addForm.password_confirmation" type="password" class="input" required />
                     </div>
-                    <div class="flex gap-2 justify-end pt-1">
-                        <button type="button" @click="showAdd = false" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary" :disabled="addForm.processing">Create</button>
+
+                    <!-- Nav permissions (hidden for admins — they get everything) -->
+                    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <ShieldCheckIcon class="h-4 w-4 text-brand-600" />
+                            <span class="text-sm font-semibold text-gray-700">Nav Permissions</span>
+                        </div>
+                        <p v-if="addIsAdmin" class="text-xs text-gray-400 italic">
+                            Admins have access to everything — no restrictions apply.
+                        </p>
+                        <template v-else>
+                            <p class="text-xs text-gray-500 mb-3">
+                                Choose exactly which sections this user can see in the sidebar.
+                            </p>
+                            <div class="grid grid-cols-2 gap-2 max-h-72 overflow-y-auto">
+                                <label
+                                    v-for="item in NAV_ITEMS"
+                                    :key="item.key"
+                                    class="flex items-center gap-2 cursor-pointer rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-white transition-colors"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="addForm.nav_permissions.includes(item.key)"
+                                        @change="toggleAddPerm(item.key)"
+                                        class="rounded border-gray-300 text-brand-600"
+                                    />
+                                    {{ item.label }}
+                                </label>
+                            </div>
+                        </template>
                     </div>
                 </form>
+                <div class="flex gap-2 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
+                    <button type="button" @click="showAdd = false" class="btn-secondary">Cancel</button>
+                    <button type="button" @click="store" class="btn-primary" :disabled="addForm.processing">Create</button>
+                </div>
             </div>
         </div>
 
