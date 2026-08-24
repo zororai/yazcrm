@@ -175,7 +175,7 @@ function destroy(role) {
                         <p class="text-xs text-gray-400 mb-2">
                             Choose exactly which sidebar sections this role can see.
                         </p>
-                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50 max-h-80 overflow-y-auto">
+                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
                             <label v-for="key in validPerms" :key="key"
                                 class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 py-1">
                                 <input type="checkbox"
@@ -215,7 +215,7 @@ function destroy(role) {
                         <p class="text-xs text-gray-400 mb-2">
                             Choose exactly which sidebar sections this role can see.
                         </p>
-                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50 max-h-80 overflow-y-auto">
+                        <div class="grid grid-cols-2 gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
                             <label v-for="key in validPerms" :key="key"
                                 class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 py-1">
                                 <input type="checkbox"
