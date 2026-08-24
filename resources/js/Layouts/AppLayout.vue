@@ -164,13 +164,13 @@ const navigation = computed(() => [
         ? [{ name: 'Review Queue', href: '/data-collection/review-queue', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
     ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
-    ...(can('stores') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),
-    ...(can('stores') ? [{ name: 'Stocktakes', href: '/stocktakes', icon: QueueListIcon }] : []),
+    ...(can('stock_transfers') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),
+    ...(can('stocktakes') ? [{ name: 'Stocktakes', href: '/stocktakes', icon: QueueListIcon }] : []),
     ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Departments', href: '/departments', icon: FolderOpenIcon }] : []),
     ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Locations', href: '/locations', icon: TagIcon }] : []),
-    ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
+    ...(can('item_categories') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Item Categories', href: '/item-categories', icon: FolderOpenIcon }] : []),
     ...(can('extensions')   ? [{ name: 'Extensions',  href: '/extensions',                       icon: SignalIcon }] : []),
     ...(can('analytics')    ? [{ name: 'Analytics',   href: '/analytics',                        icon: ChartBarIcon }] : []),
