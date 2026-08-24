@@ -2,6 +2,7 @@
 
 namespace App\Services\DataCollection;
 
+use App\Support\DataCollection\ConditionEvaluator;
 use App\Support\DataCollection\QuestionType;
 
 class SubmissionValidationService
@@ -14,6 +15,12 @@ class SubmissionValidationService
 
         foreach ($schema['sections'] ?? [] as $section) {
             foreach ($section['questions'] ?? [] as $question) {
+                // A question hidden by skip logic can't be required or type-checked —
+                // the field officer never had a chance to answer it.
+                if (! ConditionEvaluator::isVisible($question, $answers)) {
+                    continue;
+                }
+
                 $id    = $question['id'] ?? null;
                 $type  = $question['type'] ?? null;
                 $label = $question['label'] ?? $id;

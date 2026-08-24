@@ -160,6 +160,8 @@ const navigation = computed(() => [
         ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
     ...(can('data_collection') ? [{ name: 'Data Collection', href: '/data-collection', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('data_collection') ? [{ name: 'My Collection', href: '/my-collection', icon: QueueListIcon }] : []),
+    ...(can('data_collection') && (isAdmin.value || user.value?.role === 'director')
+        ? [{ name: 'Review Queue', href: '/data-collection/review-queue', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
     ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
     ...(can('stores') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),

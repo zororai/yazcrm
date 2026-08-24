@@ -15,6 +15,10 @@ const QUESTION_TYPES = [
     'date', 'datetime', 'time', 'select_one', 'select_multiple', 'yes_no',
 ];
 const OPTION_TYPES = ['select_one', 'select_multiple'];
+const CONDITION_OPERATORS = [
+    'equals', 'not_equals', 'greater_than', 'less_than',
+    'greater_than_or_equal', 'less_than_or_equal', 'contains', 'is_empty', 'is_not_empty',
+];
 
 const draftVersion = computed(() => props.versions.find(v => v.status === 'draft'));
 const publishedVersion = computed(() => props.versions.find(v => v.status === 'published'));
@@ -38,6 +42,14 @@ function moveSection(i, dir) {
 
 function addQuestion(section) {
     section.questions.push({ id: uid(), type: 'text', label: '', required: false, options: [] });
+}
+
+const allQuestions = computed(() =>
+    schemaForm.schema.sections.flatMap(s => s.questions.map(q => ({ id: q.id, label: q.label || q.id })))
+);
+
+function toggleCondition(question) {
+    question.visible_if = question.visible_if ? null : { question: '', operator: 'equals', value: '' };
 }
 function removeQuestion(section, i) {
     section.questions.splice(i, 1);
@@ -77,7 +89,11 @@ const versionStatusColor = {
 
 const submissionStatusColor = {
     draft: 'bg-gray-100 text-gray-700',
-    submitted: 'bg-green-100 text-green-800',
+    submitted: 'bg-amber-100 text-amber-800',
+    under_review: 'bg-blue-100 text-blue-800',
+    approved: 'bg-green-100 text-green-800',
+    rejected: 'bg-red-100 text-red-800',
+    correction_required: 'bg-orange-100 text-orange-800',
 };
 
 const showAssign = ref(false);
@@ -164,9 +180,34 @@ function openSubmission(s) {
                             <button @click="removeQuestion(section, qi)" class="text-gray-400 hover:text-red-600" :disabled="!isManager"><TrashIcon class="h-4 w-4" /></button>
                         </div>
                     </div>
-                    <label class="flex items-center gap-2 text-xs text-gray-600 mt-2">
-                        <input type="checkbox" v-model="q.required" :disabled="!isManager" /> Required
-                    </label>
+                    <div class="flex items-center gap-4 mt-2">
+                        <label class="flex items-center gap-2 text-xs text-gray-600">
+                            <input type="checkbox" v-model="q.required" :disabled="!isManager" /> Required
+                        </label>
+                        <label class="flex items-center gap-2 text-xs text-gray-600">
+                            <input type="checkbox" :checked="!!q.visible_if" @change="toggleCondition(q)" :disabled="!isManager" /> Show conditionally
+                        </label>
+                    </div>
+
+                    <div v-if="q.visible_if" class="mt-2 pl-3 border-l-2 border-blue-100 grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="label">If question</label>
+                            <select v-model="q.visible_if.question" class="input" :disabled="!isManager">
+                                <option value="" disabled>Select…</option>
+                                <option v-for="oq in allQuestions.filter(o => o.id !== q.id)" :key="oq.id" :value="oq.id">{{ oq.label }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label">Operator</label>
+                            <select v-model="q.visible_if.operator" class="input" :disabled="!isManager">
+                                <option v-for="op in CONDITION_OPERATORS" :key="op" :value="op">{{ op.replace(/_/g, ' ') }}</option>
+                            </select>
+                        </div>
+                        <div v-if="!['is_empty', 'is_not_empty'].includes(q.visible_if.operator)">
+                            <label class="label">Value</label>
+                            <input v-model="q.visible_if.value" class="input" :disabled="!isManager" />
+                        </div>
+                    </div>
 
                     <div v-if="OPTION_TYPES.includes(q.type)" class="mt-2 pl-3 border-l-2 border-gray-100 space-y-1">
                         <div v-for="(opt, oi) in q.options" :key="oi" class="flex gap-2">

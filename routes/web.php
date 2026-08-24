@@ -54,6 +54,12 @@ Route::middleware('auth')->group(function () {
     Route::put('data-collection/submissions/{submission}',        [Web\DataCollectionSubmissionController::class, 'update'])->name('data-collection.submissions.update');
     Route::post('data-collection/submissions/{submission}/submit', [Web\DataCollectionSubmissionController::class, 'submit'])->name('data-collection.submissions.submit');
 
+    Route::get('data-collection/review-queue', [Web\DataCollectionSubmissionController::class, 'reviewQueue'])->name('data-collection.review-queue');
+    Route::post('data-collection/submissions/{submission}/start-review',        [Web\DataCollectionSubmissionController::class, 'startReview'])->name('data-collection.submissions.start-review');
+    Route::post('data-collection/submissions/{submission}/approve',             [Web\DataCollectionSubmissionController::class, 'approve'])->name('data-collection.submissions.approve');
+    Route::post('data-collection/submissions/{submission}/reject',              [Web\DataCollectionSubmissionController::class, 'reject'])->name('data-collection.submissions.reject');
+    Route::post('data-collection/submissions/{submission}/request-correction',  [Web\DataCollectionSubmissionController::class, 'requestCorrection'])->name('data-collection.submissions.request-correction');
+
     Route::get('dashboard', [Web\DashboardController::class, 'index'])->name('dashboard');
     Route::post('announcements', [Web\AnnouncementController::class, 'store'])->name('announcements.store');
     Route::get('my-work',   [Web\MyWorkController::class, 'index'])->name('my-work');

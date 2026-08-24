@@ -63,13 +63,18 @@ class DataCollectionSubmissionController extends Controller
 
     public function show(Request $request, DataCollectionSubmission $submission): Response
     {
-        if (! $this->canAccess($request->user(), $submission)) {
+        $user = $request->user();
+        if (! $this->canAccess($user, $submission)) {
             abort(403);
         }
 
+        $isOwner = $submission->submitted_by === $user->id;
+
         return Inertia::render('DataCollection/Submissions/Show', [
-            'submission' => $submission->load(['form:id,name', 'formVersion', 'submittedBy:id,name']),
-            'canEdit'    => $submission->status === 'draft' && $submission->submitted_by === $request->user()->id,
+            'submission' => $submission->load(['form:id,name', 'formVersion', 'submittedBy:id,name', 'reviews.reviewer:id,name']),
+            'canEdit'    => in_array($submission->status, ['draft', 'correction_required'], true) && $isOwner,
+            'canReview'  => $this->isManager($user) && in_array($submission->status, ['submitted', 'under_review'], true),
+            'isManager'  => $this->isManager($user),
         ]);
     }
 
@@ -103,5 +108,86 @@ class DataCollectionSubmissionController extends Controller
         }
 
         return back()->with('success', 'Submission completed.');
+    }
+
+    public function reviewQueue(Request $request): Response
+    {
+        if (! $this->isManager($request->user())) {
+            abort(403);
+        }
+
+        $submissions = DataCollectionSubmission::with(['form:id,name', 'form.project:id,name', 'submittedBy:id,name'])
+            ->whereIn('status', ['submitted', 'under_review'])
+            ->orderByRaw("CASE status WHEN 'submitted' THEN 0 WHEN 'under_review' THEN 1 ELSE 2 END")
+            ->latest('submitted_at')
+            ->get();
+
+        return Inertia::render('DataCollection/ReviewQueue', ['submissions' => $submissions]);
+    }
+
+    public function startReview(Request $request, DataCollectionSubmission $submission): RedirectResponse
+    {
+        if (! $this->isManager($request->user())) {
+            abort(403);
+        }
+
+        try {
+            $this->service->startReview($submission, $request->user());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Review started.');
+    }
+
+    public function approve(Request $request, DataCollectionSubmission $submission): RedirectResponse
+    {
+        if (! $this->isManager($request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validate(['comment' => 'nullable|string|max:2000']);
+
+        try {
+            $this->service->approve($submission, $request->user(), $data['comment'] ?? null);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Submission approved.');
+    }
+
+    public function reject(Request $request, DataCollectionSubmission $submission): RedirectResponse
+    {
+        if (! $this->isManager($request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validate(['comment' => 'required|string|max:2000']);
+
+        try {
+            $this->service->reject($submission, $request->user(), $data['comment']);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Submission rejected.');
+    }
+
+    public function requestCorrection(Request $request, DataCollectionSubmission $submission): RedirectResponse
+    {
+        if (! $this->isManager($request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validate(['comment' => 'required|string|max:2000']);
+
+        try {
+            $this->service->requestCorrection($submission, $request->user(), $data['comment']);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Correction requested.');
     }
 }

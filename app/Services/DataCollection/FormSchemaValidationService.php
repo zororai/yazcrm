@@ -2,6 +2,7 @@
 
 namespace App\Services\DataCollection;
 
+use App\Support\DataCollection\ConditionEvaluator;
 use App\Support\DataCollection\QuestionType;
 
 class FormSchemaValidationService
@@ -53,6 +54,33 @@ class FormSchemaValidationService
 
         if ($totalQuestions === 0) {
             $errors[] = 'The form has no questions.';
+        }
+
+        // Second pass: conditional logic can reference a question defined
+        // anywhere in the form, so it's checked once all IDs are known.
+        foreach ($sections as $section) {
+            foreach ($section['questions'] ?? [] as $question) {
+                $condition = $question['visible_if'] ?? null;
+                if (! $condition) {
+                    continue;
+                }
+
+                $id = $question['id'] ?? '?';
+                $targetId = $condition['question'] ?? null;
+                $operator = $condition['operator'] ?? null;
+
+                if (! $targetId || ! in_array($targetId, $questionIds, true)) {
+                    $errors[] = "Question '{$id}' has conditional logic referencing a non-existent question.";
+                }
+
+                if (! in_array($operator, ConditionEvaluator::OPERATORS, true)) {
+                    $errors[] = "Question '{$id}' has conditional logic with an invalid operator.";
+                }
+
+                if ($targetId === $id) {
+                    $errors[] = "Question '{$id}' cannot have conditional logic that depends on itself.";
+                }
+            }
         }
 
         return $errors;
