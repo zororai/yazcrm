@@ -25,6 +25,9 @@ Route::middleware('auth')->group(function () {
     Route::get('change-password',  [Web\AuthController::class, 'showChangePassword'])->name('password.change');
     Route::post('change-password', [Web\AuthController::class, 'changePassword'])->name('password.change.store');
 
+    Route::get('profile',           [Web\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('profile/password',  [Web\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
     Route::get('audit-log', [Web\AuditLogController::class, 'index'])->name('audit-log.index');
 
     // ─── Data Collection — Phase 1 (Projects, Forms, Form Versions) ──────────

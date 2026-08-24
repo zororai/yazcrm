@@ -265,13 +265,15 @@ function logout() {
             <!-- User -->
             <div class="border-t border-gray-700 p-4">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
-                        {{ user?.name?.charAt(0)?.toUpperCase() }}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white truncate">{{ user?.name }}</p>
-                        <p class="text-xs text-gray-400 truncate capitalize">{{ user?.role }}</p>
-                    </div>
+                    <Link href="/profile" class="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
+                            {{ user?.name?.charAt(0)?.toUpperCase() }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-white truncate">{{ user?.name }}</p>
+                            <p class="text-xs text-gray-400 truncate capitalize">{{ user?.role }}</p>
+                        </div>
+                    </Link>
                     <button
                         @click="logout"
                         class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
@@ -323,13 +325,15 @@ function logout() {
                 </Link>
                 <!-- User profile -->
                 <div class="flex items-center gap-3 pl-3 border-l border-gray-700 flex-shrink-0">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
-                        {{ user?.name?.charAt(0)?.toUpperCase() }}
-                    </div>
-                    <div class="hidden md:block">
-                        <p class="text-sm font-medium text-white leading-tight">{{ user?.name }}</p>
-                        <p class="text-xs text-gray-400 capitalize leading-tight">{{ user?.role }}</p>
-                    </div>
+                    <Link href="/profile" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
+                            {{ user?.name?.charAt(0)?.toUpperCase() }}
+                        </div>
+                        <div class="hidden md:block">
+                            <p class="text-sm font-medium text-white leading-tight">{{ user?.name }}</p>
+                            <p class="text-xs text-gray-400 capitalize leading-tight">{{ user?.role }}</p>
+                        </div>
+                    </Link>
                     <button
                         @click="logout"
                         class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"

@@ -2,9 +2,13 @@
 import { computed, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, RectangleStackIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon, RectangleStackIcon, UserPlusIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ form: Object, versions: Array, isManager: Boolean });
+const props = defineProps({
+    form: Object, versions: Array, assignments: { type: Array, default: () => [] },
+    submissions: { type: Array, default: () => [] }, users: { type: Array, default: () => [] },
+    isManager: Boolean,
+});
 
 const QUESTION_TYPES = [
     'text', 'long_text', 'number', 'decimal', 'integer', 'email', 'phone',
@@ -70,6 +74,24 @@ const versionStatusColor = {
     published: 'bg-green-100 text-green-800',
     retired: 'bg-gray-200 text-gray-500',
 };
+
+const submissionStatusColor = {
+    draft: 'bg-gray-100 text-gray-700',
+    submitted: 'bg-green-100 text-green-800',
+};
+
+const showAssign = ref(false);
+const assignForm = useForm({ assigned_to: '', due_date: '' });
+
+function submitAssign() {
+    assignForm.post(`/data-collection/forms/${props.form.id}/assignments`, {
+        onSuccess: () => { showAssign.value = false; assignForm.reset(); },
+    });
+}
+
+function openSubmission(s) {
+    router.get(`/data-collection/submissions/${s.id}`);
+}
 </script>
 
 <template>
@@ -77,6 +99,9 @@ const versionStatusColor = {
         <template #title>{{ form.name }}</template>
         <template #header-actions>
             <div class="flex gap-2" v-if="isManager">
+                <button v-if="form.current_version_id" @click="showAssign = true" class="btn-secondary btn-sm">
+                    <UserPlusIcon class="h-4 w-4" /> Assign
+                </button>
                 <button v-if="!draftVersion" @click="createNewVersion" class="btn-secondary btn-sm">
                     <RectangleStackIcon class="h-4 w-4" /> New Version
                 </button>
@@ -165,6 +190,51 @@ const versionStatusColor = {
 
         <div v-else class="card text-sm text-gray-400 text-center py-8">
             This form has no draft version to edit. Click "New Version" to start one.
+        </div>
+
+        <div v-if="isManager" class="card mt-4">
+            <h3 class="font-semibold text-gray-900 mb-2 text-sm">Assignments</h3>
+            <ul class="text-sm divide-y divide-gray-50">
+                <li v-for="a in assignments" :key="a.id" class="flex items-center justify-between py-2">
+                    <span>{{ a.assignee?.name }} <span class="text-xs text-gray-400">v{{ a.form_version?.version_number }}</span></span>
+                    <span class="badge bg-gray-100 text-gray-700">{{ a.status }}</span>
+                </li>
+                <li v-if="!assignments.length" class="text-gray-400 text-center py-4">Nobody assigned yet.</li>
+            </ul>
+        </div>
+
+        <div class="card mt-4">
+            <h3 class="font-semibold text-gray-900 mb-2 text-sm">{{ isManager ? 'Submissions' : 'My Submissions' }}</h3>
+            <ul class="text-sm divide-y divide-gray-50">
+                <li v-for="s in submissions" :key="s.id" @click="openSubmission(s)" class="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded">
+                    <span>{{ s.submitted_by?.name }} <span class="text-xs text-gray-400">{{ s.completion_percentage }}%</span></span>
+                    <span :class="['badge', submissionStatusColor[s.status]]">{{ s.status }}</span>
+                </li>
+                <li v-if="!submissions.length" class="text-gray-400 text-center py-4">No submissions yet.</li>
+            </ul>
+        </div>
+
+        <div v-if="showAssign" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-4">Assign Form</h3>
+                <form @submit.prevent="submitAssign" class="space-y-3">
+                    <div>
+                        <label class="label">Assign To</label>
+                        <select v-model="assignForm.assigned_to" class="input" required>
+                            <option value="" disabled>Select…</option>
+                            <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Due Date</label>
+                        <input v-model="assignForm.due_date" type="date" class="input" />
+                    </div>
+                    <div class="flex gap-2 justify-end pt-1">
+                        <button type="button" @click="showAssign = false" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" :disabled="assignForm.processing">Assign</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </AppLayout>
 </template>
