@@ -27,13 +27,16 @@ class StockReceiptController extends Controller
         }
 
         $data = $request->validate([
-            'supplier_name'          => 'nullable|string|max:255',
-            'reference_number'       => 'nullable|string|max:100',
-            'notes'                  => 'nullable|string',
-            'lines'                  => 'required|array|min:1',
-            'lines.*.item_id'        => 'required|exists:items,id',
-            'lines.*.quantity'       => 'required|integer|min:1',
-            'lines.*.unit_cost'      => 'nullable|numeric|min:0',
+            'supplier_name'                    => 'nullable|string|max:255',
+            'supplier_id'                       => 'nullable|exists:suppliers,id',
+            'purchase_order_id'                 => 'nullable|exists:purchase_orders,id',
+            'reference_number'                  => 'nullable|string|max:100',
+            'notes'                              => 'nullable|string',
+            'lines'                              => 'required|array|min:1',
+            'lines.*.item_id'                    => 'required|exists:items,id',
+            'lines.*.purchase_order_item_id'     => 'nullable|exists:purchase_order_items,id',
+            'lines.*.quantity'                   => 'required|integer|min:1',
+            'lines.*.unit_cost'                  => 'nullable|numeric|min:0',
         ]);
 
         $this->stock->receiveStock($store, $request->user(), $data['lines'], $data);

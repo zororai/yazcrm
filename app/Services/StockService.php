@@ -17,6 +17,10 @@ use RuntimeException;
 
 class StockService
 {
+    public function __construct(private readonly PurchaseOrderService $purchaseOrders)
+    {
+    }
+
     private function stockFor(int $storeId, int $itemId): StoreStock
     {
         return StoreStock::firstOrCreate(['store_id' => $storeId, 'item_id' => $itemId]);
@@ -35,16 +39,20 @@ class StockService
         ]);
     }
 
-    // §8 Stock Receiving — increases store_stock.quantity per line.
+    // §8 Stock Receiving — increases store_stock.quantity per line. When a
+    // line references a purchase order item, its received quantity is
+    // tracked and the PO's fulfillment status is recomputed.
     public function receiveStock(Store $store, User $actor, array $lines, array $meta = []): StockReceipt
     {
         return DB::transaction(function () use ($store, $actor, $lines, $meta) {
             $receipt = StockReceipt::create([
-                'store_id'         => $store->id,
-                'received_by'      => $actor->id,
-                'supplier_name'    => $meta['supplier_name'] ?? null,
-                'reference_number' => $meta['reference_number'] ?? null,
-                'notes'            => $meta['notes'] ?? null,
+                'store_id'           => $store->id,
+                'purchase_order_id'  => $meta['purchase_order_id'] ?? null,
+                'received_by'        => $actor->id,
+                'supplier_name'      => $meta['supplier_name'] ?? null,
+                'supplier_id'        => $meta['supplier_id'] ?? null,
+                'reference_number'   => $meta['reference_number'] ?? null,
+                'notes'              => $meta['notes'] ?? null,
             ]);
             $receipt->update(['receipt_number' => $this->number('GRN', $receipt->id)]);
 
@@ -55,10 +63,15 @@ class StockService
                 }
 
                 $receipt->items()->create([
-                    'item_id'   => $line['item_id'],
-                    'quantity'  => $qty,
-                    'unit_cost' => $line['unit_cost'] ?? null,
+                    'item_id'                 => $line['item_id'],
+                    'purchase_order_item_id'  => $line['purchase_order_item_id'] ?? null,
+                    'quantity'                => $qty,
+                    'unit_cost'               => $line['unit_cost'] ?? null,
                 ]);
+
+                if (! empty($line['purchase_order_item_id'])) {
+                    \App\Models\PurchaseOrderItem::where('id', $line['purchase_order_item_id'])->increment('quantity_received', $qty);
+                }
 
                 $stock = $this->stockFor($store->id, $line['item_id']);
                 $stock->increment('quantity', $qty);
@@ -68,6 +81,10 @@ class StockService
                     'reference_type' => 'stock_receipt', 'reference_id' => $receipt->id,
                     'quantity_change' => $qty,
                 ]);
+            }
+
+            if (! empty($meta['purchase_order_id'])) {
+                $this->purchaseOrders->syncFulfillment(\App\Models\PurchaseOrder::findOrFail($meta['purchase_order_id']));
             }
 
             return $receipt;

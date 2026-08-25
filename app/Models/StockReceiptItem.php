@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockReceiptItem extends Model
 {
-    protected $fillable = ['stock_receipt_id', 'item_id', 'quantity', 'unit_cost'];
+    protected $fillable = ['stock_receipt_id', 'item_id', 'purchase_order_item_id', 'quantity', 'unit_cost'];
 
     public function receipt(): BelongsTo
     {
@@ -17,5 +17,10 @@ class StockReceiptItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function purchaseOrderItem(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrderItem::class);
     }
 }

@@ -37,6 +37,7 @@ const NAV_ITEMS = [
     { key: 'stocktakes', label: 'Stocktakes' },
     { key: 'item_categories', label: 'Item Categories' },
     { key: 'fixed_assets', label: 'Fixed Assets' },
+    { key: 'procurement', label: 'Procurement (Suppliers & Purchase Orders)' },
     { key: 'data_collection', label: 'Data Collection' },
     { key: 'extensions',  label: 'Extensions' },
     { key: 'analytics',   label: 'Analytics' },

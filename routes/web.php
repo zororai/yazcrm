@@ -248,6 +248,23 @@ Route::middleware('auth')->group(function () {
 
     Route::post('fixed-assets/{fixedAsset}/inspections', [Web\FixedAssetInspectionController::class, 'store'])->name('fixed-assets.inspections.store');
 
+    // ─── Procurement — Phase 6 (Suppliers, Purchase Orders, PO→GRN linking) ──
+    Route::get('suppliers',              [Web\SupplierController::class, 'index'])->name('suppliers.index');
+    Route::post('suppliers',             [Web\SupplierController::class, 'store'])->name('suppliers.store');
+    Route::put('suppliers/{supplier}',   [Web\SupplierController::class, 'update'])->name('suppliers.update');
+    Route::delete('suppliers/{supplier}', [Web\SupplierController::class, 'destroy'])->name('suppliers.destroy');
+
+    Route::get('purchase-orders',                          [Web\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+    Route::get('purchase-orders/export',                    [Web\PurchaseOrderController::class, 'export'])->name('purchase-orders.export');
+    Route::post('purchase-orders',                          [Web\PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+    Route::get('purchase-orders/{purchaseOrder}',           [Web\PurchaseOrderController::class, 'show'])->name('purchase-orders.show');
+    Route::post('purchase-orders/{purchaseOrder}/submit',   [Web\PurchaseOrderController::class, 'submit'])->name('purchase-orders.submit');
+    Route::post('purchase-orders/{purchaseOrder}/approve',  [Web\PurchaseOrderController::class, 'approve'])->name('purchase-orders.approve');
+    Route::post('purchase-orders/{purchaseOrder}/reject',   [Web\PurchaseOrderController::class, 'reject'])->name('purchase-orders.reject');
+    Route::post('purchase-orders/{purchaseOrder}/mark-sent', [Web\PurchaseOrderController::class, 'markSent'])->name('purchase-orders.mark-sent');
+    Route::post('purchase-orders/{purchaseOrder}/receive',  [Web\PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+    Route::post('purchase-orders/{purchaseOrder}/cancel',   [Web\PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+
     // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
     Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read',   [Web\NotificationController::class, 'markRead'])->name('notifications.read');

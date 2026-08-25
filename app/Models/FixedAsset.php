@@ -13,7 +13,7 @@ class FixedAsset extends Model
 
     protected $fillable = [
         'asset_number', 'asset_category_id', 'name', 'description', 'manufacturer', 'model',
-        'serial_number', 'barcode', 'purchase_date', 'purchase_cost', 'supplier_name',
+        'serial_number', 'barcode', 'purchase_date', 'purchase_cost', 'supplier_name', 'supplier_id',
         'warranty_start', 'warranty_expiry', 'condition', 'status',
         'location_id', 'department_id', 'current_custodian_id', 'created_by',
     ];
@@ -35,6 +35,11 @@ class FixedAsset extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(AssetCategory::class, 'asset_category_id');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function location(): BelongsTo

@@ -28,6 +28,7 @@ const PERM_LABELS = {
     stocktakes: 'Stocktakes',
     item_categories: 'Item Categories',
     fixed_assets: 'Fixed Assets',
+    procurement: 'Procurement (Suppliers & Purchase Orders)',
     data_collection: 'Data Collection',
     extensions:  'Extensions',
     analytics:   'Analytics',
