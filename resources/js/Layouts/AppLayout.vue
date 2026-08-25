@@ -162,6 +162,9 @@ const navigation = computed(() => [
     ...(can('data_collection') ? [{ name: 'My Collection', href: '/my-collection', icon: QueueListIcon }] : []),
     ...(can('data_collection') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Review Queue', href: '/data-collection/review-queue', icon: ClipboardDocumentCheckIcon }] : []),
+    ...(can('fixed_assets') ? [{ name: 'Fixed Assets', href: '/fixed-assets', icon: ServerStackIcon }] : []),
+    ...(can('fixed_assets') && (isAdmin.value || user.value?.role === 'director')
+        ? [{ name: 'Asset Categories', href: '/asset-categories', icon: FolderOpenIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
     ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
     ...(can('stock_transfers') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),

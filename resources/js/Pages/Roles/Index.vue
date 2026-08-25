@@ -27,6 +27,7 @@ const PERM_LABELS = {
     stock_transfers: 'Stock Transfers',
     stocktakes: 'Stocktakes',
     item_categories: 'Item Categories',
+    fixed_assets: 'Fixed Assets',
     data_collection: 'Data Collection',
     extensions:  'Extensions',
     analytics:   'Analytics',

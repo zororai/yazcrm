@@ -227,6 +227,27 @@ Route::middleware('auth')->group(function () {
     Route::put('stocktakes/{stocktake}',      [Web\StocktakeController::class, 'update'])->name('stocktakes.update');
     Route::post('stocktakes/{stocktake}/complete', [Web\StocktakeController::class, 'complete'])->name('stocktakes.complete');
 
+    // ─── Fixed Assets — Phase 3 (register, assign, return, transfer, dispose) ─
+    Route::get('asset-categories',                  [Web\AssetCategoryController::class, 'index'])->name('asset-categories.index');
+    Route::post('asset-categories',                 [Web\AssetCategoryController::class, 'store'])->name('asset-categories.store');
+    Route::put('asset-categories/{assetCategory}',    [Web\AssetCategoryController::class, 'update'])->name('asset-categories.update');
+    Route::delete('asset-categories/{assetCategory}', [Web\AssetCategoryController::class, 'destroy'])->name('asset-categories.destroy');
+
+    Route::get('fixed-assets',              [Web\FixedAssetController::class, 'index'])->name('fixed-assets.index');
+    Route::post('fixed-assets',             [Web\FixedAssetController::class, 'store'])->name('fixed-assets.store');
+    Route::get('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'show'])->name('fixed-assets.show');
+    Route::put('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'update'])->name('fixed-assets.update');
+    Route::post('fixed-assets/{fixedAsset}/assign',   [Web\FixedAssetController::class, 'assign'])->name('fixed-assets.assign');
+    Route::post('fixed-assets/{fixedAsset}/return',   [Web\FixedAssetController::class, 'returnAsset'])->name('fixed-assets.return');
+    Route::post('fixed-assets/{fixedAsset}/transfer', [Web\FixedAssetController::class, 'transfer'])->name('fixed-assets.transfer');
+    Route::post('fixed-assets/{fixedAsset}/dispose',  [Web\FixedAssetController::class, 'dispose'])->name('fixed-assets.dispose');
+
+    Route::post('fixed-assets/{fixedAsset}/maintenance', [Web\FixedAssetMaintenanceController::class, 'store'])->name('fixed-assets.maintenance.store');
+    Route::post('fixed-assets/{fixedAsset}/maintenance/{maintenance}/complete', [Web\FixedAssetMaintenanceController::class, 'complete'])->name('fixed-assets.maintenance.complete');
+    Route::post('fixed-assets/{fixedAsset}/maintenance/{maintenance}/cancel',   [Web\FixedAssetMaintenanceController::class, 'cancel'])->name('fixed-assets.maintenance.cancel');
+
+    Route::post('fixed-assets/{fixedAsset}/inspections', [Web\FixedAssetInspectionController::class, 'store'])->name('fixed-assets.inspections.store');
+
     // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
     Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read',   [Web\NotificationController::class, 'markRead'])->name('notifications.read');
