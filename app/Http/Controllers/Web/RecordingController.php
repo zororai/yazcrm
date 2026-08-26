@@ -15,8 +15,9 @@ class RecordingController extends Controller
         $query = Recording::with(['call.client:id,name', 'call.agent:id,name', 'call.ticket:id,call_id'])
             ->orderByDesc('created_at');
 
-        // Agents only see recordings of calls to their own assigned extension
-        if ($request->user()->role !== 'admin') {
+        // Agents only see recordings of calls to their own assigned extension.
+        // Admins, directors, and helpline managers see everything.
+        if (! in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true)) {
             $extNumber = \App\Models\Extension::where('user_id', $request->user()->id)->value('extension_number');
             if ($extNumber) {
                 $query->whereHas('call', fn ($q) => $q->where('extension_number', $extNumber));
@@ -40,11 +41,20 @@ class RecordingController extends Controller
             $query->whereDate('created_at', '<=', $to);
         }
 
+        $isManager = in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true);
+
+        if ($isManager && ($agentId = $request->input('agent_id'))) {
+            $query->whereHas('call', fn ($q) => $q->where('agent_id', $agentId));
+        }
+
         $recordings = $query->paginate(20)->withQueryString();
 
         return Inertia::render('Recordings/Index', [
             'recordings' => $recordings,
-            'filters'    => $request->only(['search', 'from', 'to']),
+            'filters'    => $request->only(['search', 'from', 'to', 'agent_id']),
+            'agents'     => $isManager
+                ? \App\Models\User::whereHas('extension')->orderBy('name')->get(['id', 'name'])
+                : [],
         ]);
     }
 }

@@ -1,23 +1,35 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import { MagnifyingGlassIcon, ArrowDownTrayIcon, MicrophoneIcon, TicketIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
-const props = defineProps({ recordings: Object, filters: Object });
+const props = defineProps({ recordings: Object, filters: Object, agents: { type: Array, default: () => [] } });
 
-const search = ref(props.filters.search ?? '');
-const from   = ref(props.filters.from   ?? '');
-const to     = ref(props.filters.to     ?? '');
+const search  = ref(props.filters.search ?? '');
+const from    = ref(props.filters.from   ?? '');
+const to      = ref(props.filters.to     ?? '');
+const agentId = ref(props.filters.agent_id ?? '');
+const groupByAgent = ref(true);
 
 const runFilter = debounce(() => {
-    router.get('/recordings', { search: search.value, from: from.value, to: to.value }, {
+    router.get('/recordings', { search: search.value, from: from.value, to: to.value, agent_id: agentId.value }, {
         preserveState: true,
         replace: true,
     });
 }, 400);
+
+const groupedRecordings = computed(() => {
+    const groups = new Map();
+    for (const r of props.recordings.data) {
+        const name = r.call?.agent?.name ?? 'Unassigned';
+        if (! groups.has(name)) groups.set(name, []);
+        groups.get(name).push(r);
+    }
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+});
 
 // ── Attach ticket to a recorded call ─────────────────────────────────────────
 const ticketModalCall = ref(null);
@@ -75,6 +87,16 @@ function statusColor(s) {
                 <label class="label">To</label>
                 <input v-model="to" @change="runFilter" type="date" class="input" />
             </div>
+            <div v-if="agents.length">
+                <label class="label">Agent</label>
+                <select v-model="agentId" @change="runFilter" class="input">
+                    <option value="">All agents</option>
+                    <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
+                </select>
+            </div>
+            <label v-if="agents.length" class="flex items-center gap-2 text-sm text-gray-600 pb-2">
+                <input type="checkbox" v-model="groupByAgent" /> Group by agent
+            </label>
         </div>
 
         <div class="card p-0 overflow-hidden">
@@ -91,42 +113,89 @@ function statusColor(s) {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    <tr v-for="r in recordings.data" :key="r.id" class="hover:bg-gray-50">
-                        <td class="px-4 py-2.5">
-                            <p class="font-medium text-gray-900">{{ r.call?.caller }} → {{ r.call?.callee }}</p>
-                            <p class="text-xs text-gray-400">{{ r.call?.client?.name ?? 'No client linked' }}</p>
-                        </td>
-                        <td class="px-4 py-2.5 text-gray-600">{{ r.call?.agent?.name ?? '—' }}</td>
-                        <td class="px-4 py-2.5 text-gray-600">{{ fmtDuration(r.duration) }}</td>
-                        <td class="px-4 py-2.5 text-gray-600">{{ new Date(r.created_at).toLocaleString() }}</td>
-                        <td class="px-4 py-2.5">
-                            <span :class="['badge', statusColor(r.transcription_status)]">{{ r.transcription_status }}</span>
-                        </td>
-                        <td class="px-4 py-2.5">
-                            <audio controls preload="none" class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
-                        </td>
-                        <td class="px-4 py-2.5 text-right">
-                            <div class="flex gap-2 justify-end items-center">
-                                <a :href="`/api/recordings/${r.id}/download?download=1`" download class="text-gray-400 hover:text-gray-700" title="Download">
-                                    <ArrowDownTrayIcon class="h-4 w-4" />
-                                </a>
-                                <button
-                                    v-if="r.call && !r.call.ticket"
-                                    @click="openTicketModal(r)"
-                                    class="text-gray-400 hover:text-brand-600"
-                                    title="Attach ticket"
-                                >
-                                    <TicketIcon class="h-4 w-4" />
-                                </button>
-                                <Link v-if="r.call?.ticket" :href="`/tickets/${r.call.ticket.id}`" class="text-green-600 hover:underline text-xs font-medium">
-                                    Ticket #{{ r.call.ticket.id }}
-                                </Link>
-                                <Link v-if="r.call" :href="`/calls/${r.call.id}`" class="text-brand-600 hover:underline text-xs font-medium">
-                                    View call
-                                </Link>
-                            </div>
-                        </td>
-                    </tr>
+                    <template v-if="groupByAgent && agents.length">
+                        <template v-for="[agentName, rows] in groupedRecordings" :key="agentName">
+                            <tr class="bg-gray-100">
+                                <td colspan="7" class="px-4 py-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                    {{ agentName }} <span class="font-normal normal-case text-gray-400">({{ rows.length }})</span>
+                                </td>
+                            </tr>
+                            <tr v-for="r in rows" :key="r.id" class="hover:bg-gray-50">
+                                <td class="px-4 py-2.5">
+                                    <p class="font-medium text-gray-900">{{ r.call?.caller }} → {{ r.call?.callee }}</p>
+                                    <p class="text-xs text-gray-400">{{ r.call?.client?.name ?? 'No client linked' }}</p>
+                                </td>
+                                <td class="px-4 py-2.5 text-gray-600">{{ r.call?.agent?.name ?? '—' }}</td>
+                                <td class="px-4 py-2.5 text-gray-600">{{ fmtDuration(r.duration) }}</td>
+                                <td class="px-4 py-2.5 text-gray-600">{{ new Date(r.created_at).toLocaleString() }}</td>
+                                <td class="px-4 py-2.5">
+                                    <span :class="['badge', statusColor(r.transcription_status)]">{{ r.transcription_status }}</span>
+                                </td>
+                                <td class="px-4 py-2.5">
+                                    <audio controls preload="none" class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
+                                </td>
+                                <td class="px-4 py-2.5 text-right">
+                                    <div class="flex gap-2 justify-end items-center">
+                                        <a :href="`/api/recordings/${r.id}/download?download=1`" download class="text-gray-400 hover:text-gray-700" title="Download">
+                                            <ArrowDownTrayIcon class="h-4 w-4" />
+                                        </a>
+                                        <button
+                                            v-if="r.call && !r.call.ticket"
+                                            @click="openTicketModal(r)"
+                                            class="text-gray-400 hover:text-brand-600"
+                                            title="Attach ticket"
+                                        >
+                                            <TicketIcon class="h-4 w-4" />
+                                        </button>
+                                        <Link v-if="r.call?.ticket" :href="`/tickets/${r.call.ticket.id}`" class="text-green-600 hover:underline text-xs font-medium">
+                                            Ticket #{{ r.call.ticket.id }}
+                                        </Link>
+                                        <Link v-if="r.call" :href="`/calls/${r.call.id}`" class="text-brand-600 hover:underline text-xs font-medium">
+                                            View call
+                                        </Link>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </template>
+                    <template v-else>
+                        <tr v-for="r in recordings.data" :key="r.id" class="hover:bg-gray-50">
+                            <td class="px-4 py-2.5">
+                                <p class="font-medium text-gray-900">{{ r.call?.caller }} → {{ r.call?.callee }}</p>
+                                <p class="text-xs text-gray-400">{{ r.call?.client?.name ?? 'No client linked' }}</p>
+                            </td>
+                            <td class="px-4 py-2.5 text-gray-600">{{ r.call?.agent?.name ?? '—' }}</td>
+                            <td class="px-4 py-2.5 text-gray-600">{{ fmtDuration(r.duration) }}</td>
+                            <td class="px-4 py-2.5 text-gray-600">{{ new Date(r.created_at).toLocaleString() }}</td>
+                            <td class="px-4 py-2.5">
+                                <span :class="['badge', statusColor(r.transcription_status)]">{{ r.transcription_status }}</span>
+                            </td>
+                            <td class="px-4 py-2.5">
+                                <audio controls preload="none" class="h-8 max-w-[220px]" :src="`/api/recordings/${r.id}/download`" />
+                            </td>
+                            <td class="px-4 py-2.5 text-right">
+                                <div class="flex gap-2 justify-end items-center">
+                                    <a :href="`/api/recordings/${r.id}/download?download=1`" download class="text-gray-400 hover:text-gray-700" title="Download">
+                                        <ArrowDownTrayIcon class="h-4 w-4" />
+                                    </a>
+                                    <button
+                                        v-if="r.call && !r.call.ticket"
+                                        @click="openTicketModal(r)"
+                                        class="text-gray-400 hover:text-brand-600"
+                                        title="Attach ticket"
+                                    >
+                                        <TicketIcon class="h-4 w-4" />
+                                    </button>
+                                    <Link v-if="r.call?.ticket" :href="`/tickets/${r.call.ticket.id}`" class="text-green-600 hover:underline text-xs font-medium">
+                                        Ticket #{{ r.call.ticket.id }}
+                                    </Link>
+                                    <Link v-if="r.call" :href="`/calls/${r.call.id}`" class="text-brand-600 hover:underline text-xs font-medium">
+                                        View call
+                                    </Link>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
                     <tr v-if="!recordings.data.length">
                         <td colspan="7" class="px-4 py-16 text-center text-gray-400">
                             <MicrophoneIcon class="h-8 w-8 mx-auto mb-2 text-gray-300" />

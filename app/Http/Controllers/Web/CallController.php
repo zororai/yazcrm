@@ -21,8 +21,9 @@ class CallController extends Controller
         $user  = $request->user();
         $query = Call::with(['client', 'agent', 'recording'])->latest('started_at');
 
-        // Agents only see their own calls via their assigned extension
-        if ($user->role !== 'admin') {
+        // Agents only see their own calls via their assigned extension.
+        // Admins, directors, and helpline managers see everything.
+        if (! in_array($user->role, ['admin', 'director', 'helpline_manager'], true)) {
             $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
             if ($extNumber) {
                 $query->where('extension_number', $extNumber);
@@ -57,7 +58,7 @@ class CallController extends Controller
         return Inertia::render('Calls/Index', [
             'calls'      => $calls,
             'filters'    => $request->only(['direction', 'status', 'search', 'date_from', 'date_to']),
-            'is_agent'   => $user->role !== 'admin',
+            'is_agent'   => ! in_array($user->role, ['admin', 'director', 'helpline_manager'], true),
         ]);
     }
 
@@ -66,7 +67,7 @@ class CallController extends Controller
         $user  = $request->user();
         $query = Call::with(['client', 'agent'])->latest('started_at');
 
-        if ($user->role !== 'admin') {
+        if (! in_array($user->role, ['admin', 'director', 'helpline_manager'], true)) {
             $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
             if ($extNumber) {
                 $query->where('extension_number', $extNumber);
