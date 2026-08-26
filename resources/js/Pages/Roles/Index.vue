@@ -11,6 +11,7 @@ const props = defineProps({
 
 const PERM_LABELS = {
     dashboard:   'Dashboard',
+    helpline_dashboard: 'Helpline Dashboards and Data',
     dialer:      'Dialer',
     calls:       'Calls',
     recordings:  'Recordings',

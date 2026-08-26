@@ -2750,6 +2750,13 @@ window.addEventListener('DOMContentLoaded', () => {
   updateSocial(TICKET_DEFAULT);
   renderTargets();
 
+  // Deep-link straight into a section, e.g. /screen?section=calls
+  const requestedSection = new URLSearchParams(window.location.search).get('section');
+  if (requestedSection) {
+    const btn = document.querySelector(`.sb-btn[onclick*="showSection('${requestedSection}'"]`);
+    if (btn) showSection(requestedSection, btn);
+  }
+
   // Refresh data every 60 seconds without reloading the page
   setInterval(refreshData, 60_000);
 });

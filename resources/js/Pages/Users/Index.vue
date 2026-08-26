@@ -20,6 +20,7 @@ const resetForm = useForm({ password: '', password_confirmation: '' });
 
 const NAV_ITEMS = [
     { key: 'dashboard',   label: 'Dashboard' },
+    { key: 'helpline_dashboard', label: 'Helpline Dashboards and Data' },
     { key: 'dialer',      label: 'Dialer' },
     { key: 'calls',       label: 'Calls' },
     { key: 'recordings',  label: 'Recordings' },

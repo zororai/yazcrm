@@ -142,6 +142,7 @@ onUnmounted(() => {
 
 const navigation = computed(() => [
     ...(can('dashboard')    ? [{ name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon }] : []),
+    ...(can('helpline_dashboard') ? [{ name: 'Call Activity', href: '/screen?section=calls', icon: ChartBarIcon }] : []),
     { name: 'My Work', href: '/my-work', icon: ClipboardDocumentCheckIcon },
     ...(can('dialer')       ? [{ name: 'Dialer',     href: '/dialer',      icon: PhoneArrowUpRightIcon }] : []),
     ...(can('calls')        ? [{ name: 'Calls',      href: '/calls',       icon: PhoneIcon }] : []),
