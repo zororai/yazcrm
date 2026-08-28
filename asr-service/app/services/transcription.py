@@ -47,9 +47,10 @@ def normalize_audio(src_path: str) -> str:
     import os
     os.close(fd)
 
+    settings = get_settings()
     result = subprocess.run(
         [
-            "ffmpeg", "-y", "-i", src_path,
+            settings.ffmpeg_path, "-y", "-i", src_path,
             "-ac", "1", "-ar", str(TARGET_SAMPLE_RATE), "-f", "wav", dst_path,
         ],
         capture_output=True,
@@ -93,8 +94,6 @@ def transcribe(audio_path: str, filename: str, language: str, model_override: st
 
     normalized_path = normalize_audio(audio_path)
     try:
-        started = time.perf_counter()
-
         waveform, sample_rate = torchaudio.load(normalized_path)
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
@@ -105,7 +104,12 @@ def transcribe(audio_path: str, filename: str, language: str, model_override: st
         if audio_array.size == 0:
             raise TranscriptionError("Audio contains no decodable samples.")
 
+        # Model load (incl. first-time download) happens once and is cached —
+        # excluded from processing_time_ms so the metric reflects actual
+        # inference time, not the one-off download/load cost.
         processor, model = get_model_manager().get(model_name)
+
+        started = time.perf_counter()
 
         inputs = processor(audio_array, sampling_rate=TARGET_SAMPLE_RATE, return_tensors="pt")
         inputs = {k: v.to(settings.device) for k, v in inputs.items()}

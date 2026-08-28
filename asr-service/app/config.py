@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     device: str = "cpu"
     max_audio_size_mb: int = 100
+    ffmpeg_path: str = "ffmpeg"
 
     def models_by_language(self) -> dict[str, str]:
         return {
