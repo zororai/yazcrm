@@ -80,6 +80,10 @@ Route::middleware('auth')->group(function () {
     Route::get('calls/export', [Web\CallController::class, 'export'])->name('calls.export');
     Route::get('calls/{call}', [Web\CallController::class, 'show'])->name('calls.show');
     Route::post('calls/{call}/link-client', [Web\CallController::class, 'linkClient'])->name('calls.link-client');
+    Route::post('calls/{call}/transcript', [Web\CallTranscriptController::class, 'store'])->name('calls.transcript.store');
+    Route::post('calls/{call}/transcript/retry', [Web\CallTranscriptController::class, 'retry'])->name('calls.transcript.retry');
+    Route::post('calls/{call}/transcript/viewed', [Web\CallTranscriptController::class, 'markViewed'])->name('calls.transcript.viewed');
+    Route::get('calls/{call}/transcript/export', [Web\CallTranscriptController::class, 'export'])->name('calls.transcript.export');
 
     Route::get('recordings', [Web\RecordingController::class, 'index'])->name('recordings.index');
 

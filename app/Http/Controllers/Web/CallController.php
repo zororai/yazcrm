@@ -135,15 +135,22 @@ class CallController extends Controller
         ]);
     }
 
-    public function show(Call $call): Response
+    public function show(Request $request, Call $call): Response
     {
-        $call->load(['client', 'agent', 'recording', 'ticket', 'callbackQueue.agent']);
+        $this->authorize('view', $call);
+
+        $call->load(['client', 'agent', 'recording', 'ticket', 'callbackQueue.agent', 'transcript']);
 
         $clients = Client::select('id', 'name', 'phone')->orderBy('name')->get();
 
         return Inertia::render('Calls/Show', [
             'call'    => $call,
             'clients' => $clients,
+            'can'     => [
+                'transcribe'      => $request->user()->can('transcribe', $call),
+                'viewTranscript'  => $request->user()->can('viewTranscript', $call),
+                'exportTranscript' => $request->user()->can('exportTranscript', $call),
+            ],
         ]);
     }
 

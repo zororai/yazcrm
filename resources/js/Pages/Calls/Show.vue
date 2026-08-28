@@ -1,10 +1,10 @@
 <script setup>
-import { ref } from 'vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, LinkIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, LinkIcon, ArrowDownTrayIcon, LanguageIcon, ArrowPathIcon, ClipboardDocumentIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ call: Object, clients: Array });
+const props = defineProps({ call: Object, clients: Array, can: Object });
 
 const showLinkModal = ref(false);
 const linkForm = useForm({ client_id: props.call.client?.id ?? '' });
@@ -25,6 +25,40 @@ const statusColor = {
     missed:   'bg-red-100 text-red-800',
     voicemail:'bg-yellow-100 text-yellow-800',
 };
+
+// ── Transcription ────────────────────────────────────────────────────────────
+const transcriptStatusColor = {
+    pending:    'bg-gray-100 text-gray-600',
+    processing: 'bg-amber-100 text-amber-800',
+    completed:  'bg-green-100 text-green-800',
+    failed:     'bg-red-100 text-red-800',
+    cancelled:  'bg-gray-100 text-gray-500',
+};
+
+const transcribeForm = useForm({ language: 'shona' });
+const showTranscript = ref(false);
+const copied = ref(false);
+
+function requestTranscription() {
+    transcribeForm.post(`/calls/${props.call.id}/transcript`);
+}
+
+function retryTranscription() {
+    router.post(`/calls/${props.call.id}/transcript/retry`);
+}
+
+function toggleTranscript() {
+    showTranscript.value = !showTranscript.value;
+    if (showTranscript.value) {
+        router.post(`/calls/${props.call.id}/transcript/viewed`, {}, { preserveScroll: true, preserveState: true, onSuccess: () => {} });
+    }
+}
+
+async function copyTranscript() {
+    await navigator.clipboard.writeText(props.call.transcript.transcript);
+    copied.value = true;
+    setTimeout(() => { copied.value = false; }, 1500);
+}
 </script>
 
 <template>
@@ -84,6 +118,70 @@ const statusColor = {
                     </a>
                 </div>
                 <audio controls class="w-full" :src="`/api/recordings/${call.recording.id}/download`" />
+            </div>
+
+            <!-- Transcription -->
+            <div v-if="call.recording" class="card">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                        <LanguageIcon class="h-4 w-4 text-gray-400" /> Transcription
+                    </h3>
+                    <span v-if="call.transcript" :class="['badge capitalize', transcriptStatusColor[call.transcript.status]]">
+                        {{ call.transcript.status }}
+                    </span>
+                </div>
+
+                <!-- Not yet requested -->
+                <div v-if="!call.transcript" class="flex items-center gap-3">
+                    <select v-if="can.transcribe" v-model="transcribeForm.language" class="input w-40">
+                        <option value="shona">Shona</option>
+                        <option value="english">English</option>
+                        <option value="ndebele">Ndebele</option>
+                    </select>
+                    <button v-if="can.transcribe" @click="requestTranscription" class="btn-primary btn-sm" :disabled="transcribeForm.processing">
+                        Transcribe Call
+                    </button>
+                    <p v-else class="text-sm text-gray-400">No transcription has been requested for this call.</p>
+                </div>
+
+                <!-- Pending / processing -->
+                <div v-else-if="['pending', 'processing'].includes(call.transcript.status)" class="text-sm text-gray-500">
+                    Transcription processing…
+                </div>
+
+                <!-- Failed -->
+                <div v-else-if="call.transcript.status === 'failed'">
+                    <p class="text-sm text-red-600 mb-2">Transcription failed.</p>
+                    <p class="text-xs text-gray-500 mb-3">Reason: {{ call.transcript.error_message ?? 'Unknown error.' }}</p>
+                    <button v-if="can.transcribe" @click="retryTranscription" class="btn-secondary btn-sm">
+                        <ArrowPathIcon class="h-4 w-4" /> Retry
+                    </button>
+                </div>
+
+                <!-- Completed -->
+                <div v-else-if="call.transcript.status === 'completed'">
+                    <dl class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm mb-3">
+                        <div><dt class="text-gray-500">Language</dt><dd class="font-medium capitalize">{{ call.transcript.language }}</dd></div>
+                        <div><dt class="text-gray-500">Model</dt><dd class="font-medium text-xs">{{ call.transcript.model }}</dd></div>
+                        <div v-if="call.transcript.confidence"><dt class="text-gray-500">Confidence</dt><dd class="font-medium">{{ Math.round(call.transcript.confidence * 100) }}%</dd></div>
+                    </dl>
+
+                    <div class="flex items-center gap-3 mb-3">
+                        <button @click="toggleTranscript" class="btn-secondary btn-sm">
+                            {{ showTranscript ? 'Hide Transcript' : 'View Transcript' }}
+                        </button>
+                        <button v-if="showTranscript" @click="copyTranscript" class="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1">
+                            <ClipboardDocumentIcon class="h-4 w-4" /> {{ copied ? 'Copied!' : 'Copy' }}
+                        </button>
+                        <a v-if="can.exportTranscript" :href="`/calls/${call.id}/transcript/export`" class="text-sm text-brand-600 hover:underline inline-flex items-center gap-1">
+                            <ArrowDownTrayIcon class="h-4 w-4" /> Download
+                        </a>
+                    </div>
+
+                    <p v-if="showTranscript" class="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded-lg p-3">
+                        {{ call.transcript.transcript }}
+                    </p>
+                </div>
             </div>
 
             <!-- Related ticket -->

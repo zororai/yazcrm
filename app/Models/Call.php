@@ -33,6 +33,11 @@ class Call extends Model
         return $this->hasOne(Recording::class);
     }
 
+    public function transcript()
+    {
+        return $this->hasOne(CallTranscript::class);
+    }
+
     public function ticket()
     {
         return $this->hasOne(Ticket::class);
