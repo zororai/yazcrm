@@ -54,6 +54,10 @@ function band(score) {
                         <p class="capitalize text-gray-800">{{ asset.type }}</p>
                     </div>
                     <div>
+                        <p class="text-xs text-gray-400">Category</p>
+                        <p class="text-gray-800">{{ asset.category?.name ?? 'Uncategorized' }}</p>
+                    </div>
+                    <div>
                         <p class="text-xs text-gray-400">Location</p>
                         <p class="text-gray-800">{{ asset.location ?? '—' }}</p>
                     </div>
@@ -159,6 +163,22 @@ function band(score) {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Activity Log -->
+            <div class="card">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Activity Log</h3>
+                <div v-if="!asset.activity_logs?.length" class="text-sm text-gray-400 py-4 text-center">No activity recorded yet.</div>
+                <ul v-else class="space-y-3">
+                    <li v-for="log in asset.activity_logs" :key="log.id" class="flex items-start justify-between text-sm border-b border-gray-50 pb-2 last:border-0">
+                        <div>
+                            <span class="badge bg-gray-100 text-gray-700 capitalize mr-2">{{ log.action }}</span>
+                            <span class="text-gray-600">{{ log.user?.name ?? 'System' }}</span>
+                            <span v-if="log.changed_fields?.length" class="text-gray-400"> — {{ log.changed_fields.join(', ') }}</span>
+                        </div>
+                        <span class="text-xs text-gray-400 shrink-0 ml-3">{{ new Date(log.created_at).toLocaleString() }}</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </AppLayout>

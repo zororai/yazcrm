@@ -297,7 +297,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/assets/{asset}/edit', [Web\AssetController::class, 'edit'])->name('assets.edit');
         Route::put('/assets/{asset}', [Web\AssetController::class, 'update'])->name('assets.update');
         Route::delete('/assets/{asset}', [Web\AssetController::class, 'destroy'])->name('assets.destroy');
+        Route::post('/assets/{asset}/restore', [Web\AssetController::class, 'restore'])->name('assets.restore');
+        Route::delete('/assets/{asset}/force', [Web\AssetController::class, 'forceDestroy'])->name('assets.force-destroy');
         Route::get('/export', [Web\AssetRegisterController::class, 'export'])->name('registry.export');
+        Route::post('/import', [Web\AssetRegisterController::class, 'import'])->name('registry.import');
+        Route::get('/import-template', [Web\AssetRegisterController::class, 'importTemplate'])->name('registry.import-template');
+        Route::post('/bulk', [Web\AssetRegisterController::class, 'bulkAction'])->name('registry.bulk');
+
+        Route::get('/categories', [Web\ItAssetCategoryController::class, 'index'])->name('it-asset-categories.index');
+        Route::post('/categories', [Web\ItAssetCategoryController::class, 'store'])->name('it-asset-categories.store');
+        Route::put('/categories/{itAssetCategory}', [Web\ItAssetCategoryController::class, 'update'])->name('it-asset-categories.update');
+        Route::delete('/categories/{itAssetCategory}', [Web\ItAssetCategoryController::class, 'destroy'])->name('it-asset-categories.destroy');
     });
 
     // ─── Risk Register (admin only) ──────────────────────────────────────────

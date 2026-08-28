@@ -4,8 +4,9 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { Link } from '@inertiajs/vue3';
 
 const props = defineProps({
-    asset:   Object,
-    options: Object,
+    asset:      Object,
+    options:    Object,
+    categories: { type: Array, default: () => [] },
 });
 
 const isEdit = !!props.asset;
@@ -14,6 +15,7 @@ const form = useForm({
     asset_tag:          props.asset?.asset_tag          ?? '',
     name:               props.asset?.name               ?? '',
     type:               props.asset?.type               ?? 'server',
+    category_id:        props.asset?.category_id        ?? '',
     location:           props.asset?.location           ?? '',
     ip_address:         props.asset?.ip_address         ?? '',
     owner:              props.asset?.owner              ?? '',
@@ -67,6 +69,13 @@ function submit() {
                             <label class="label">Type *</label>
                             <select v-model="form.type" class="input" required>
                                 <option v-for="t in options.types" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label">Category</label>
+                            <select v-model="form.category_id" class="input">
+                                <option value="">Uncategorized</option>
+                                <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                             </select>
                         </div>
                         <div>
