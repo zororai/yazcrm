@@ -12,3 +12,9 @@ auth.json
 npm-debug.log
 yarn-error.log
 test_*.php
+.env
+.env.*
+!.env.example
+asr-service/.env
+asr-service/venv
+asr-service/__pycache__

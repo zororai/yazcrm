@@ -48,4 +48,14 @@ class CallPolicy
     {
         return $this->isManager($user);
     }
+
+    public function viewAiAnalysis(User $user, Call $call): bool
+    {
+        return $this->view($user, $call);
+    }
+
+    public function reviewAiAnalysis(User $user, Call $call): bool
+    {
+        return $this->isManager($user);
+    }
 }

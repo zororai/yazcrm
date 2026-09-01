@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Events\CallEndedEvent;
 use App\Events\IncomingCallEvent;
 use App\Jobs\TranscribeAndDraftNotes;
+use App\Jobs\TranscribeCall;
 use App\Models\Call;
 use App\Models\CallbackQueue;
+use App\Models\CallTranscript;
 use App\Models\Client;
 use App\Models\Extension;
 use App\Models\Recording;
@@ -14,6 +16,7 @@ use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class WebhookController extends Controller
 {
@@ -124,6 +127,17 @@ class WebhookController extends Controller
                 ]
             );
             TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
+
+            // Multilingual ASR pipeline — opt-in alongside the existing
+            // Whisper-based one above. See config/asr.php for why this is
+            // off by default (blocking risk under QUEUE_CONNECTION=sync).
+            if (config('asr.auto_transcribe.enabled') && ! CallTranscript::where('call_id', $call->id)->exists()) {
+                try {
+                    TranscribeCall::dispatch($call->id, config('asr.auto_transcribe.default_language', 'shona'));
+                } catch (Throwable $e) {
+                    Log::error('Auto-transcription dispatch failed', ['call_id' => $call->id, 'error' => $e->getMessage()]);
+                }
+            }
         }
 
         // Only queue a callback for inbound missed calls — not outbound or internal

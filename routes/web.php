@@ -84,6 +84,8 @@ Route::middleware('auth')->group(function () {
     Route::post('calls/{call}/transcript/retry', [Web\CallTranscriptController::class, 'retry'])->name('calls.transcript.retry');
     Route::post('calls/{call}/transcript/viewed', [Web\CallTranscriptController::class, 'markViewed'])->name('calls.transcript.viewed');
     Route::get('calls/{call}/transcript/export', [Web\CallTranscriptController::class, 'export'])->name('calls.transcript.export');
+    Route::post('calls/{call}/ai-analysis', [Web\CallAiAnalysisController::class, 'store'])->name('calls.ai-analysis.store');
+    Route::post('calls/{call}/ai-analysis/review', [Web\CallAiAnalysisController::class, 'review'])->name('calls.ai-analysis.review');
 
     Route::get('recordings', [Web\RecordingController::class, 'index'])->name('recordings.index');
 

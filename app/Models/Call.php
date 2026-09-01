@@ -38,6 +38,11 @@ class Call extends Model
         return $this->hasOne(CallTranscript::class);
     }
 
+    public function aiAnalysis()
+    {
+        return $this->hasOne(CallAiAnalysis::class);
+    }
+
     public function ticket()
     {
         return $this->hasOne(Ticket::class);

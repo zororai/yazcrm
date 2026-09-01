@@ -88,6 +88,14 @@ class TranscribeCall implements ShouldQueue
                 'error_message'       => null,
                 'completed_at'        => now(),
             ]);
+
+            if (config('asr.ai_intelligence.enabled')) {
+                try {
+                    AnalyzeCallTranscript::dispatch($call->id);
+                } catch (Throwable $e) {
+                    Log::error('AnalyzeCallTranscript dispatch failed', ['call_id' => $call->id, 'error' => $e->getMessage()]);
+                }
+            }
         } catch (Throwable $e) {
             // Never log transcript content — only the failure reason.
             Log::error('TranscribeCall failed', [

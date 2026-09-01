@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Jobs\TranscribeCall;
 use App\Models\Call;
+use App\Models\CallTranscript;
 use App\Models\Extension;
 use App\Models\Recording;
 use App\Models\Setting;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class YeastarService
 {
@@ -240,7 +243,7 @@ class YeastarService
                 );
 
                 if (!empty($row['recordfile'])) {
-                    Recording::firstOrCreate(
+                    $recording = Recording::firstOrCreate(
                         ['call_id' => $call->id],
                         [
                             'file_name' => basename($row['recordfile']),
@@ -248,6 +251,7 @@ class YeastarService
                             'duration'  => (int)($row['talkduration'] ?? 0),
                         ]
                     );
+                    $this->maybeAutoTranscribe($recording);
                 }
 
                 $synced++;
@@ -289,10 +293,11 @@ class YeastarService
                 );
 
                 if (!empty($cdr['recording_file'])) {
-                    Recording::firstOrCreate(
+                    $recording = Recording::firstOrCreate(
                         ['call_id' => $call->id],
                         ['file_name' => basename($cdr['recording_file']), 'file_path' => $cdr['recording_file'], 'duration' => (int)($cdr['duration'] ?? 0)]
                     );
+                    $this->maybeAutoTranscribe($recording);
                 }
 
                 $synced++;
@@ -301,6 +306,31 @@ class YeastarService
         } while (count($cdrList) === 100);
 
         return $synced;
+    }
+
+    /**
+     * Queue a newly-synced recording for transcription, per spec §21's
+     * "Call Ends → Recording Available → ... → TranscribeCall dispatched"
+     * flow. Gated behind config('asr.auto_transcribe.enabled') — see that
+     * config's comment for why this defaults off (blocking risk under a
+     * sync queue connection). Never throws: a transcription failure must
+     * never break call syncing.
+     */
+    private function maybeAutoTranscribe(Recording $recording): void
+    {
+        if (! $recording->wasRecentlyCreated || ! config('asr.auto_transcribe.enabled')) {
+            return;
+        }
+
+        if (CallTranscript::where('call_id', $recording->call_id)->exists()) {
+            return;
+        }
+
+        try {
+            TranscribeCall::dispatch($recording->call_id, config('asr.auto_transcribe.default_language', 'shona'));
+        } catch (Throwable $e) {
+            Log::error('Auto-transcription dispatch failed', ['call_id' => $recording->call_id, 'error' => $e->getMessage()]);
+        }
     }
 
     private function mapDirectionFromDb(string $calltype): string

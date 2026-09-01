@@ -139,7 +139,7 @@ class CallController extends Controller
     {
         $this->authorize('view', $call);
 
-        $call->load(['client', 'agent', 'recording', 'ticket', 'callbackQueue.agent', 'transcript']);
+        $call->load(['client', 'agent', 'recording', 'ticket', 'callbackQueue.agent', 'transcript', 'aiAnalysis']);
 
         $clients = Client::select('id', 'name', 'phone')->orderBy('name')->get();
 
@@ -147,9 +147,10 @@ class CallController extends Controller
             'call'    => $call,
             'clients' => $clients,
             'can'     => [
-                'transcribe'      => $request->user()->can('transcribe', $call),
-                'viewTranscript'  => $request->user()->can('viewTranscript', $call),
+                'transcribe'       => $request->user()->can('transcribe', $call),
+                'viewTranscript'   => $request->user()->can('viewTranscript', $call),
                 'exportTranscript' => $request->user()->can('exportTranscript', $call),
+                'reviewAiAnalysis' => $request->user()->can('reviewAiAnalysis', $call),
             ],
         ]);
     }
