@@ -239,6 +239,41 @@ class TicketController extends Controller
         return response()->json($numbers);
     }
 
+    // Looks up today's call recording for a contact number, so a manually
+    // created ticket can pull in the same AI-drafted summary the auto-popup
+    // ticket flow gets — scoped to today only, matching the spec ask.
+    public function findRecordingByNumber(Request $request): JsonResponse
+    {
+        $number = trim($request->get('number', ''));
+        if ($number === '') {
+            return response()->json(['found' => false]);
+        }
+
+        $call = Call::whereDate('started_at', today())
+            ->where(function ($q) use ($number) {
+                $q->where('caller', $number)->orWhere('callee', $number);
+            })
+            ->whereHas('recording')
+            ->with('recording')
+            ->latest('started_at')
+            ->first();
+
+        if (! $call || ! $call->recording) {
+            return response()->json(['found' => false]);
+        }
+
+        $recording = $call->recording;
+
+        return response()->json([
+            'found'         => true,
+            'call_id'       => $call->id,
+            'recording_id'  => $recording->id,
+            'status'        => $recording->transcription_status,
+            'ai_notes'      => $recording->ai_notes,
+            'started_at'    => $call->started_at,
+        ]);
+    }
+
     private array $crmRules = [
         'psychosocial_type'        => 'nullable|in:Awareness Raising,Helpline Marketing,Counselling',
         'contact_number'           => 'nullable|string|max:50',

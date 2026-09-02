@@ -148,7 +148,14 @@ class WebhookController extends Controller
                     'format'    => 'wav',
                 ]
             );
-            TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
+            // On QUEUE_CONNECTION=sync (no worker), dispatch() runs inline
+            // and can now throw (see TranscribeAndDraftNotes) — must not let
+            // that break the webhook response back to the PBX.
+            try {
+                TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
+            } catch (Throwable $e) {
+                Log::error('TranscribeAndDraftNotes dispatch failed', ['recording_id' => $recording->id, 'error' => $e->getMessage()]);
+            }
 
             // Multilingual ASR pipeline — opt-in alongside the existing
             // Whisper-based one above. See config/asr.php for why this is

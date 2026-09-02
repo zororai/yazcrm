@@ -13,15 +13,24 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use OpenAI\Laravel\Facades\OpenAI;
+use RuntimeException;
 
 class TranscribeAndDraftNotes implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 2;
+    public int $tries = 4;
     public int $timeout = 300;
 
     public function __construct(public readonly int $recordingId) {}
+
+    public function backoff(): array
+    {
+        // The recording often isn't finalized on the PBX the instant the
+        // call-end webhook fires — give it time to actually become
+        // available instead of failing permanently on the first attempt.
+        return [15, 30, 60];
+    }
 
     public function handle(YeastarService $yeastar): void
     {
@@ -31,14 +40,24 @@ class TranscribeAndDraftNotes implements ShouldQueue
         $recording->update(['transcription_status' => 'processing']);
 
         try {
-            // 1. Get a download URL from Yeastar
-            $url = $recording->file_url
-                ?? $yeastar->getRecordingDownloadUrl($recording->file_name);
+            // 1. Get a download URL from Yeastar. The recording is often not
+            // finalized on the PBX the instant the call-end webhook fires,
+            // so poll briefly in-process before giving up — this matters
+            // regardless of queue driver, and is the only thing that helps
+            // under QUEUE_CONNECTION=sync, where $tries/backoff() never
+            // actually get a chance to run (sync executes a job exactly
+            // once per dispatch — there's no worker loop to retry it).
+            $url = $recording->file_url;
+            for ($attempt = 0; ! $url && $attempt < 3; $attempt++) {
+                if ($attempt > 0) {
+                    sleep(3);
+                }
+                $url = $yeastar->getRecordingDownloadUrl($recording->file_name);
+            }
 
             if (!$url) {
-                $recording->update(['transcription_status' => 'failed']);
-                Log::warning("TranscribeAndDraftNotes: no URL for recording {$this->recordingId}");
-                return;
+                Log::warning("TranscribeAndDraftNotes: no URL yet for recording {$this->recordingId} (attempt {$this->attempts()})");
+                throw new RuntimeException('Recording not yet available from PBX.');
             }
 
             // 2. Download the audio file into a temp file
@@ -46,9 +65,8 @@ class TranscribeAndDraftNotes implements ShouldQueue
             $response = Http::withoutVerifying()->timeout(120)->get($url);
 
             if (!$response->successful()) {
-                $recording->update(['transcription_status' => 'failed']);
-                Log::warning("TranscribeAndDraftNotes: download failed for recording {$this->recordingId}");
-                return;
+                Log::warning("TranscribeAndDraftNotes: download failed for recording {$this->recordingId} (attempt {$this->attempts()}, HTTP {$response->status()})");
+                throw new RuntimeException("Recording download failed (HTTP {$response->status()}).");
             }
 
             file_put_contents($tmpPath, $response->body());
