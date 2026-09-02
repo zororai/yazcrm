@@ -62,16 +62,21 @@ const activeCalls   = ref([]);
 const dismissedIds  = ref(new Set());
 let   pollTimer     = null;
 
+// A stable per-call key. Falling back to just the caller's number (as this
+// used to) meant dismissing one call silently suppressed every future call
+// from that same number too — once dismissed, it never popped up again.
+// started_at makes distinct calls from the same number resolve to distinct keys.
+function callKey(c) {
+    return c.call_id ?? c.id ?? `${c.caller ?? c.src ?? 'unknown'}-${c.started_at ?? ''}`;
+}
+
 const visibleCalls = computed(() =>
-    activeCalls.value.filter(c => {
-        const key = c.id ?? c.caller;
-        return !dismissedIds.value.has(key);
-    })
+    activeCalls.value.filter(c => !dismissedIds.value.has(callKey(c)))
 );
 
 function dismissCall(index) {
     const call = visibleCalls.value[index];
-    if (call) dismissedIds.value.add(call.id ?? call.caller);
+    if (call) dismissedIds.value.add(callKey(call));
 }
 
 function requestNotifyPermission() {
@@ -129,7 +134,7 @@ async function pollActiveCalls() {
         const { data } = await axios.get('/api/calls/active');
         const incoming = (data.calls ?? []);
         // Auto-clear dismissed set when a call disappears
-        const currentKeys = new Set(incoming.map(c => c.id ?? c.caller));
+        const currentKeys = new Set(incoming.map(callKey));
         dismissedIds.value.forEach(k => {
             if (!currentKeys.has(k)) dismissedIds.value.delete(k);
         });

@@ -124,7 +124,7 @@ class CallController extends Controller
                 ->where('direction', 'inbound')
                 ->whereNull('ended_at')
                 ->where('started_at', '>=', now()->subSeconds(90))
-                ->get(['id', 'caller', 'callee', 'extension_number', 'started_at', 'client_id'])
+                ->get(['id', 'call_id', 'caller', 'callee', 'extension_number', 'started_at', 'client_id'])
                 ->toArray();
         }
 
