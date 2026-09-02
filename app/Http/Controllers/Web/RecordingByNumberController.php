@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Recording;
 use App\Models\Ticket;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,20 +12,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 // Groups recordings (via their call's caller number) and tickets (via
-// contact_number) by phone number, so a supervisor can see e.g. "this
-// number has 10 tickets and 10 recordings" in one place. Manager-only —
-// this is a cross-caller supervisory/QA view, not a normal agent tool.
+// contact_number) by phone number, so anyone can see e.g. "this number
+// has 10 tickets and 10 recordings" in one place.
 class RecordingByNumberController extends Controller
 {
-    private function isManager(User $user): bool
-    {
-        return in_array($user->role, ['admin', 'director', 'helpline_manager'], true);
-    }
-
     public function index(Request $request): Response
     {
-        abort_unless($this->isManager($request->user()), 403);
-
         $recordingCounts = DB::table('recordings')
             ->join('calls', 'calls.id', '=', 'recordings.call_id')
             ->whereNotNull('calls.caller')
@@ -79,8 +70,6 @@ class RecordingByNumberController extends Controller
     // Drill-down for one number — fetched on expand, not upfront.
     public function details(Request $request): JsonResponse
     {
-        abort_unless($this->isManager($request->user()), 403);
-
         $number = trim($request->get('number', ''));
         if ($number === '') {
             return response()->json(['recordings' => [], 'tickets' => []]);

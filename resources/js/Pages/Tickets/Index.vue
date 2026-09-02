@@ -1155,7 +1155,12 @@ const statusColor = {
                                     @click="draftNotes"
                                     :disabled="draftingNotes"
                                     :title="foundRecordingId ? 'Generate a summary from the found call recording' : 'Draft a note from the fields filled in so far'"
-                                    class="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                                    :class="[
+                                        'flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
+                                        foundRecordingId
+                                            ? 'bg-gradient-to-r from-brand-600 to-indigo-600 text-white hover:from-brand-700 hover:to-indigo-700'
+                                            : 'bg-brand-50 text-brand-700 hover:bg-brand-100',
+                                    ]"
                                 >
                                     <svg v-if="!draftingNotes" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>

@@ -67,14 +67,23 @@ class TranscribeCall implements ShouldQueue
                 throw new \RuntimeException('Recording download URL unavailable.');
             }
 
-            $response = Http::withoutVerifying()->timeout(120)->get($url);
+            // Yeastar's download endpoint requires the same Authorization
+            // token as every other API call — without it, it returns HTTP
+            // 200 with a small JSON error body (e.g. expired token) instead
+            // of audio, which then fails opaquely downstream.
+            $response = Http::withoutVerifying()->withHeaders(['Authorization' => $yeastar->getAccessToken()])->timeout(120)->get($url);
 
             if (! $response->successful()) {
                 throw new \RuntimeException("Failed to download recording (HTTP {$response->status()}).");
             }
 
-            $tmpPath = tempnam(sys_get_temp_dir(), 'call_') . '.wav';
-            file_put_contents($tmpPath, $response->body());
+            $body = $response->body();
+            if (str_starts_with(ltrim($body), '{')) {
+                throw new \RuntimeException('Recording download returned an error instead of audio (possibly an expired PBX token).');
+            }
+
+            $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'call_' . uniqid() . '.wav';
+            file_put_contents($tmpPath, $body);
 
             $result = $speechToText->transcribe($tmpPath, $this->language);
 

@@ -70,7 +70,7 @@ function statusColor(s) {
 <template>
     <AppLayout>
         <template #title>Call Recordings</template>
-        <template v-if="agents.length" #header-actions>
+        <template #header-actions>
             <Link href="/recordings/by-number" class="btn-secondary btn-sm">Group by Number</Link>
         </template>
 

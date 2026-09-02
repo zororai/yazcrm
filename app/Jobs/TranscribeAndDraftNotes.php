@@ -65,22 +65,35 @@ class TranscribeAndDraftNotes implements ShouldQueue
             // path as a string (the old code) writes to a *different* path
             // than the one tempnam actually created, orphaning it. Build
             // the path correctly instead.
+            // Yeastar's download endpoint requires the same Authorization
+            // token as every other API call — it is NOT a self-contained
+            // pre-signed URL. Downloading without it silently returns a
+            // small JSON {"errcode":10004,"errmsg":"TOKEN EXPIRED"} body
+            // instead of audio, which OpenAI then rejects as "Invalid file
+            // format" — the real bug had nothing to do with file format.
             $downloadPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rec_' . uniqid() . '.download';
-            $response = Http::withoutVerifying()->timeout(120)->get($url);
+            $response = Http::withoutVerifying()->withHeaders(['Authorization' => $yeastar->getAccessToken()])->timeout(120)->get($url);
 
             if (!$response->successful()) {
                 Log::warning("TranscribeAndDraftNotes: download failed for recording {$this->recordingId} (attempt {$this->attempts()}, HTTP {$response->status()})");
                 throw new RuntimeException("Recording download failed (HTTP {$response->status()}).");
             }
 
-            file_put_contents($downloadPath, $response->body());
+            // Yeastar returns HTTP 200 even for its own API errors (e.g. an
+            // expired token), with a small JSON body instead of audio —
+            // catch that explicitly rather than letting it fail opaquely
+            // inside ffmpeg/Whisper.
+            $body = $response->body();
+            if (str_starts_with(ltrim($body), '{')) {
+                Log::warning("TranscribeAndDraftNotes: download returned an API error body for recording {$this->recordingId}: " . substr($body, 0, 200));
+                throw new RuntimeException('Recording download returned an error instead of audio (possibly an expired PBX token).');
+            }
 
-            // 2b. Normalize with ffmpeg before handing to Whisper. Yeastar
+            file_put_contents($downloadPath, $body);
+
+            // 2b. Normalize with ffmpeg before handing to Whisper — Yeastar
             // recordings aren't guaranteed to be a codec/container Whisper's
-            // API accepts as-is — this is what was actually causing
-            // "Invalid file format" errors, not a missing extension.
-            // Converting to a clean mono 16kHz WAV first makes format
-            // irrelevant.
+            // API accepts as-is.
             $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rec_' . uniqid() . '.wav';
             $ffmpeg = env('FFMPEG_PATH', 'ffmpeg');
             $result = Process::run([$ffmpeg, '-y', '-i', $downloadPath, '-ac', '1', '-ar', '16000', '-f', 'wav', $tmpPath]);
