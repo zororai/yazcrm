@@ -50,11 +50,33 @@ class WebhookController extends Controller
     {
         $caller = $payload['caller'] ?? $payload['src'] ?? '';
         $callee = $payload['callee'] ?? $payload['dst'] ?? '';
+        $callId = $payload['call_id'] ?? uniqid('live_');
 
         $client = Client::where('phone', $caller)->first();
 
+        // Persist a lightweight row immediately so the incoming-call popup's
+        // polling fallback (used when the live Yeastar active-call API is
+        // unavailable) has an accurate record of calls that are ringing
+        // right now — not just calls that have already ended. handleCallEnd()
+        // upserts by call_id, so this is safely overwritten/completed later.
+        // 'status' is left at its DB default ('missed') here — the enum has
+        // no "ringing" state — and 'ended_at' stays null. handleCallEnd()
+        // fills in the real status once the call is over. In the meantime,
+        // "started but ended_at still null" is what marks a call as live.
+        Call::updateOrCreate(
+            ['call_id' => $callId],
+            [
+                'caller'           => $caller,
+                'callee'           => $callee,
+                'direction'        => 'inbound',
+                'started_at'       => now(),
+                'extension_number' => $payload['extension'] ?? null,
+                'client_id'        => $client?->id,
+            ]
+        );
+
         $callData = [
-            'call_id'  => $payload['call_id'] ?? uniqid('live_'),
+            'call_id'  => $callId,
             'caller'   => $caller,
             'callee'   => $callee,
             'direction' => 'inbound',
@@ -109,8 +131,8 @@ class WebhookController extends Controller
             ]);
         }
 
-        // Prompt agents to log a ticket for any answered call that lasted ≥ 30 s
-        if ($status === 'answered' && $duration >= 30) {
+        // Prompt agents to log a ticket for any answered call that lasted ≥ 15 s
+        if ($status === 'answered' && $duration >= 15) {
             event(new CallEndedEvent($call->load('client')));
         }
 

@@ -110,13 +110,19 @@ class CallController extends Controller
 
         try {
             $calls = $this->yeastar->getActiveCalls();
-        } catch (\Exception) {}
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Yeastar getActiveCalls failed, using DB fallback', ['error' => $e->getMessage()]);
+        }
 
-        // Fallback: inbound calls started in last 90 seconds not yet ended
+        // Fallback: inbound calls started in the last 90s that haven't ended
+        // yet. Previously filtered on status='answered', but a still-ringing
+        // call has no status yet (only set once handleCallEnd runs) — that
+        // excluded genuinely active calls. ended_at IS NULL is the correct
+        // "still in progress" signal.
         if (empty($calls)) {
             $calls = Call::with('client')
                 ->where('direction', 'inbound')
-                ->where('status', 'answered')
+                ->whereNull('ended_at')
                 ->where('started_at', '>=', now()->subSeconds(90))
                 ->get(['id', 'caller', 'callee', 'extension_number', 'started_at', 'client_id'])
                 ->toArray();

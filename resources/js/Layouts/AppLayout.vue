@@ -16,6 +16,7 @@ import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
 import Dialer from '@/Components/Dialer.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
 import CompleteProfileModal from '@/Components/CompleteProfileModal.vue';
+import PendingTicketQueue from '@/Components/PendingTicketQueue.vue';
 
 const page  = usePage();
 const user  = computed(() => page.props.auth.user);
@@ -39,6 +40,16 @@ const isLight = computed(() => theme.value === 'light');
 
 const sidebarOpen     = ref(false);
 const pendingCall     = ref(null);
+const pendingTicketQueue = ref([]); // calls awaiting a ticket, shown as floating queue buttons
+
+function openTicketFromQueue(call) {
+    pendingTicketQueue.value = pendingTicketQueue.value.filter(c => c.call_id !== call.call_id);
+    pendingCall.value = call;
+}
+
+function dismissFromQueue(call) {
+    pendingTicketQueue.value = pendingTicketQueue.value.filter(c => c.call_id !== call.call_id);
+}
 const urgentCount     = ref(0);
 const urgentAlert     = ref(false); // banner shown when count increases
 const urgentToast     = ref(null);  // { subject, contact_number, id } for popup toast
@@ -133,7 +144,9 @@ onMounted(() => {
     if (window.Echo && user.value) {
         window.Echo.private(`agent.${user.value.id}`)
             .listen('.call-ended', (data) => {
-                pendingCall.value = data;
+                if (! pendingTicketQueue.value.some(c => c.call_id === data.call_id)) {
+                    pendingTicketQueue.value.push(data);
+                }
             });
     }
 
@@ -459,11 +472,18 @@ function logout() {
         </div>
     </Transition>
 
-    <!-- Auto ticket modal: fires when an answered call ≥ 30 s ends -->
+    <!-- Ticket modal: opened by clicking a queued call below -->
     <CallTicketModal
         v-if="pendingCall"
         :call="pendingCall"
         @close="pendingCall = null"
+    />
+
+    <!-- Floating queue: calls ≥ 15s awaiting a ticket, stacked on the right -->
+    <PendingTicketQueue
+        :calls="pendingTicketQueue"
+        @open="openTicketFromQueue"
+        @dismiss="dismissFromQueue"
     />
 
     <!-- Incoming call popup (polled every 8 s) -->
