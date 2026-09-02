@@ -41,6 +41,7 @@ const isLight = computed(() => theme.value === 'light');
 const sidebarOpen     = ref(false);
 const pendingCall     = ref(null);
 const pendingTicketQueue = ref([]); // calls awaiting a ticket, shown as floating queue buttons
+const ticketPromptedKeys = ref(new Set()); // calls already queued for a ticket, so polling doesn't re-add them
 
 function openTicketFromQueue(call) {
     pendingTicketQueue.value = pendingTicketQueue.value.filter(c => c.call_id !== call.call_id);
@@ -67,7 +68,7 @@ let   pollTimer     = null;
 // from that same number too — once dismissed, it never popped up again.
 // started_at makes distinct calls from the same number resolve to distinct keys.
 function callKey(c) {
-    return c.call_id ?? c.id ?? `${c.caller ?? c.src ?? 'unknown'}-${c.started_at ?? ''}`;
+    return c.id ?? c.call_id ?? `${c.caller ?? c.src ?? 'unknown'}-${c.started_at ?? ''}`;
 }
 
 const visibleCalls = computed(() =>
@@ -139,6 +140,31 @@ async function pollActiveCalls() {
             if (!currentKeys.has(k)) dismissedIds.value.delete(k);
         });
         activeCalls.value = incoming;
+
+        // Drive the 15s ticket-queue prompt off this same reliable polling
+        // data, not just the call-ended webhook (which isn't always firing —
+        // see handleCallEnd). Any call still tracked 15s after it started
+        // gets queued for a ticket, once.
+        const now = Date.now();
+        for (const call of incoming) {
+            const key = callKey(call);
+            if (ticketPromptedKeys.value.has(key)) continue;
+            const startedMs = call.started_at ? new Date(call.started_at).getTime() : null;
+            if (!startedMs || (now - startedMs) < 15000) continue;
+
+            ticketPromptedKeys.value.add(key);
+            if (! pendingTicketQueue.value.some(c => c.call_id === key)) {
+                pendingTicketQueue.value.push({
+                    call_id:   key,
+                    caller:    call.caller ?? call.src ?? 'Unknown',
+                    callee:    call.callee ?? call.dst ?? call.extension_number ?? '',
+                    duration:  Math.round((now - startedMs) / 1000),
+                    direction: call.direction ?? 'inbound',
+                    client:    call.client ?? null,
+                    recording_id: call.recording_id ?? null,
+                });
+            }
+        }
     } catch {
         // silently ignore network errors during polling
     }

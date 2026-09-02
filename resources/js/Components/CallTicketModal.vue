@@ -1,7 +1,7 @@
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import { PhoneIcon, XMarkIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { PhoneIcon, ClockIcon } from '@heroicons/vue/24/outline';
 
 const distressDomains = computed(() => usePage().props.distressDomains ?? []);
 
@@ -97,15 +97,12 @@ const priorityColor = {
     <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
         <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
 
-            <!-- Header -->
+            <!-- Header — no close button: a ticket must be logged before this can be dismissed -->
             <div class="flex items-center justify-between bg-brand-600 px-5 py-4 flex-shrink-0">
                 <div class="flex items-center gap-2 text-white">
                     <PhoneIcon class="h-5 w-5" />
-                    <span class="font-semibold">Call ended — log a ticket?</span>
+                    <span class="font-semibold">Call ended — log a ticket</span>
                 </div>
-                <button @click="emit('close')" class="text-white/70 hover:text-white transition-colors">
-                    <XMarkIcon class="h-5 w-5" />
-                </button>
             </div>
 
             <!-- Call summary -->
@@ -272,11 +269,8 @@ const priorityColor = {
                 </div>
             </form>
 
-            <!-- Footer -->
+            <!-- Footer — Create Ticket is the only way to close this modal -->
             <div class="flex gap-2 px-5 py-4 border-t border-gray-100 flex-shrink-0">
-                <button type="button" @click="emit('close')" class="btn-secondary flex-1 justify-center">
-                    Dismiss
-                </button>
                 <button type="button" @click="submit" class="btn-primary flex-1 justify-center" :disabled="form.processing">
                     {{ form.processing ? 'Creating…' : 'Create Ticket' }}
                 </button>
