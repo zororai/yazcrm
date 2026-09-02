@@ -310,7 +310,62 @@ const debouncedContactSearch = debounce(async (q) => {
 }, 300);
 
 function onContactInput() { debouncedContactSearch(addForm.contact_number); }
-function selectContact(num) { addForm.contact_number = num; showContactDrop.value = false; contactResults.value = []; }
+function selectContact(num) {
+    addForm.contact_number = num;
+    showContactDrop.value = false;
+    contactResults.value = [];
+    lookupRecordingForNumber(num);
+}
+
+// ── Auto-attach today's call recording once the agent finishes entering the number ──
+const recordingLookup = ref(null); // null | 'loading' | 'found' | 'processing' | 'not_found'
+const recordingLookupMessage = ref('');
+const foundRecordingId = ref(null); // set whenever a recording exists, independent of transcription status
+let recordingLookupPollTimer = null;
+
+async function lookupRecordingForNumber(number) {
+    clearTimeout(recordingLookupPollTimer);
+    if (!number || number.length < 6) {
+        recordingLookup.value = null;
+        foundRecordingId.value = null;
+        return;
+    }
+
+    recordingLookup.value = 'loading';
+    try {
+        const res  = await fetch(`/calls/find-recording?number=${encodeURIComponent(number)}`);
+        const data = await res.json();
+
+        if (!data.found) {
+            recordingLookup.value = 'not_found';
+            recordingLookupMessage.value = "No recording found for this number today.";
+            foundRecordingId.value = null;
+            return;
+        }
+
+        foundRecordingId.value = data.recording_id;
+
+        if (data.status === 'done' && data.ai_notes) {
+            if (!addForm.description) addForm.description = data.ai_notes;
+            recordingLookup.value = 'found';
+            recordingLookupMessage.value = "Today's call recording found — notes auto-filled.";
+        } else if (data.status === 'processing' || data.status === 'pending') {
+            recordingLookup.value = 'processing';
+            recordingLookupMessage.value = "Recording found — transcribing and drafting a summary…";
+            recordingLookupPollTimer = setTimeout(() => lookupRecordingForNumber(number), 5000);
+        } else {
+            recordingLookup.value = 'found';
+            recordingLookupMessage.value = 'Recording found, but no summary is available yet.';
+        }
+    } catch {
+        recordingLookup.value = null;
+    }
+}
+
+function onContactBlur() {
+    setTimeout(() => { showContactDrop.value = false; }, 150);
+    lookupRecordingForNumber(addForm.contact_number);
+}
 
 // ── Referred To combobox ──────────────────────────────────────────────────────
 const referredToSearch   = ref('');
@@ -345,6 +400,10 @@ function closeReferredToDrop() {
 
 function openAdd() {
     addForm.reset();
+    recordingLookup.value = null;
+    recordingLookupMessage.value = '';
+    foundRecordingId.value = null;
+    clearTimeout(recordingLookupPollTimer);
     showAdd.value = true;
 }
 
@@ -749,13 +808,23 @@ const statusColor = {
                                         v-model="addForm.contact_number"
                                         @input="onContactInput"
                                         @focus="showContactDrop = true"
-                                        @blur="() => setTimeout(() => showContactDrop = false, 150)"
+                                        @blur="onContactBlur"
                                         class="input"
                                         :class="{ 'border-red-500': addForm.errors.contact_number }"
                                         placeholder="Type or search number…"
                                         autocomplete="off"
                                         required
                                     />
+                                    <p v-if="recordingLookupMessage" class="mt-1 text-xs" :class="{
+                                        'text-green-600': recordingLookup === 'found',
+                                        'text-amber-600': recordingLookup === 'processing',
+                                        'text-gray-400':  recordingLookup === 'not_found',
+                                    }">
+                                        {{ recordingLookupMessage }}
+                                    </p>
+                                    <audio v-if="foundRecordingId" controls preload="none"
+                                        class="mt-1.5 h-8 w-full"
+                                        :src="`/api/recordings/${foundRecordingId}/download`" />
                                     <ul v-if="showContactDrop && contactResults.length"
                                         class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                                         <li v-for="num in contactResults" :key="num">
@@ -1013,7 +1082,10 @@ const statusColor = {
                         <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Notes</h4>
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label class="label">Counsellor's Notes</label>
+                                <label class="label">
+                                    Counsellor's Notes
+                                    <span v-if="recordingLookup === 'found'" class="text-green-600 font-normal">— auto-filled from today's call recording</span>
+                                </label>
                                 <button
                                     type="button"
                                     @click="draftNotes"
