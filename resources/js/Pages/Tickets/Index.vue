@@ -440,9 +440,66 @@ function store() {
 }
 
 const draftingNotes = ref(false);
+const DRAFT_POLL_MAX_ATTEMPTS = 8; // ~40s of retrying at 5s intervals
+
+async function fetchAiNotes(recordingId) {
+    const res = await fetch(`/api/recordings/${recordingId}/ai-notes`, {
+        headers: { 'Accept': 'application/json' },
+    });
+    return res.json();
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// If a recording was found for this number (see lookupRecordingForNumber),
+// "AI Draft Notes"/"Generate Summary from Recording" pulls the real summary
+// from that recording's transcript. Many recordings never actually had
+// transcription triggered (e.g. ones created by the periodic CDR sync
+// rather than the real-time call-end webhook) — clicking this button used
+// to just check status and give up if it wasn't already 'done', which did
+// nothing for those. It now actively kicks off transcription and polls
+// until a summary is ready, rather than passively waiting on a job that
+// may never have been dispatched in the first place.
 async function draftNotes() {
     draftingNotes.value = true;
     try {
+        if (foundRecordingId.value) {
+            let data = await fetchAiNotes(foundRecordingId.value);
+
+            if (data.status !== 'done' && data.status !== 'processing') {
+                // Not already running — actively trigger it instead of just checking.
+                recordingLookup.value = 'processing';
+                recordingLookupMessage.value = 'Starting transcription…';
+                await fetch(`/api/recordings/${foundRecordingId.value}/transcribe`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                });
+            }
+
+            for (let attempt = 0; attempt < DRAFT_POLL_MAX_ATTEMPTS; attempt++) {
+                if (data.status === 'done' && data.ai_notes) {
+                    addForm.description = data.ai_notes;
+                    recordingLookup.value = 'found';
+                    recordingLookupMessage.value = "Today's call recording found — notes auto-filled.";
+                    return;
+                }
+                if (data.status === 'failed') break;
+
+                recordingLookup.value = 'processing';
+                recordingLookupMessage.value = 'Transcribing the recording and drafting a summary…';
+                await sleep(5000);
+                data = await fetchAiNotes(foundRecordingId.value);
+            }
+
+            recordingLookup.value = 'not_found';
+            recordingLookupMessage.value = data.status === 'failed'
+                ? 'Transcription failed for this recording. You can type notes manually.'
+                : 'Still transcribing — try the button again in a moment.';
+            return;
+        }
+
         const res = await fetch('/tickets/draft-notes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
@@ -1090,6 +1147,7 @@ const statusColor = {
                                     type="button"
                                     @click="draftNotes"
                                     :disabled="draftingNotes"
+                                    :title="foundRecordingId ? 'Generate a summary from the found call recording' : 'Draft a note from the fields filled in so far'"
                                     class="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
                                 >
                                     <svg v-if="!draftingNotes" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
@@ -1099,7 +1157,7 @@ const statusColor = {
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                                     </svg>
-                                    {{ draftingNotes ? 'Drafting…' : 'AI Draft Notes' }}
+                                    {{ draftingNotes ? 'Drafting…' : (foundRecordingId ? 'Generate Summary from Recording' : 'AI Draft Notes') }}
                                 </button>
                             </div>
                             <textarea v-model="addForm.description" class="input h-24 resize-none" placeholder="Notes from the session…" />

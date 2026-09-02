@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use Anthropic\Laravel\Facades\Anthropic;
 use App\Models\Recording;
 use App\Services\YeastarService;
 use Illuminate\Bus\Queueable;
@@ -89,17 +88,19 @@ class TranscribeAndDraftNotes implements ShouldQueue
                 return;
             }
 
-            // 4. Generate counsellor notes with Claude
-            $message = Anthropic::messages()->create([
-                'model'      => 'claude-haiku-4-5-20251001',
+            // 4. Generate counsellor notes with OpenAI (same provider as the
+            // Whisper transcription step above, and the same one used by
+            // CaseIntelligenceService for the multilingual pipeline).
+            $message = OpenAI::chat()->create([
+                'model'      => 'gpt-4o-mini',
                 'max_tokens' => 500,
-                'system'     => 'You are assisting a counsellor at a helpline. Based on the call transcript below, write a concise professional counsellor session note in 4-6 sentences. Cover: presenting issue, emotional state of the caller, interventions discussed, and any referrals or follow-up actions. Use neutral, non-judgmental clinical language. Do not invent details not present in the transcript.',
                 'messages'   => [
+                    ['role' => 'system', 'content' => 'You are assisting a counsellor at a helpline. Based on the call transcript below, write a concise professional counsellor session note in 4-6 sentences. Cover: presenting issue, emotional state of the caller, interventions discussed, and any referrals or follow-up actions. Use neutral, non-judgmental clinical language. Do not invent details not present in the transcript.'],
                     ['role' => 'user', 'content' => "Call transcript:\n\n{$transcript}\n\nDraft a counsellor session note."],
                 ],
             ]);
 
-            $aiNotes = $message->content[0]->text ?? '';
+            $aiNotes = $message->choices[0]->message->content ?? '';
 
             $recording->update([
                 'transcript'           => $transcript,
