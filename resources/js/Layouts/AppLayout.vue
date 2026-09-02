@@ -250,6 +250,7 @@ const navigation = computed(() => [
     ...(can('yalep') ? [{ name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon }] : []),
     ...(can('roles')        ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
     ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
+    ...(isAdmin.value ? [{ name: 'Counsellor Profiles', href: '/counsellor-profiles', icon: UserGroupIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);
 
