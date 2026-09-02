@@ -27,6 +27,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('profile',           [Web\ProfileController::class, 'show'])->name('profile.show');
     Route::post('profile',          [Web\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('profile/dismiss-prompt', [Web\ProfileController::class, 'dismissPrompt'])->name('profile.dismiss-prompt');
     Route::put('profile/password',  [Web\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
     Route::get('audit-log', [Web\AuditLogController::class, 'index'])->name('audit-log.index');

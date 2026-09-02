@@ -12,8 +12,8 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'phone', 'bio', 'password', 'role', 'supervisor_id', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
-        'must_change_password',
+        'name', 'first_name', 'surname', 'username', 'email', 'phone', 'bio', 'password', 'role', 'supervisor_id',
+        'avatar', 'is_active', 'last_login_at', 'nav_permissions', 'must_change_password', 'profile_prompt_dismiss_count',
     ];
 
     protected $appends = ['profile_complete'];
@@ -60,7 +60,8 @@ class User extends Authenticatable
 
     public function getProfileCompleteAttribute(): bool
     {
-        return filled($this->phone) && filled($this->bio) && filled($this->avatar);
+        return filled($this->phone) && filled($this->bio) && filled($this->avatar)
+            && filled($this->first_name) && filled($this->surname) && filled($this->username);
     }
 
     public function supervisor()

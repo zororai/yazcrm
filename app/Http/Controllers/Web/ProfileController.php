@@ -22,9 +22,12 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'phone'  => 'nullable|string|max:50',
-            'bio'    => 'nullable|string|max:1000',
-            'avatar' => 'nullable|image|max:2048',
+            'first_name' => 'nullable|string|max:100',
+            'surname'    => 'nullable|string|max:100',
+            'username'   => 'nullable|string|max:100',
+            'phone'      => 'nullable|string|max:50',
+            'bio'        => 'nullable|string|max:1000',
+            'avatar'     => 'nullable|image|max:2048',
         ]);
 
         if ($request->hasFile('avatar')) {
@@ -37,6 +40,16 @@ class ProfileController extends Controller
         $request->user()->update($data);
 
         return back()->with('success', 'Profile updated.');
+    }
+
+    // Records that the user dismissed the complete-your-profile popup, so the
+    // count persists across sessions — after 3 dismissals the popup stops
+    // offering "Remind me later" and must be completed.
+    public function dismissPrompt(Request $request): RedirectResponse
+    {
+        $request->user()->increment('profile_prompt_dismiss_count');
+
+        return back();
     }
 
     public function updatePassword(Request $request): RedirectResponse

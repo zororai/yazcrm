@@ -16,9 +16,12 @@ function submitPassword() {
 
 const avatarPreview = ref(props.profileUser.avatar ? `/storage/${props.profileUser.avatar}` : null);
 const profileForm = useForm({
-    phone:  props.profileUser.phone ?? '',
-    bio:    props.profileUser.bio   ?? '',
-    avatar: null,
+    first_name: props.profileUser.first_name ?? '',
+    surname:    props.profileUser.surname    ?? '',
+    username:   props.profileUser.username   ?? '',
+    phone:      props.profileUser.phone      ?? '',
+    bio:        props.profileUser.bio        ?? '',
+    avatar:     null,
 });
 
 function onAvatarChange(e) {
@@ -60,6 +63,23 @@ function submitProfile() {
                             <input type="file" accept="image/*" class="text-xs" @change="onAvatarChange" />
                             <p v-if="profileForm.errors.avatar" class="mt-1 text-xs text-red-600">{{ profileForm.errors.avatar }}</p>
                         </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">Name</label>
+                            <input v-model="profileForm.first_name" class="input" placeholder="First name" />
+                            <p v-if="profileForm.errors.first_name" class="mt-1 text-xs text-red-600">{{ profileForm.errors.first_name }}</p>
+                        </div>
+                        <div>
+                            <label class="label">Surname</label>
+                            <input v-model="profileForm.surname" class="input" placeholder="Surname" />
+                            <p v-if="profileForm.errors.surname" class="mt-1 text-xs text-red-600">{{ profileForm.errors.surname }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label">Username</label>
+                        <input v-model="profileForm.username" class="input" placeholder="e.g. jdoe" />
+                        <p v-if="profileForm.errors.username" class="mt-1 text-xs text-red-600">{{ profileForm.errors.username }}</p>
                     </div>
                     <div>
                         <label class="label">Phone</label>
