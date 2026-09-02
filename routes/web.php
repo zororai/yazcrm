@@ -94,6 +94,8 @@ Route::middleware('auth')->group(function () {
     Route::post('calls/{call}/ai-analysis/review', [Web\CallAiAnalysisController::class, 'review'])->name('calls.ai-analysis.review');
 
     Route::get('recordings', [Web\RecordingController::class, 'index'])->name('recordings.index');
+    Route::get('recordings/by-number', [Web\RecordingByNumberController::class, 'index'])->name('recordings.by-number');
+    Route::get('recordings/by-number/details', [Web\RecordingByNumberController::class, 'details'])->name('recordings.by-number.details');
 
     // Clients
     Route::get('clients', [Web\ClientController::class, 'index'])->name('clients.index');
