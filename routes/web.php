@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::post('change-password', [Web\AuthController::class, 'changePassword'])->name('password.change.store');
 
     Route::get('profile',           [Web\ProfileController::class, 'show'])->name('profile.show');
+    Route::post('profile',          [Web\ProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/password',  [Web\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
     Route::get('audit-log', [Web\AuditLogController::class, 'index'])->name('audit-log.index');
@@ -72,6 +73,9 @@ Route::middleware('auth')->group(function () {
         Route::post('service-directory', [Web\ServiceProviderController::class, 'store'])->name('service-providers.store');
         Route::put('service-directory/{serviceProvider}', [Web\ServiceProviderController::class, 'update'])->name('service-providers.update');
         Route::delete('service-directory/{serviceProvider}', [Web\ServiceProviderController::class, 'destroy'])->name('service-providers.destroy');
+
+        Route::get('transcription-test', [Web\TranscriptionTestController::class, 'create'])->name('transcription-test.create');
+        Route::post('transcription-test', [Web\TranscriptionTestController::class, 'store'])->name('transcription-test.store');
     });
 
     // Calls

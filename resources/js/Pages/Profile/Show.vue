@@ -13,6 +13,23 @@ function submitPassword() {
         onSuccess: () => passwordForm.reset(),
     });
 }
+
+const avatarPreview = ref(props.profileUser.avatar ? `/storage/${props.profileUser.avatar}` : null);
+const profileForm = useForm({
+    phone:  props.profileUser.phone ?? '',
+    bio:    props.profileUser.bio   ?? '',
+    avatar: null,
+});
+
+function onAvatarChange(e) {
+    const file = e.target.files[0];
+    profileForm.avatar = file;
+    if (file) avatarPreview.value = URL.createObjectURL(file);
+}
+
+function submitProfile() {
+    profileForm.post('/profile', { preserveScroll: true });
+}
 </script>
 
 <template>
@@ -31,6 +48,33 @@ function submitPassword() {
                     <p><span class="text-gray-400">Last Login:</span> {{ profileUser.last_login_at ? new Date(profileUser.last_login_at).toLocaleString() : '—' }}</p>
                     <p><span class="text-gray-400">Status:</span> {{ profileUser.is_active ? 'Active' : 'Inactive' }}</p>
                 </div>
+            </div>
+
+            <div class="card">
+                <h3 class="font-semibold text-gray-900 mb-3">Profile Details</h3>
+                <form @submit.prevent="submitProfile" class="space-y-3">
+                    <div class="flex items-center gap-4">
+                        <img :src="avatarPreview ?? '/images/default-avatar.png'" class="h-24 w-24 rounded-full object-cover border border-gray-200" />
+                        <div>
+                            <label class="label mb-1">Profile Photo</label>
+                            <input type="file" accept="image/*" class="text-xs" @change="onAvatarChange" />
+                            <p v-if="profileForm.errors.avatar" class="mt-1 text-xs text-red-600">{{ profileForm.errors.avatar }}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label">Phone</label>
+                        <input v-model="profileForm.phone" class="input" placeholder="e.g. +263 77 123 4567" />
+                        <p v-if="profileForm.errors.phone" class="mt-1 text-xs text-red-600">{{ profileForm.errors.phone }}</p>
+                    </div>
+                    <div>
+                        <label class="label">Bio</label>
+                        <textarea v-model="profileForm.bio" class="input h-20 resize-none" placeholder="A short line about yourself…"></textarea>
+                        <p v-if="profileForm.errors.bio" class="mt-1 text-xs text-red-600">{{ profileForm.errors.bio }}</p>
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button type="submit" class="btn-primary" :disabled="profileForm.processing">Save Profile</button>
+                    </div>
+                </form>
             </div>
 
             <div class="card">

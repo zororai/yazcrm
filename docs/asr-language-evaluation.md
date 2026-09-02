@@ -1,4 +1,17 @@
-# ASR Language Evaluation
+# ASR Language Evaluation (SUPERSEDED)
+
+**2026-09-01: the self-hosted Python ASR service (`asr-service/`, per-language
+Hugging Face models) was removed and replaced with OpenAI Whisper
+(`app/Services/SpeechToTextService.php`).** Whisper is one universal
+multilingual model — there's no per-language model to activate, and the
+`ASR_MODEL_SHONA` / `ASR_MODEL_ENGLISH` / `ASR_MODEL_NDEBELE` env vars this
+document refers to no longer exist. Whisper is allowed to attempt any
+language without a pass/fail gate (a deliberate choice — see git history for
+the reasoning). This document is kept for historical record of what was
+evaluated on the old local-model approach; it does not describe the current
+system's language support.
+
+---
 
 Per spec §23/§32 Phase 6 — no language is activated (`ASR_MODEL_*` set) without
 being run against real audio first. This is a running log of what's been

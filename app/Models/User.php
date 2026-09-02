@@ -12,9 +12,11 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'supervisor_id', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
+        'name', 'email', 'phone', 'bio', 'password', 'role', 'supervisor_id', 'avatar', 'is_active', 'last_login_at', 'nav_permissions',
         'must_change_password',
     ];
+
+    protected $appends = ['profile_complete'];
 
     protected $hidden = ['password', 'remember_token'];
 
@@ -54,6 +56,11 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function getProfileCompleteAttribute(): bool
+    {
+        return filled($this->phone) && filled($this->bio) && filled($this->avatar);
     }
 
     public function supervisor()

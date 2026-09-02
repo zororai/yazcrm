@@ -15,11 +15,16 @@ import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
 import Dialer from '@/Components/Dialer.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
+import CompleteProfileModal from '@/Components/CompleteProfileModal.vue';
 
 const page  = usePage();
 const user  = computed(() => page.props.auth.user);
 const flash = computed(() => page.props.flash);
 const isAdmin = computed(() => user.value?.role === 'admin');
+
+// Prompt once per session to complete phone/bio/avatar — dismissible via
+// "Remind me later", reappears next login if still incomplete.
+const showCompleteProfile = ref(user.value && user.value.profile_complete === false);
 
 // nav_permissions: null on admins (full access), array of keys on agents/supervisors
 const can = (key) => isAdmin.value || (user.value?.nav_permissions ?? []).includes(key);
@@ -195,6 +200,7 @@ const navigation = computed(() => [
     ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
     ...(isAdmin.value || can('registry') ? [{ name: 'Asset Register', href: '/registry', icon: ServerStackIcon }] : []),
     ...(isAdmin.value ? [{ name: 'IT Asset Categories', href: '/registry/categories', icon: FolderOpenIcon }] : []),
+    ...(isAdmin.value ? [{ name: 'Transcription Test Tool', href: '/transcription-test', icon: MicrophoneIcon }] : []),
     ...(isAdmin.value || can('risk')     ? [{ name: 'Risk Register',  href: '/risk',     icon: ShieldExclamationIcon }] : []),
     ...(can('sbc')          ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
     ...(can('yalep') ? [{ name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon }] : []),
@@ -468,4 +474,11 @@ function logout() {
 
     <!-- WebRTC Dialer -->
     <Dialer />
+
+    <!-- Complete-profile prompt -->
+    <CompleteProfileModal
+        v-if="showCompleteProfile && user"
+        :user="user"
+        @dismiss="showCompleteProfile = false"
+    />
 </template>
