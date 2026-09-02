@@ -11,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 use OpenAI\Laravel\Facades\OpenAI;
 use RuntimeException;
 
@@ -59,8 +60,12 @@ class TranscribeAndDraftNotes implements ShouldQueue
                 throw new RuntimeException('Recording not yet available from PBX.');
             }
 
-            // 2. Download the audio file into a temp file
-            $tmpPath = tempnam(sys_get_temp_dir(), 'rec_') . '.wav';
+            // 2. Download the audio file into a temp file. tempnam() creates
+            // a file with no extension; appending '.wav' to the returned
+            // path as a string (the old code) writes to a *different* path
+            // than the one tempnam actually created, orphaning it. Build
+            // the path correctly instead.
+            $downloadPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rec_' . uniqid() . '.download';
             $response = Http::withoutVerifying()->timeout(120)->get($url);
 
             if (!$response->successful()) {
@@ -68,7 +73,23 @@ class TranscribeAndDraftNotes implements ShouldQueue
                 throw new RuntimeException("Recording download failed (HTTP {$response->status()}).");
             }
 
-            file_put_contents($tmpPath, $response->body());
+            file_put_contents($downloadPath, $response->body());
+
+            // 2b. Normalize with ffmpeg before handing to Whisper. Yeastar
+            // recordings aren't guaranteed to be a codec/container Whisper's
+            // API accepts as-is — this is what was actually causing
+            // "Invalid file format" errors, not a missing extension.
+            // Converting to a clean mono 16kHz WAV first makes format
+            // irrelevant.
+            $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rec_' . uniqid() . '.wav';
+            $ffmpeg = env('FFMPEG_PATH', 'ffmpeg');
+            $result = Process::run([$ffmpeg, '-y', '-i', $downloadPath, '-ac', '1', '-ar', '16000', '-f', 'wav', $tmpPath]);
+            @unlink($downloadPath);
+
+            if (! $result->successful() || ! is_file($tmpPath) || filesize($tmpPath) === 0) {
+                Log::warning("TranscribeAndDraftNotes: ffmpeg normalization failed for recording {$this->recordingId}: " . $result->errorOutput());
+                throw new RuntimeException('Downloaded recording is not valid/readable audio.');
+            }
 
             // 3. Transcribe with Whisper
             $transcribeResponse = OpenAI::audio()->transcribe([

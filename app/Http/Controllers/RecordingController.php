@@ -69,7 +69,16 @@ class RecordingController extends Controller
         }
 
         $recording->update(['transcription_status' => 'pending']);
-        TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
+
+        // On QUEUE_CONNECTION=sync (no worker), dispatch() runs inline and
+        // can throw — the job itself already marks the recording 'failed'
+        // and logs the reason, so here we only need to stop that from
+        // surfacing as an uncaught 500 back to the caller.
+        try {
+            TranscribeAndDraftNotes::dispatch($recording->id)->onQueue('default');
+        } catch (\Throwable $e) {
+            Log::error('TranscribeAndDraftNotes dispatch failed', ['recording_id' => $recording->id, 'error' => $e->getMessage()]);
+        }
 
         return response()->json(['message' => 'Transcription queued.']);
     }

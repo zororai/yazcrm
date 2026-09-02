@@ -476,6 +476,13 @@ async function draftNotes() {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
                 });
+                // Re-fetch immediately — under a sync queue (no worker), the
+                // transcribe request above already ran the job to completion
+                // before resolving, so `data` here is stale otherwise. Without
+                // this, a recording that previously failed would still show
+                // its old 'failed' status and the loop below would give up
+                // instantly, ignoring the retry that was just triggered.
+                data = await fetchAiNotes(foundRecordingId.value);
             }
 
             for (let attempt = 0; attempt < DRAFT_POLL_MAX_ATTEMPTS; attempt++) {
