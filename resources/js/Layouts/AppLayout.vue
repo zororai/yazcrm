@@ -48,8 +48,27 @@ function openTicketFromQueue(call) {
     pendingCall.value = call;
 }
 
-function dismissFromQueue(call) {
-    pendingTicketQueue.value = pendingTicketQueue.value.filter(c => c.call_id !== call.call_id);
+// Load calls that ended >=15s ago and still have no ticket, from the server
+// — not just from live polling — so the "log a ticket" queue survives a
+// page refresh instead of being wiped along with in-memory state.
+async function loadNeedingTicket() {
+    try {
+        const { data } = await axios.get('/api/calls/needing-ticket');
+        for (const call of (data.calls ?? [])) {
+            ticketPromptedKeys.value.add(call.call_id);
+            if (! pendingTicketQueue.value.some(c => c.call_id === call.call_id)) {
+                pendingTicketQueue.value.push({
+                    call_id:   call.call_id,
+                    caller:    call.caller,
+                    callee:    call.callee,
+                    duration:  call.duration,
+                    direction: call.direction,
+                    client:    call.client ?? null,
+                    recording_id: call.recording_id ?? null,
+                });
+            }
+        }
+    } catch { /* ignore */ }
 }
 const urgentCount     = ref(0);
 const urgentAlert     = ref(false); // banner shown when count increases
@@ -62,6 +81,7 @@ let   toastTimer      = null;
 const activeCalls   = ref([]);
 const dismissedIds  = ref(new Set());
 let   pollTimer     = null;
+let   needingTicketTimer = null;
 
 // A stable per-call key. Falling back to just the caller's number (as this
 // used to) meant dismissing one call silently suppressed every future call
@@ -185,6 +205,11 @@ onMounted(() => {
     pollActiveCalls();
     pollTimer = setInterval(pollActiveCalls, 8000);
 
+    // Re-seed the ticket queue from the server (survives refresh) and keep
+    // catching any call that ended without the client noticing.
+    loadNeedingTicket();
+    needingTicketTimer = setInterval(loadNeedingTicket, 30000);
+
     // Request browser notification permission
     requestNotifyPermission();
 
@@ -196,6 +221,7 @@ onMounted(() => {
 onUnmounted(() => {
     if (user.value) window.Echo?.leave(`agent.${user.value.id}`);
     clearInterval(pollTimer);
+    clearInterval(needingTicketTimer);
 });
 
 const navigation = computed(() => [
@@ -511,11 +537,12 @@ function logout() {
         @close="pendingCall = null"
     />
 
-    <!-- Floating queue: calls ≥ 15s awaiting a ticket, stacked on the right -->
+    <!-- Floating queue: calls ≥ 15s awaiting a ticket, stacked on the right.
+         No dismiss — a ticket must be logged to clear an entry, and the
+         queue is re-seeded from the server on load so it survives a refresh. -->
     <PendingTicketQueue
         :calls="pendingTicketQueue"
         @open="openTicketFromQueue"
-        @dismiss="dismissFromQueue"
     />
 
     <!-- Incoming call popup (polled every 8 s) -->

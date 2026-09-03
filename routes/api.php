@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Active calls (for popup polling)
     Route::get('calls/active', [CallController::class, 'active']);
+    Route::get('calls/needing-ticket', [CallController::class, 'needingTicket']);
 
     // Dashboard
     Route::get('dashboard/stats',          [DashboardController::class, 'stats']);

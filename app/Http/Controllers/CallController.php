@@ -130,4 +130,44 @@ class CallController extends Controller
 
         return response()->json(['calls' => $calls]);
     }
+
+    // Calls that lasted >=15s, ended, and still have no ticket logged.
+    // Fetched on page load (and re-polled) so the "log a ticket" queue
+    // survives a refresh instead of relying purely on the client's
+    // in-memory state, which a reload would silently wipe.
+    public function needingTicket(Request $request): JsonResponse
+    {
+        // duration (not ended_at, which the CDR sync leaves null in practice)
+        // is the reliable "this call is over" signal here.
+        $query = Call::with(['client', 'recording:id,call_id'])
+            ->where('duration', '>=', 15)
+            ->where('started_at', '>=', now()->subDay())
+            ->where('started_at', '<=', now()->subMinute())
+            ->whereDoesntHave('ticket')
+            ->orderByDesc('started_at');
+
+        $user = $request->user();
+        if (! in_array($user->role, ['admin', 'director', 'helpline_manager'], true)) {
+            $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
+            $extNumber ? $query->where('extension_number', $extNumber) : $query->whereRaw('0 = 1');
+        }
+
+        $calls = $query->limit(20)
+            ->get(['id', 'call_id', 'caller', 'callee', 'duration', 'direction', 'extension_number', 'started_at', 'client_id'])
+            ->map(function (Call $call) {
+                return [
+                    'id'          => $call->id,
+                    'call_id'     => $call->call_id,
+                    'caller'      => $call->caller,
+                    'callee'      => $call->callee,
+                    'duration'    => $call->duration,
+                    'direction'   => $call->direction,
+                    'started_at'  => $call->started_at,
+                    'client'      => $call->client,
+                    'recording_id' => $call->recording?->id,
+                ];
+            });
+
+        return response()->json(['calls' => $calls]);
+    }
 }
