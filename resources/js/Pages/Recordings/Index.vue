@@ -12,14 +12,34 @@ const search  = ref(props.filters.search ?? '');
 const from    = ref(props.filters.from   ?? '');
 const to      = ref(props.filters.to     ?? '');
 const agentId = ref(props.filters.agent_id ?? '');
+const period  = ref(props.filters.period ?? '');
 const groupByAgent = ref(true);
 
+const periods = [
+    { key: 'today', label: 'Today' },
+    { key: 'week',  label: 'This Week' },
+    { key: 'month', label: 'This Month' },
+    { key: 'year',  label: 'This Year' },
+];
+
 const runFilter = debounce(() => {
-    router.get('/recordings', { search: search.value, from: from.value, to: to.value, agent_id: agentId.value }, {
+    router.get('/recordings', { search: search.value, from: from.value, to: to.value, agent_id: agentId.value, period: period.value }, {
         preserveState: true,
         replace: true,
     });
 }, 400);
+
+function setPeriod(key) {
+    period.value = period.value === key ? '' : key;
+    from.value = '';
+    to.value = '';
+    runFilter();
+}
+
+function onDateChange() {
+    period.value = '';
+    runFilter();
+}
 
 const groupedRecordings = computed(() => {
     const groups = new Map();
@@ -74,32 +94,42 @@ function statusColor(s) {
             <Link href="/recordings/by-number" class="btn-secondary btn-sm">Group by Number</Link>
         </template>
 
-        <div class="card mb-4 flex flex-wrap gap-3 items-end">
-            <div class="flex-1 min-w-[200px]">
-                <label class="label">Search caller/callee</label>
-                <div class="relative">
-                    <MagnifyingGlassIcon class="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input v-model="search" @input="runFilter" class="input pl-9" placeholder="Phone number…" />
+        <div class="card mb-4">
+            <div class="flex flex-wrap gap-3 items-end">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="label">Search caller/callee/extension</label>
+                    <div class="relative">
+                        <MagnifyingGlassIcon class="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input v-model="search" @input="runFilter" class="input pl-9" placeholder="Phone number or extension…" />
+                    </div>
                 </div>
+                <div>
+                    <label class="label">From</label>
+                    <input v-model="from" @change="onDateChange" type="date" class="input" />
+                </div>
+                <div>
+                    <label class="label">To</label>
+                    <input v-model="to" @change="onDateChange" type="date" class="input" />
+                </div>
+                <div v-if="agents.length">
+                    <label class="label">Agent</label>
+                    <select v-model="agentId" @change="runFilter" class="input">
+                        <option value="">All agents</option>
+                        <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
+                    </select>
+                </div>
+                <label v-if="agents.length" class="flex items-center gap-2 text-sm text-gray-600 pb-2">
+                    <input type="checkbox" v-model="groupByAgent" /> Group by agent
+                </label>
             </div>
-            <div>
-                <label class="label">From</label>
-                <input v-model="from" @change="runFilter" type="date" class="input" />
+
+            <div class="flex flex-wrap gap-2 mt-3">
+                <button v-for="p in periods" :key="p.key" type="button" @click="setPeriod(p.key)"
+                    :class="['px-3 py-1.5 rounded-full text-xs font-medium transition',
+                        period === p.key ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">
+                    {{ p.label }}
+                </button>
             </div>
-            <div>
-                <label class="label">To</label>
-                <input v-model="to" @change="runFilter" type="date" class="input" />
-            </div>
-            <div v-if="agents.length">
-                <label class="label">Agent</label>
-                <select v-model="agentId" @change="runFilter" class="input">
-                    <option value="">All agents</option>
-                    <option v-for="a in agents" :key="a.id" :value="a.id">{{ a.name }}</option>
-                </select>
-            </div>
-            <label v-if="agents.length" class="flex items-center gap-2 text-sm text-gray-600 pb-2">
-                <input type="checkbox" v-model="groupByAgent" /> Group by agent
-            </label>
         </div>
 
         <div class="card p-0 overflow-hidden">
@@ -107,6 +137,7 @@ function statusColor(s) {
                 <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
                     <tr>
                         <th class="px-4 py-2 text-left">Call</th>
+                        <th class="px-4 py-2 text-left">Ext</th>
                         <th class="px-4 py-2 text-left">Agent</th>
                         <th class="px-4 py-2 text-left">Duration</th>
                         <th class="px-4 py-2 text-left">Date</th>
@@ -119,7 +150,7 @@ function statusColor(s) {
                     <template v-if="groupByAgent && agents.length">
                         <template v-for="[agentName, rows] in groupedRecordings" :key="agentName">
                             <tr class="bg-gray-100">
-                                <td colspan="7" class="px-4 py-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                <td colspan="8" class="px-4 py-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                     {{ agentName }} <span class="font-normal normal-case text-gray-400">({{ rows.length }})</span>
                                 </td>
                             </tr>
@@ -128,6 +159,7 @@ function statusColor(s) {
                                     <p class="font-medium text-gray-900">{{ r.call?.caller }} → {{ r.call?.callee }}</p>
                                     <p class="text-xs text-gray-400">{{ r.call?.client?.name ?? 'No client linked' }}</p>
                                 </td>
+                                <td class="px-4 py-2.5 text-gray-500">{{ r.call?.extension_number ?? '—' }}</td>
                                 <td class="px-4 py-2.5 text-gray-600">{{ r.call?.agent?.name ?? '—' }}</td>
                                 <td class="px-4 py-2.5 text-gray-600">{{ fmtDuration(r.duration) }}</td>
                                 <td class="px-4 py-2.5 text-gray-600">{{ new Date(r.created_at).toLocaleString() }}</td>
@@ -167,6 +199,7 @@ function statusColor(s) {
                                 <p class="font-medium text-gray-900">{{ r.call?.caller }} → {{ r.call?.callee }}</p>
                                 <p class="text-xs text-gray-400">{{ r.call?.client?.name ?? 'No client linked' }}</p>
                             </td>
+                            <td class="px-4 py-2.5 text-gray-500">{{ r.call?.extension_number ?? '—' }}</td>
                             <td class="px-4 py-2.5 text-gray-600">{{ r.call?.agent?.name ?? '—' }}</td>
                             <td class="px-4 py-2.5 text-gray-600">{{ fmtDuration(r.duration) }}</td>
                             <td class="px-4 py-2.5 text-gray-600">{{ new Date(r.created_at).toLocaleString() }}</td>
@@ -200,7 +233,7 @@ function statusColor(s) {
                         </tr>
                     </template>
                     <tr v-if="!recordings.data.length">
-                        <td colspan="7" class="px-4 py-16 text-center text-gray-400">
+                        <td colspan="8" class="px-4 py-16 text-center text-gray-400">
                             <MicrophoneIcon class="h-8 w-8 mx-auto mb-2 text-gray-300" />
                             No recordings found.
                         </td>

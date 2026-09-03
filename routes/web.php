@@ -374,9 +374,6 @@ Route::middleware('auth')->group(function () {
         Route::post('call-targets', [Web\CallTargetController::class, 'store'])->name('call-targets.store');
         Route::delete('call-targets/{user}', [Web\CallTargetController::class, 'destroy'])->name('call-targets.destroy');
 
-        // Counsellor profiles — profile + call target + tickets-today in one place
-        Route::get('counsellor-profiles', [Web\CounsellorProfileController::class, 'index'])->name('counsellor-profiles.index');
-
         Route::get('extensions', [Web\ExtensionController::class, 'index'])->name('extensions.index');
         Route::get('users', [Web\UserController::class, 'index'])->name('users.index');
         Route::post('users', [Web\UserController::class, 'store'])->name('users.store');
@@ -396,4 +393,10 @@ Route::middleware('auth')->group(function () {
         Route::post('yeastar-settings/test', [Web\YeastarSettingsController::class, 'testConnection'])->name('yeastar-settings.test');
         Route::post('yeastar-settings/register-webhook', [Web\YeastarSettingsController::class, 'registerWebhook'])->name('yeastar-settings.register-webhook');
     });
+
+    // Counsellor profiles — profile + call target + tickets-today in one place.
+    // Manager oversight page: admin/director/helpline_manager (not admin-only).
+    Route::get('counsellor-profiles', [Web\CounsellorProfileController::class, 'index'])->name('counsellor-profiles.index');
+    Route::get('counsellor-profiles/{counsellor}', [Web\CounsellorProfileController::class, 'show'])->name('counsellor-profiles.show');
+    Route::get('counsellor-profiles/{counsellor}/details', [Web\CounsellorProfileController::class, 'details'])->name('counsellor-profiles.details');
 });
