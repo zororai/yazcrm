@@ -80,6 +80,22 @@ function toggleAgentWeeklyOff(agent, day) {
     router.post('/timetable/weekly-off', { user_id: agent.id, weekly_off: next }, { preserveScroll: true });
 }
 
+// Each agent's own shift preference — 'rotating' (default), 'day', or 'night'.
+const shiftPreferenceOptions = [
+    { value: 'rotating', label: 'Rotating' },
+    { value: 'day',      label: 'Day only' },
+    { value: 'night',    label: 'Night only' },
+];
+
+const agentShiftPrefState = ref(
+    Object.fromEntries(props.allAgents.map(a => [a.id, a.shift_preference ?? 'rotating']))
+);
+
+function setAgentShiftPreference(agent, pref) {
+    agentShiftPrefState.value = { ...agentShiftPrefState.value, [agent.id]: pref };
+    router.post('/timetable/shift-preference', { user_id: agent.id, shift_preference: pref }, { preserveScroll: true });
+}
+
 function submitGenerate() {
     generateForm.post('/timetable/generate', {
         preserveScroll: true,
@@ -119,6 +135,21 @@ function toggleWeeklyOff(day) {
     router.post('/timetable/weekly-off', {
         user_id: soleAgent.value.id,
         weekly_off: weeklyOffSelection.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['agents'] }),
+    });
+}
+
+// ── Shift preference — self view ─────────────────────────────────────────────
+const shiftPrefSelection = ref(soleAgent.value?.shift_preference ?? 'rotating');
+watch(soleAgent, (a) => { shiftPrefSelection.value = a?.shift_preference ?? 'rotating'; });
+
+function setShiftPreference(pref) {
+    shiftPrefSelection.value = pref;
+    router.post('/timetable/shift-preference', {
+        user_id: soleAgent.value.id,
+        shift_preference: pref,
     }, {
         preserveScroll: true,
         onSuccess: () => router.reload({ only: ['agents'] }),
@@ -245,6 +276,19 @@ function toggleWeeklyOff(day) {
             </div>
         </div>
 
+        <!-- Shift preference — per agent -->
+        <div v-if="soleAgent" class="card mt-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-1">Shift preference — {{ soleAgent.name }}</h3>
+            <p class="text-xs text-gray-400 mb-3">Day only / Night only pins every working day to that shift instead of alternating.</p>
+            <div class="flex gap-2">
+                <button v-for="opt in shiftPreferenceOptions" :key="opt.value" type="button" @click="setShiftPreference(opt.value)"
+                    :class="['px-3 py-1.5 rounded-full text-xs font-medium transition-colors',
+                        shiftPrefSelection === opt.value ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">
+                    {{ opt.label }}
+                </button>
+            </div>
+        </div>
+
         <!-- Generate modal -->
         <div v-if="showGenerate" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <div class="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -275,7 +319,7 @@ function toggleWeeklyOff(day) {
                     </div>
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="label mb-0">Agents (leave empty for all) — each has their own weekly off days</label>
+                            <label class="label mb-0">Agents (leave empty for all) — each has their own weekly off days &amp; shift preference</label>
                             <button type="button" @click="generateForm.agent_ids = []" class="text-xs text-brand-600 hover:underline">
                                 Clear selection
                             </button>
@@ -295,6 +339,10 @@ function toggleWeeklyOff(day) {
                                         {{ w.label[0] }}
                                     </button>
                                 </div>
+                                <select :value="agentShiftPrefState[a.id]" @change="setAgentShiftPreference(a, $event.target.value)"
+                                    class="text-xs rounded-lg border-gray-200 py-1 pl-2 pr-6 flex-shrink-0">
+                                    <option v-for="opt in shiftPreferenceOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                </select>
                             </div>
                         </div>
                         <p class="text-xs text-gray-400 mt-1">

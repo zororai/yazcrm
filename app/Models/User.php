@@ -14,7 +14,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'first_name', 'surname', 'username', 'email', 'phone', 'bio', 'password', 'role', 'supervisor_id',
         'avatar', 'is_active', 'last_login_at', 'nav_permissions', 'must_change_password', 'profile_prompt_dismiss_count',
-        'weekly_off_days',
+        'weekly_off_days', 'shift_preference',
     ];
 
     protected $appends = ['profile_complete'];

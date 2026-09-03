@@ -46,7 +46,7 @@ class TimetableController extends Controller
         } elseif (! $isManager) {
             $agentQuery->where('id', $user->id);
         }
-        $agents = $agentQuery->get(['id', 'name', 'username', 'weekly_off_days']);
+        $agents = $agentQuery->get(['id', 'name', 'username', 'weekly_off_days', 'shift_preference']);
         $agentIds = $agents->pluck('id');
 
         $shifts = TimetableShift::whereIn('user_id', $agentIds)
@@ -65,6 +65,7 @@ class TimetableController extends Controller
                 'name'     => $agent->name,
                 'username' => $agent->username,
                 'weekly_off_days' => $agent->weekly_off_days ?? [],
+                'shift_preference' => $agent->shift_preference ?? 'rotating',
                 'shifts'   => ($shifts[$agent->id] ?? collect())->map(fn ($s) => [
                     'date'       => $s->work_date->toDateString(),
                     'shift_type' => $s->shift_type,
@@ -79,7 +80,7 @@ class TimetableController extends Controller
 
         return Inertia::render('Timetable/Index', [
             'agents'    => $rows,
-            'allAgents' => $isManager ? User::where('role', 'agent')->orderBy('name')->get(['id', 'name', 'weekly_off_days']) : [],
+            'allAgents' => $isManager ? User::where('role', 'agent')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']) : [],
             'isManager' => $isManager,
             'filters'   => ['start' => $start, 'end' => $end, 'agent_id' => $request->input('agent_id')],
             'shiftTimes' => [
@@ -96,14 +97,18 @@ class TimetableController extends Controller
         $validated = $request->validate([
             'start_date' => 'required|date',
             'end_date'   => 'required|date|after_or_equal:start_date',
-            'block_size' => 'nullable|integer|min:1|max:14',
+            'block_size' => 'nullable|integer|min:1|max:60',
+            'working_days' => 'nullable|integer|min:1|max:60',
+            'rest_days'    => 'nullable|integer|min:0|max:60',
             'agent_ids'  => 'nullable|array',
             'agent_ids.*' => 'integer|exists:users,id',
             'weekly_off'   => 'nullable|array',
             'weekly_off.*' => 'integer|min:0|max:6',
         ]);
 
-        $blockSize = $validated['block_size'] ?? 1;
+        $workingDaysTarget = $validated['working_days'] ?? self::WORKING_DAYS_TARGET;
+        $restDaysTarget    = $validated['rest_days'] ?? self::REST_DAYS_TARGET;
+        $blockSize = min($validated['block_size'] ?? 1, $workingDaysTarget);
         $label     = Carbon::parse($validated['start_date'])->format('M Y') . ' – ' . Carbon::parse($validated['end_date'])->format('M Y');
         $batchWeeklyOff = $validated['weekly_off'] ?? [];
 
@@ -111,13 +116,13 @@ class TimetableController extends Controller
         // their profile) with any weekdays picked just for this batch.
         $agents = User::where('role', 'agent')
             ->when(! empty($validated['agent_ids']), fn ($q) => $q->whereIn('id', $validated['agent_ids']))
-            ->get(['id', 'weekly_off_days']);
+            ->get(['id', 'weekly_off_days', 'shift_preference']);
 
         $allDates = CarbonPeriod::create($validated['start_date'], $validated['end_date'])
             ->toArray();
 
         DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label, $batchWeeklyOff) {
-            foreach ($agents as $agent) {
+            foreach ($agents as $index => $agent) {
                 $weeklyOff = array_unique(array_merge($agent->weekly_off_days ?? [], $batchWeeklyOff));
                 // Clear any existing shifts in this range before regenerating.
                 TimetableShift::where('user_id', $agent->id)
@@ -130,24 +135,69 @@ class TimetableController extends Controller
                     ->map(fn ($d) => $d->toDateString())
                     ->all();
 
+                $isUnavailableDate = fn (Carbon $d) => in_array($d->toDateString(), $specialDates, true) || in_array($d->dayOfWeek, $weeklyOff, true);
+                $validDayCount     = count(array_filter($allDates, fn ($d) => ! $isUnavailableDate($d)));
+
                 // Cycle 14 working days, 14 rest days, repeating across the
                 // whole range. A special day (individually marked, or a
                 // selected weekly-off weekday) is invisible to both counters
                 // — it's just skipped, the cycle picks up right where it
                 // left off on the next calendar day.
-                $mode          = 'working'; // 'working' | 'resting'
+                //
+                // Agents are split into 4 rotating groups so the roster is
+                // actually staggered instead of everyone resting/working
+                // the same calendar days on the same shift:
+                //   group 0: working, starts Day    group 1: working, starts Night
+                //   group 2: resting first           group 3: resting first, starts Night once working
+                // This guarantees both Day and Night are covered whenever
+                // anyone is on duty, and half the team is always resting
+                // while the other half covers.
+                $group         = $index % 4;
+                $mode          = $group >= 2 ? 'resting' : 'working';
                 $daysInMode    = 0;
-                $workDayIndex  = 0; // drives Day/Night alternation, never resets
+                $workDayIndex  = in_array($group, [1, 3], true) ? $blockSize : 0; // drives Day/Night alternation, never resets
                 $rows          = [];
 
+                // Resting-first groups would otherwise burn 14 calendar
+                // days before their first working block even starts —
+                // in a range that isn't long enough, that leaves too few
+                // valid days left to reach 14 real working days. Cap only
+                // their FIRST rest phase so at least 14 valid days remain
+                // afterward (never below 0); later rest phases (if the
+                // range is long enough for a second cycle) use the full
+                // 14 as normal.
+                $restTarget = $mode === 'resting'
+                    ? min(self::REST_DAYS_TARGET, max(0, $validDayCount - self::WORKING_DAYS_TARGET))
+                    : self::REST_DAYS_TARGET;
+
+                // Not enough valid days for a meaningful initial rest — skip
+                // straight to working so what little range there is gets
+                // used towards the 14-day target instead of being wasted.
+                if ($mode === 'resting' && $restTarget === 0) {
+                    $mode = 'working';
+                }
+
                 foreach ($allDates as $date) {
-                    if (in_array($date->toDateString(), $specialDates, true) || in_array($date->dayOfWeek, $weeklyOff, true)) {
-                        continue;
-                    }
+                    $isUnavailable = in_array($date->toDateString(), $specialDates, true) || in_array($date->dayOfWeek, $weeklyOff, true);
 
                     if ($mode === 'working') {
-                        $blockIndex = intdiv($workDayIndex, $blockSize);
-                        $shiftType  = $blockIndex % 2 === 0 ? 'day' : 'night';
+                        // A special/weekly-off day during a working block
+                        // doesn't count towards it — the block simply
+                        // extends further into the calendar so the agent
+                        // still ends up with exactly 14 real working days.
+                        if ($isUnavailable) {
+                            continue;
+                        }
+
+                        // An agent pinned to Day-only or Night-only skips
+                        // the alternation entirely — every working day is
+                        // that fixed shift, regardless of block/group.
+                        if (in_array($agent->shift_preference, ['day', 'night'], true)) {
+                            $shiftType = $agent->shift_preference;
+                        } else {
+                            $blockIndex = intdiv($workDayIndex, $blockSize);
+                            $shiftType  = $blockIndex % 2 === 0 ? 'day' : 'night';
+                        }
 
                         $rows[] = [
                             'user_id'      => $agent->id,
@@ -166,10 +216,16 @@ class TimetableController extends Controller
                             $daysInMode = 0;
                         }
                     } else {
+                        // Resting days are never assigned a shift anyway,
+                        // so a special/weekly-off day here doesn't need to
+                        // extend anything — every calendar day counts,
+                        // keeping rest blocks a fixed 14 calendar days and
+                        // leaving the range free for working blocks.
                         $daysInMode++;
-                        if ($daysInMode === self::REST_DAYS_TARGET) {
+                        if ($daysInMode === $restTarget) {
                             $mode       = 'working';
                             $daysInMode = 0;
+                            $restTarget = self::REST_DAYS_TARGET; // only the first rest phase is capped
                         }
                     }
                 }
@@ -198,6 +254,23 @@ class TimetableController extends Controller
         User::where('id', $targetId)->update(['weekly_off_days' => $validated['weekly_off'] ?? []]);
 
         return back()->with('success', 'Weekly off days updated.');
+    }
+
+    // ── Shift preference — pin an agent to Day-only or Night-only ───────────
+    public function updateShiftPreference(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id'          => 'nullable|integer|exists:users,id',
+            'shift_preference' => 'nullable|in:day,night,rotating',
+        ]);
+
+        $targetId = $validated['user_id'] ?? $request->user()->id;
+        abort_unless($targetId === $request->user()->id || $this->isManager($request), 403);
+
+        $preference = ($validated['shift_preference'] ?? 'rotating') === 'rotating' ? null : $validated['shift_preference'];
+        User::where('id', $targetId)->update(['shift_preference' => $preference]);
+
+        return back()->with('success', 'Shift preference updated.');
     }
 
     // ── Special (unavailable) days — agents manage their own ────────────────
