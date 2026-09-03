@@ -403,6 +403,7 @@ Route::middleware('auth')->group(function () {
     // Timetable — rotating day/night roster. Agents view their own and mark
     // special (unavailable) days; managers generate and view everyone's.
     Route::get('timetable', [Web\TimetableController::class, 'index'])->name('timetable.index');
+    Route::get('timetable/export-pdf', [Web\TimetableController::class, 'exportPdf'])->name('timetable.export-pdf');
     Route::post('timetable/generate', [Web\TimetableController::class, 'generate'])->name('timetable.generate');
     Route::post('timetable/weekly-off', [Web\TimetableController::class, 'updateWeeklyOff'])->name('timetable.weekly-off');
     Route::post('timetable/shift-preference', [Web\TimetableController::class, 'updateShiftPreference'])->name('timetable.shift-preference');

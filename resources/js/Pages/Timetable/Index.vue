@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { CalendarDaysIcon, SunIcon, MoonIcon, XMarkIcon, PlusIcon } from '@heroicons/vue/24/outline';
+import { CalendarDaysIcon, SunIcon, MoonIcon, XMarkIcon, PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     agents: Array,
@@ -19,6 +19,12 @@ const agentId = ref(props.filters.agent_id ?? '');
 function runFilter() {
     router.get('/timetable', { start: start.value, end: end.value, agent_id: agentId.value || undefined }, { preserveState: true, replace: true });
 }
+
+const pdfExportUrl = computed(() => {
+    const params = new URLSearchParams({ start: start.value, end: end.value });
+    if (agentId.value) params.set('agent_id', agentId.value);
+    return `/timetable/export-pdf?${params.toString()}`;
+});
 
 // ── Date grid for the selected range ─────────────────────────────────────────
 const dates = computed(() => {
@@ -54,10 +60,12 @@ const cellStyle = {
 // ── Generate (manager) ────────────────────────────────────────────────────────
 const showGenerate = ref(false);
 const generateForm = useForm({
-    start_date: props.filters.start,
-    end_date:   props.filters.end,
-    block_size: 1,
-    agent_ids:  [],
+    start_date:   props.filters.start,
+    end_date:     props.filters.end,
+    block_size:   1,
+    working_days: 14,
+    rest_days:    14,
+    agent_ids:    [],
 });
 
 const weekdays = [
@@ -161,6 +169,9 @@ function setShiftPreference(pref) {
     <AppLayout>
         <template #title>Timetable</template>
         <template #header-actions>
+            <a :href="pdfExportUrl" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                <ArrowDownTrayIcon class="h-4 w-4" /> Download PDF
+            </a>
             <button v-if="isManager" @click="showGenerate = true" class="btn-primary btn-sm">Generate Timetable</button>
         </template>
 
@@ -298,7 +309,7 @@ function setShiftPreference(pref) {
                 </div>
                 <form @submit.prevent="submitGenerate" class="p-5 space-y-4 overflow-y-auto flex-1">
                     <p class="text-xs text-gray-500">
-                        Each agent cycles 14 working days on, 14 days resting, repeating for the whole range
+                        Each agent cycles the working/rest days below, repeating for the whole range
                         (their own marked unavailable days and weekly off days are skipped without breaking
                         the cycle), alternating Day/Night shift in blocks across the working days.
                     </p>
@@ -312,9 +323,22 @@ function setShiftPreference(pref) {
                             <input v-model="generateForm.end_date" type="date" class="input" required />
                         </div>
                     </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label">Working days per cycle</label>
+                            <input v-model.number="generateForm.working_days" type="number" min="1" max="60" class="input" />
+                        </div>
+                        <div>
+                            <label class="label">Rest days per cycle</label>
+                            <input v-model.number="generateForm.rest_days" type="number" min="0" max="60" class="input" />
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 -mt-2">
+                        Default is 14 on / 14 off — change these to use a different cycle length (e.g. 7 on / 7 off).
+                    </p>
                     <div>
                         <label class="label">Shift block size (days per block)</label>
-                        <input v-model.number="generateForm.block_size" type="number" min="1" max="14" class="input" />
+                        <input v-model.number="generateForm.block_size" type="number" min="1" :max="generateForm.working_days" class="input" />
                         <p class="text-xs text-gray-400 mt-1">1 = alternates every working day (Day, Night, Day, Night…). 7 = a week of Day shift, then a week of Night shift.</p>
                     </div>
                     <div>

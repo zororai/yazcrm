@@ -33,11 +33,12 @@ class TimetableController extends Controller
         return in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true);
     }
 
-    public function index(Request $request): Response
+    /** Shared by index() and exportPdf() — resolves the visible agents plus
+     *  their shifts/special days for a date range, honoring the same
+     *  self-only-vs-all-agents access rule. */
+    private function buildRows(Request $request, string $start, string $end): \Illuminate\Support\Collection
     {
-        $user  = $request->user();
-        $start = $request->input('start', now()->startOfMonth()->toDateString());
-        $end   = $request->input('end', now()->endOfMonth()->toDateString());
+        $user      = $request->user();
         $isManager = $this->isManager($request);
 
         $agentQuery = User::where('role', 'agent')->orderBy('name');
@@ -59,7 +60,7 @@ class TimetableController extends Controller
             ->get(['id', 'user_id', 'date', 'reason'])
             ->groupBy('user_id');
 
-        $rows = $agents->map(function (User $agent) use ($shifts, $specialDays) {
+        return $agents->map(function (User $agent) use ($shifts, $specialDays) {
             return [
                 'id'       => $agent->id,
                 'name'     => $agent->name,
@@ -77,9 +78,16 @@ class TimetableController extends Controller
                 ])->values(),
             ];
         })->values();
+    }
+
+    public function index(Request $request): Response
+    {
+        $start = $request->input('start', now()->startOfMonth()->toDateString());
+        $end   = $request->input('end', now()->endOfMonth()->toDateString());
+        $isManager = $this->isManager($request);
 
         return Inertia::render('Timetable/Index', [
-            'agents'    => $rows,
+            'agents'    => $this->buildRows($request, $start, $end),
             'allAgents' => $isManager ? User::where('role', 'agent')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']) : [],
             'isManager' => $isManager,
             'filters'   => ['start' => $start, 'end' => $end, 'agent_id' => $request->input('agent_id')],
@@ -87,6 +95,65 @@ class TimetableController extends Controller
                 'day'   => self::DAY_START . ' – ' . self::DAY_END,
                 'night' => self::NIGHT_START . ' – ' . self::NIGHT_END . ' (+1)',
             ],
+        ]);
+    }
+
+    public function exportPdf(Request $request): \Illuminate\Http\Response
+    {
+        $start = $request->input('start', now()->startOfMonth()->toDateString());
+        $end   = $request->input('end', now()->endOfMonth()->toDateString());
+        $rows  = $this->buildRows($request, $start, $end);
+
+        $dates = CarbonPeriod::create($start, $end)->toArray();
+
+        $pdf = new \FPDF('L', 'mm', 'A4');
+        $pdf->SetMargins(8, 8, 8);
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 13);
+        // FPDF's core fonts are Latin-1 only — plain ASCII avoids mojibake for the em dash.
+        $pdf->Cell(0, 8, 'Timetable - ' . Carbon::parse($start)->format('d M Y') . ' to ' . Carbon::parse($end)->format('d M Y'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->Cell(0, 5, 'D = Day (' . self::DAY_START . '-' . self::DAY_END . ')   N = Night (' . self::NIGHT_START . '-' . self::NIGHT_END . ' +1)   Off = resting/unavailable', 0, 1);
+        $pdf->Ln(2);
+
+        $nameColWidth = 32;
+        $usableWidth  = 297 - 16 - $nameColWidth; // A4 landscape width minus margins minus name column
+        $dayColWidth  = max(5, min(7, $usableWidth / max(count($dates), 1)));
+
+        // Header row
+        $pdf->SetFont('Arial', 'B', 7);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell($nameColWidth, 6, 'Agent', 1, 0, 'L', true);
+        foreach ($dates as $d) {
+            $pdf->Cell($dayColWidth, 6, $d->format('d'), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', '', 7);
+        foreach ($rows as $row) {
+            $shiftsByDate = collect($row['shifts'])->keyBy('date');
+            $specialByDate = collect($row['special_days'])->keyBy('date');
+
+            $pdf->Cell($nameColWidth, 6, $row['name'], 1, 0, 'L');
+            foreach ($dates as $d) {
+                $ds = $d->toDateString();
+                if ($specialByDate->has($ds)) {
+                    $label = 'X';
+                } elseif ($shiftsByDate->has($ds)) {
+                    $label = $shiftsByDate[$ds]['shift_type'] === 'day' ? 'D' : 'N';
+                } else {
+                    $label = '';
+                }
+                $pdf->Cell($dayColWidth, 6, $label, 1, 0, 'C');
+            }
+            $pdf->Ln();
+        }
+
+        $filename = 'timetable_' . $start . '_to_' . $end . '.pdf';
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
     }
 
@@ -121,7 +188,7 @@ class TimetableController extends Controller
         $allDates = CarbonPeriod::create($validated['start_date'], $validated['end_date'])
             ->toArray();
 
-        DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label, $batchWeeklyOff) {
+        DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label, $batchWeeklyOff, $workingDaysTarget, $restDaysTarget) {
             foreach ($agents as $index => $agent) {
                 $weeklyOff = array_unique(array_merge($agent->weekly_off_days ?? [], $batchWeeklyOff));
                 // Clear any existing shifts in this range before regenerating.
@@ -158,21 +225,22 @@ class TimetableController extends Controller
                 $workDayIndex  = in_array($group, [1, 3], true) ? $blockSize : 0; // drives Day/Night alternation, never resets
                 $rows          = [];
 
-                // Resting-first groups would otherwise burn 14 calendar
-                // days before their first working block even starts —
-                // in a range that isn't long enough, that leaves too few
-                // valid days left to reach 14 real working days. Cap only
-                // their FIRST rest phase so at least 14 valid days remain
+                // Resting-first groups would otherwise burn a full rest
+                // block before their first working block even starts — in
+                // a range that isn't long enough, that leaves too few
+                // valid days left to reach the working-days target. Cap
+                // only their FIRST rest phase so enough valid days remain
                 // afterward (never below 0); later rest phases (if the
                 // range is long enough for a second cycle) use the full
-                // 14 as normal.
+                // target as normal.
                 $restTarget = $mode === 'resting'
-                    ? min(self::REST_DAYS_TARGET, max(0, $validDayCount - self::WORKING_DAYS_TARGET))
-                    : self::REST_DAYS_TARGET;
+                    ? min($restDaysTarget, max(0, $validDayCount - $workingDaysTarget))
+                    : $restDaysTarget;
 
                 // Not enough valid days for a meaningful initial rest — skip
                 // straight to working so what little range there is gets
-                // used towards the 14-day target instead of being wasted.
+                // used towards the working-days target instead of being
+                // wasted.
                 if ($mode === 'resting' && $restTarget === 0) {
                     $mode = 'working';
                 }
@@ -211,7 +279,7 @@ class TimetableController extends Controller
                         $workDayIndex++;
                         $daysInMode++;
 
-                        if ($daysInMode === self::WORKING_DAYS_TARGET) {
+                        if ($daysInMode === $workingDaysTarget) {
                             $mode       = 'resting';
                             $daysInMode = 0;
                         }
@@ -219,13 +287,13 @@ class TimetableController extends Controller
                         // Resting days are never assigned a shift anyway,
                         // so a special/weekly-off day here doesn't need to
                         // extend anything — every calendar day counts,
-                        // keeping rest blocks a fixed 14 calendar days and
-                        // leaving the range free for working blocks.
+                        // keeping rest blocks a fixed length and leaving
+                        // the range free for working blocks.
                         $daysInMode++;
                         if ($daysInMode === $restTarget) {
                             $mode       = 'working';
                             $daysInMode = 0;
-                            $restTarget = self::REST_DAYS_TARGET; // only the first rest phase is capped
+                            $restTarget = $restDaysTarget; // only the first rest phase is capped
                         }
                     }
                 }
