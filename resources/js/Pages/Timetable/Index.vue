@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { CalendarDaysIcon, SunIcon, MoonIcon, XMarkIcon, PlusIcon } from '@heroicons/vue/24/outline';
@@ -60,6 +60,12 @@ const generateForm = useForm({
     agent_ids:  [],
 });
 
+const weekdays = [
+    { value: 1, label: 'Mon' }, { value: 2, label: 'Tue' }, { value: 3, label: 'Wed' },
+    { value: 4, label: 'Thu' }, { value: 5, label: 'Fri' }, { value: 6, label: 'Sat' },
+    { value: 0, label: 'Sun' },
+];
+
 function submitGenerate() {
     generateForm.post('/timetable/generate', {
         preserveScroll: true,
@@ -86,6 +92,24 @@ function removeSpecialDay(id) {
 
 // Only meaningful when viewing a single agent (self, or manager filtered to one)
 const soleAgent = computed(() => props.agents.length === 1 ? props.agents[0] : null);
+
+// ── Weekly off days — per agent, e.g. always off Sat + Sun ───────────────────
+const weeklyOffSelection = ref([...(soleAgent.value?.weekly_off_days ?? [])]);
+watch(soleAgent, (a) => { weeklyOffSelection.value = [...(a?.weekly_off_days ?? [])]; });
+
+function toggleWeeklyOff(day) {
+    const i = weeklyOffSelection.value.indexOf(day);
+    if (i === -1) weeklyOffSelection.value.push(day);
+    else weeklyOffSelection.value.splice(i, 1);
+
+    router.post('/timetable/weekly-off', {
+        user_id: soleAgent.value.id,
+        weekly_off: weeklyOffSelection.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['agents'] }),
+    });
+}
 </script>
 
 <template>
@@ -194,6 +218,19 @@ const soleAgent = computed(() => props.agents.length === 1 ? props.agents[0] : n
             </div>
         </div>
 
+        <!-- Weekly off days — recurring, per agent -->
+        <div v-if="soleAgent" class="card mt-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-1">Weekly off days — {{ soleAgent.name }}</h3>
+            <p class="text-xs text-gray-400 mb-3">Always off on these weekdays, every cycle, until changed.</p>
+            <div class="grid grid-cols-7 gap-1 max-w-sm">
+                <button v-for="w in weekdays" :key="w.value" type="button" @click="toggleWeeklyOff(w.value)"
+                    :class="['flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium ring-1 transition-colors',
+                        weeklyOffSelection.includes(w.value) ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white text-gray-600 ring-gray-200 hover:bg-gray-50']">
+                    {{ w.label }}
+                </button>
+            </div>
+        </div>
+
         <!-- Generate modal -->
         <div v-if="showGenerate" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -204,8 +241,8 @@ const soleAgent = computed(() => props.agents.length === 1 ? props.agents[0] : n
                 <form @submit.prevent="submitGenerate" class="p-5 space-y-4 overflow-y-auto flex-1">
                     <p class="text-xs text-gray-500">
                         Each agent cycles 14 working days on, 14 days resting, repeating for the whole range
-                        (marked unavailable days are skipped without breaking the cycle), alternating Day/Night
-                        shift in blocks across the working days.
+                        (their own marked unavailable days and weekly off days are skipped without breaking
+                        the cycle), alternating Day/Night shift in blocks across the working days.
                     </p>
                     <div class="grid grid-cols-2 gap-3">
                         <div>

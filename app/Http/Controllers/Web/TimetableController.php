@@ -46,7 +46,7 @@ class TimetableController extends Controller
         } elseif (! $isManager) {
             $agentQuery->where('id', $user->id);
         }
-        $agents = $agentQuery->get(['id', 'name', 'username']);
+        $agents = $agentQuery->get(['id', 'name', 'username', 'weekly_off_days']);
         $agentIds = $agents->pluck('id');
 
         $shifts = TimetableShift::whereIn('user_id', $agentIds)
@@ -64,6 +64,7 @@ class TimetableController extends Controller
                 'id'       => $agent->id,
                 'name'     => $agent->name,
                 'username' => $agent->username,
+                'weekly_off_days' => $agent->weekly_off_days ?? [],
                 'shifts'   => ($shifts[$agent->id] ?? collect())->map(fn ($s) => [
                     'date'       => $s->work_date->toDateString(),
                     'shift_type' => $s->shift_type,
@@ -103,15 +104,18 @@ class TimetableController extends Controller
         $blockSize = $validated['block_size'] ?? 1;
         $label     = Carbon::parse($validated['start_date'])->format('M Y') . ' – ' . Carbon::parse($validated['end_date'])->format('M Y');
 
+        // Each agent's own weekly-off days (set on their profile), not a
+        // blanket setting for the whole generation batch.
         $agents = User::where('role', 'agent')
             ->when(! empty($validated['agent_ids']), fn ($q) => $q->whereIn('id', $validated['agent_ids']))
-            ->get(['id']);
+            ->get(['id', 'weekly_off_days']);
 
         $allDates = CarbonPeriod::create($validated['start_date'], $validated['end_date'])
             ->toArray();
 
         DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label) {
             foreach ($agents as $agent) {
+                $weeklyOff = $agent->weekly_off_days ?? [];
                 // Clear any existing shifts in this range before regenerating.
                 TimetableShift::where('user_id', $agent->id)
                     ->whereBetween('work_date', [$validated['start_date'], $validated['end_date']])
@@ -124,16 +128,17 @@ class TimetableController extends Controller
                     ->all();
 
                 // Cycle 14 working days, 14 rest days, repeating across the
-                // whole range. A special day is invisible to both counters —
-                // it's just skipped, the cycle picks up right where it left
-                // off on the next calendar day.
+                // whole range. A special day (individually marked, or a
+                // selected weekly-off weekday) is invisible to both counters
+                // — it's just skipped, the cycle picks up right where it
+                // left off on the next calendar day.
                 $mode          = 'working'; // 'working' | 'resting'
                 $daysInMode    = 0;
                 $workDayIndex  = 0; // drives Day/Night alternation, never resets
                 $rows          = [];
 
                 foreach ($allDates as $date) {
-                    if (in_array($date->toDateString(), $specialDates, true)) {
+                    if (in_array($date->toDateString(), $specialDates, true) || in_array($date->dayOfWeek, $weeklyOff, true)) {
                         continue;
                     }
 
@@ -173,6 +178,23 @@ class TimetableController extends Controller
         });
 
         return back()->with('success', 'Timetable generated for ' . $agents->count() . ' agent(s).');
+    }
+
+    // ── Weekly off days — each agent's own recurring off weekdays ───────────
+    public function updateWeeklyOff(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id'      => 'nullable|integer|exists:users,id',
+            'weekly_off'   => 'nullable|array',
+            'weekly_off.*' => 'integer|min:0|max:6',
+        ]);
+
+        $targetId = $validated['user_id'] ?? $request->user()->id;
+        abort_unless($targetId === $request->user()->id || $this->isManager($request), 403);
+
+        User::where('id', $targetId)->update(['weekly_off_days' => $validated['weekly_off'] ?? []]);
+
+        return back()->with('success', 'Weekly off days updated.');
     }
 
     // ── Special (unavailable) days — agents manage their own ────────────────

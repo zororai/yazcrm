@@ -404,6 +404,7 @@ Route::middleware('auth')->group(function () {
     // special (unavailable) days; managers generate and view everyone's.
     Route::get('timetable', [Web\TimetableController::class, 'index'])->name('timetable.index');
     Route::post('timetable/generate', [Web\TimetableController::class, 'generate'])->name('timetable.generate');
+    Route::post('timetable/weekly-off', [Web\TimetableController::class, 'updateWeeklyOff'])->name('timetable.weekly-off');
     Route::post('timetable/special-days', [Web\TimetableController::class, 'storeSpecialDay'])->name('timetable.special-days.store');
     Route::delete('timetable/special-days/{specialDay}', [Web\TimetableController::class, 'destroySpecialDay'])->name('timetable.special-days.destroy');
 });

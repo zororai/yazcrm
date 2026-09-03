@@ -14,6 +14,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name', 'first_name', 'surname', 'username', 'email', 'phone', 'bio', 'password', 'role', 'supervisor_id',
         'avatar', 'is_active', 'last_login_at', 'nav_permissions', 'must_change_password', 'profile_prompt_dismiss_count',
+        'weekly_off_days',
     ];
 
     protected $appends = ['profile_complete'];
@@ -26,6 +27,7 @@ class User extends Authenticatable
         'is_active'             => 'boolean',
         'nav_permissions'       => 'array',
         'must_change_password' => 'boolean',
+        'weekly_off_days'       => 'array',
     ];
 
     public function extension()
