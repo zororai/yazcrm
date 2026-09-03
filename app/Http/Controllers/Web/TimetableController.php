@@ -120,9 +120,16 @@ class TimetableController extends Controller
         $usableWidth  = 297 - 16 - $nameColWidth; // A4 landscape width minus margins minus name column
         $dayColWidth  = max(5, min(7, $usableWidth / max(count($dates), 1)));
 
-        // Header row
-        $pdf->SetFont('Arial', 'B', 7);
+        // Header — two rows: weekday abbreviation, then day-of-month number.
+        $pdf->SetFont('Arial', 'B', 6);
         $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell($nameColWidth, 5, '', 1, 0, 'L', true);
+        foreach ($dates as $d) {
+            $pdf->Cell($dayColWidth, 5, $d->format('D'), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetFont('Arial', 'B', 7);
         $pdf->Cell($nameColWidth, 6, 'Agent', 1, 0, 'L', true);
         foreach ($dates as $d) {
             $pdf->Cell($dayColWidth, 6, $d->format('d'), 1, 0, 'C', true);
