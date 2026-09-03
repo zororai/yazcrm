@@ -176,9 +176,17 @@ async function pollActiveCalls() {
         // Drive the 15s ticket-queue prompt off this same reliable polling
         // data, not just the call-ended webhook (which isn't always firing —
         // see handleCallEnd). Any call still tracked 15s after it started
-        // gets queued for a ticket, once.
+        // gets queued for a ticket, once — but /api/calls/active is shared,
+        // unscoped data (used for the incoming-call popup too), so only
+        // queue a prompt for the extension that actually answered it —
+        // logging a ticket is that agent's job, not every agent's.
+        const myExtension = user.value?.extension?.extension_number;
         const now = Date.now();
         for (const call of incoming) {
+            if (!myExtension) continue; // no extension of our own — nothing is "ours" to prompt for
+            const callExt = call.extension_number ?? call.extension ?? call.dst_ext ?? call.callee ?? call.dst;
+            if (String(callExt ?? '') !== String(myExtension)) continue;
+
             const key = callKey(call);
             if (ticketPromptedKeys.value.has(key)) continue;
             const startedMs = call.started_at ? new Date(call.started_at).getTime() : null;

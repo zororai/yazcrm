@@ -146,11 +146,12 @@ class CallController extends Controller
             ->whereDoesntHave('ticket')
             ->orderByDesc('started_at');
 
+        // Logging a ticket is the responsibility of whichever agent actually
+        // answered the call — not a manager oversight view. Every user
+        // (managers included) is scoped to only their own extension's calls.
         $user = $request->user();
-        if (! in_array($user->role, ['admin', 'director', 'helpline_manager'], true)) {
-            $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
-            $extNumber ? $query->where('extension_number', $extNumber) : $query->whereRaw('0 = 1');
-        }
+        $extNumber = \App\Models\Extension::where('user_id', $user->id)->value('extension_number');
+        $extNumber ? $query->where('extension_number', $extNumber) : $query->whereRaw('0 = 1');
 
         $calls = $query->limit(20)
             ->get(['id', 'call_id', 'caller', 'callee', 'duration', 'direction', 'extension_number', 'started_at', 'client_id'])
