@@ -15,14 +15,17 @@ const referredToList           = computed(() => page.props.referredTo ?? []);
 const serviceCategories        = computed(() => page.props.serviceCategories ?? {});
 
 const props = defineProps({
-    call: Object,   // { call_id, caller, callee, duration, direction, client, recording_id }
+    call: Object,   // { call_id, db_call_id, caller, callee, duration, direction, client, recording_id }
 });
 
 const emit = defineEmits(['close', 'minimize']);
 
 const form = useForm({
     subject: '', contact_number: props.call.caller ?? '', sisters_number: '', description: '',
-    priority: 'medium', status: 'in_progress', follow_up_date: '', call_id: props.call.call_id,
+    priority: 'medium', status: 'in_progress', follow_up_date: '',
+    // The real calls.id row this ticket links to — NOT the Yeastar call_id
+    // string, which the backend's `exists:calls,id` rule would reject.
+    call_id: props.call.db_call_id ?? '',
     // CRM fields — same shape as the New Ticket form on /tickets
     mode_of_communication:    'phone',
     call_validity:            'valid',

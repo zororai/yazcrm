@@ -69,7 +69,8 @@ async function loadNeedingTicket() {
             ticketPromptedKeys.value.add(call.call_id);
             if (! pendingTicketQueue.value.some(c => c.call_id === call.call_id)) {
                 pendingTicketQueue.value.push({
-                    call_id:   call.call_id,
+                    call_id:   call.call_id, // Yeastar's call_id string — only used as a dedup/queue key
+                    db_call_id: call.id ?? null, // the real calls.id row — what actually links the ticket
                     caller:    call.caller,
                     callee:    call.callee,
                     duration:  call.duration,
@@ -187,6 +188,7 @@ async function pollActiveCalls() {
             if (! pendingTicketQueue.value.some(c => c.call_id === key)) {
                 pendingTicketQueue.value.push({
                     call_id:   key,
+                    db_call_id: call.id ?? null, // only present on the DB-fallback path, not live Yeastar API items
                     caller:    call.caller ?? call.src ?? 'Unknown',
                     callee:    call.callee ?? call.dst ?? call.extension_number ?? '',
                     duration:  Math.round((now - startedMs) / 1000),
@@ -206,8 +208,11 @@ onMounted(() => {
     if (window.Echo && user.value) {
         window.Echo.private(`agent.${user.value.id}`)
             .listen('.call-ended', (data) => {
+                // CallEndedEvent's `call_id` is actually the real calls.id
+                // primary key (not the Yeastar string) — carry it through
+                // as db_call_id too, which is what the ticket link uses.
                 if (! pendingTicketQueue.value.some(c => c.call_id === data.call_id)) {
-                    pendingTicketQueue.value.push(data);
+                    pendingTicketQueue.value.push({ ...data, db_call_id: data.call_id });
                 }
             });
     }

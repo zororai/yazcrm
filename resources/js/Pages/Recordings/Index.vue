@@ -57,7 +57,7 @@ const ticketModalCall = ref(null);
 function openTicketModal(r) {
     if (!r.call) return;
     ticketModalCall.value = {
-        call_id:      r.call.id,
+        db_call_id:   r.call.id, // the real calls.id — what CallTicketModal links the ticket to
         caller:       r.call.caller,
         callee:       r.call.callee,
         duration:     r.duration,

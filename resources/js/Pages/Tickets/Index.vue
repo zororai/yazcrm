@@ -328,6 +328,7 @@ async function lookupRecordingForNumber(number) {
     if (!number || number.length < 6) {
         recordingLookup.value = null;
         foundRecordingId.value = null;
+        addForm.call_id = '';
         return;
     }
 
@@ -340,10 +341,17 @@ async function lookupRecordingForNumber(number) {
             recordingLookup.value = 'not_found';
             recordingLookupMessage.value = "No recording found for this number today.";
             foundRecordingId.value = null;
+            addForm.call_id = '';
             return;
         }
 
         foundRecordingId.value = data.recording_id;
+        // Link the ticket to the underlying call so it stops showing up in
+        // the "Call ended — log a ticket" floating queue — without this,
+        // a manually-created ticket never satisfies that queue's
+        // whereDoesntHave('ticket') check and the same call keeps
+        // re-prompting indefinitely.
+        addForm.call_id = data.call_id ?? '';
 
         if (data.status === 'done' && data.ai_notes) {
             if (!addForm.description) addForm.description = data.ai_notes;
@@ -409,6 +417,7 @@ function openAdd() {
 
 const addForm = useForm({
     subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', status: 'in_progress', follow_up_date: '',
+    call_id: '', // links the ticket to the underlying Call row when a recording was matched
     // CRM fields
     mode_of_communication:    'phone',
     call_validity:            'valid',
