@@ -16,6 +16,8 @@ use Inertia\Response;
 // a workplan-activities table). Each user files one per calendar month.
 class ProgressReportController extends Controller
 {
+    private const STATUSES = ['pending', 'reviewed', 'approved', 'needs_revision'];
+
     private function isManager(Request $request): bool
     {
         return in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true);
@@ -29,7 +31,7 @@ class ProgressReportController extends Controller
 
         $mine = ProgressReport::where('user_id', $user->id)
             ->orderByDesc('month')
-            ->get(['id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'activities']);
+            ->get(['id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'activities', 'status', 'review_notes']);
 
         $current = $mine->first(fn (ProgressReport $r) => $r->month->toDateString() === $month);
 
@@ -38,13 +40,14 @@ class ProgressReportController extends Controller
             $teamReports = ProgressReport::with('user:id,name,username')
                 ->whereDate('month', $month)
                 ->orderBy('user_id')
-                ->get(['id', 'user_id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress'])
+                ->get(['id', 'user_id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'status'])
                 ->map(fn (ProgressReport $r) => [
                     'id'         => $r->id,
                     'user'       => $r->user,
                     'job_title'  => $r->job_title,
                     'supervisor' => $r->supervisor,
                     'submitted'  => $r->date_submitted?->toDateString(),
+                    'status'     => $r->status,
                 ])->values();
         }
 
@@ -57,11 +60,14 @@ class ProgressReportController extends Controller
                 'date_submitted'    => $current->date_submitted?->toDateString(),
                 'overall_progress'  => $current->overall_progress,
                 'activities'        => $current->activities ?? [],
+                'status'            => $current->status,
+                'review_notes'      => $current->review_notes,
             ] : null,
             'history' => $mine->map(fn (ProgressReport $r) => [
                 'id'    => $r->id,
                 'month' => $r->month->toDateString(),
                 'submitted' => (bool) $r->date_submitted,
+                'status'    => $r->status,
             ])->values(),
             'isManager'    => $isManager,
             'teamReports'  => $teamReports,
@@ -84,7 +90,9 @@ class ProgressReportController extends Controller
         ]);
 
         // Always the authenticated user's own report — a report can't be
-        // filed on someone else's behalf, even by a manager.
+        // filed on someone else's behalf, even by a manager. Any edit
+        // (including editing a previously reviewed/approved report) puts
+        // it back to "pending" — it needs a fresh look from a reviewer.
         ProgressReport::updateOrCreate(
             [
                 'user_id' => $request->user()->id,
@@ -99,6 +107,10 @@ class ProgressReportController extends Controller
                     $validated['activities'] ?? [],
                     fn ($a) => filled($a['activity'] ?? null) || filled($a['completed'] ?? null) || filled($a['details'] ?? null)
                 )),
+                'status'       => 'pending',
+                'reviewed_by'  => null,
+                'reviewed_at'  => null,
+                'review_notes' => null,
             ],
         );
 
@@ -120,7 +132,34 @@ class ProgressReportController extends Controller
                 'date_submitted'    => $report->date_submitted?->toDateString(),
                 'overall_progress'  => $report->overall_progress,
                 'activities'        => $report->activities ?? [],
+                'status'            => $report->status,
+                'reviewer'          => $report->reviewer()->first(['id', 'name']),
+                'reviewed_at'       => $report->reviewed_at?->toDateTimeString(),
+                'review_notes'      => $report->review_notes,
             ],
+            'isManager' => $this->isManager($request),
+            'statuses'  => self::STATUSES,
         ]);
+    }
+
+    // The responsible authority (manager/supervisor) reviews a report and
+    // sets its status — the agent sees this reflected on their own view.
+    public function updateStatus(Request $request, ProgressReport $report): RedirectResponse
+    {
+        abort_unless($this->isManager($request), 403);
+
+        $validated = $request->validate([
+            'status'        => 'required|in:' . implode(',', self::STATUSES),
+            'review_notes'  => 'nullable|string|max:1000',
+        ]);
+
+        $report->update([
+            'status'       => $validated['status'],
+            'review_notes' => $validated['review_notes'] ?? null,
+            'reviewed_by'  => $request->user()->id,
+            'reviewed_at'  => now(),
+        ]);
+
+        return back()->with('success', 'Report status updated.');
     }
 }

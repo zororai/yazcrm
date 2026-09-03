@@ -414,4 +414,5 @@ Route::middleware('auth')->group(function () {
     Route::get('progress-reports', [Web\ProgressReportController::class, 'index'])->name('progress-reports.index');
     Route::post('progress-reports', [Web\ProgressReportController::class, 'store'])->name('progress-reports.store');
     Route::get('progress-reports/{report}', [Web\ProgressReportController::class, 'show'])->name('progress-reports.show');
+    Route::post('progress-reports/{report}/status', [Web\ProgressReportController::class, 'updateStatus'])->name('progress-reports.status');
 });

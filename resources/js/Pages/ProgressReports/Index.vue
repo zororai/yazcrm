@@ -55,6 +55,20 @@ function submit() {
 }
 
 const monthLabel = computed(() => new Date(month.value + '-01T00:00:00').toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
+
+const statusLabels = {
+    pending:         'Pending Review',
+    reviewed:        'Reviewed',
+    approved:        'Approved',
+    needs_revision:  'Needs Revision',
+};
+
+const statusColor = {
+    pending:        'bg-gray-100 text-gray-600',
+    reviewed:       'bg-blue-100 text-blue-800',
+    approved:       'bg-green-100 text-green-800',
+    needs_revision: 'bg-amber-100 text-amber-800',
+};
 </script>
 
 <template>
@@ -71,9 +85,18 @@ const monthLabel = computed(() => new Date(month.value + '-01T00:00:00').toLocal
 
         <!-- The report form — mirrors the paper template -->
         <form @submit.prevent="submit" class="card space-y-5">
-            <div>
-                <h2 class="text-lg font-bold text-gray-900">Individual Monthly Progress Report</h2>
-                <p class="text-xs text-gray-400 uppercase tracking-wide mt-1">Summary of portfolio details: please insert your KPIs as per contract</p>
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Individual Monthly Progress Report</h2>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide mt-1">Summary of portfolio details: please insert your KPIs as per contract</p>
+                </div>
+                <span v-if="current" :class="['badge flex-shrink-0', statusColor[current.status] ?? 'bg-gray-100 text-gray-600']">
+                    {{ statusLabels[current.status] ?? current.status }}
+                </span>
+            </div>
+
+            <div v-if="current?.review_notes" class="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5 text-sm text-amber-800">
+                <span class="font-medium">Reviewer notes:</span> {{ current.review_notes }}
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -132,7 +155,7 @@ const monthLabel = computed(() => new Date(month.value + '-01T00:00:00').toLocal
                 </div>
             </div>
 
-            <div class="flex justify-end">
+            <div class="flex justify-center">
                 <button type="submit" :disabled="form.processing" class="btn-primary">
                     {{ form.processing ? 'Saving…' : 'Save Report' }}
                 </button>
@@ -144,10 +167,13 @@ const monthLabel = computed(() => new Date(month.value + '-01T00:00:00').toLocal
             <h3 class="text-sm font-semibold text-gray-700 mb-3">My Reports</h3>
             <div class="flex flex-wrap gap-2">
                 <button v-for="h in history" :key="h.id" type="button" @click="month = h.month.slice(0,7); changeMonth()"
-                    :class="['px-3 py-1.5 rounded-full text-xs font-medium ring-1 transition-colors',
+                    :class="['px-3 py-1.5 rounded-full text-xs font-medium ring-1 transition-colors inline-flex items-center gap-1.5',
                         h.month.slice(0,7) === month ? 'bg-brand-600 text-white ring-brand-600' : 'bg-white text-gray-600 ring-gray-200 hover:bg-gray-50']">
                     {{ new Date(h.month + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) }}
-                    <span v-if="h.submitted" class="text-green-500 ml-1">✓</span>
+                    <span v-if="h.submitted" class="text-green-500">✓</span>
+                    <span :class="['h-1.5 w-1.5 rounded-full',
+                        { pending: 'bg-gray-400', reviewed: 'bg-blue-400', approved: 'bg-green-400', needs_revision: 'bg-amber-400' }[h.status] ?? 'bg-gray-400']"
+                        :title="statusLabels[h.status]" />
                 </button>
             </div>
         </div>
@@ -161,6 +187,9 @@ const monthLabel = computed(() => new Date(month.value + '-01T00:00:00').toLocal
                         <DocumentTextIcon class="h-4 w-4 text-gray-300" />
                         <span class="text-sm text-gray-800">{{ r.user?.name }}</span>
                         <span v-if="r.job_title" class="text-xs text-gray-400">· {{ r.job_title }}</span>
+                        <span :class="['badge', statusColor[r.status] ?? 'bg-gray-100 text-gray-600']">
+                            {{ statusLabels[r.status] ?? r.status }}
+                        </span>
                     </div>
                     <Link :href="`/progress-reports/${r.id}`" class="text-xs text-brand-600 hover:underline">View</Link>
                 </li>
