@@ -399,4 +399,11 @@ Route::middleware('auth')->group(function () {
     Route::get('counsellor-profiles', [Web\CounsellorProfileController::class, 'index'])->name('counsellor-profiles.index');
     Route::get('counsellor-profiles/{counsellor}', [Web\CounsellorProfileController::class, 'show'])->name('counsellor-profiles.show');
     Route::get('counsellor-profiles/{counsellor}/details', [Web\CounsellorProfileController::class, 'details'])->name('counsellor-profiles.details');
+
+    // Timetable — rotating day/night roster. Agents view their own and mark
+    // special (unavailable) days; managers generate and view everyone's.
+    Route::get('timetable', [Web\TimetableController::class, 'index'])->name('timetable.index');
+    Route::post('timetable/generate', [Web\TimetableController::class, 'generate'])->name('timetable.generate');
+    Route::post('timetable/special-days', [Web\TimetableController::class, 'storeSpecialDay'])->name('timetable.special-days.store');
+    Route::delete('timetable/special-days/{specialDay}', [Web\TimetableController::class, 'destroySpecialDay'])->name('timetable.special-days.destroy');
 });

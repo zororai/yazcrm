@@ -1,13 +1,19 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import JsSIP from 'jssip';
 import {
     PhoneIcon, PhoneXMarkIcon, PhoneArrowDownLeftIcon,
-    XMarkIcon, BackspaceIcon, ChevronDownIcon,
+    BackspaceIcon, ChevronDownIcon,
 } from '@heroicons/vue/24/outline';
 
 // ── State ──────────────────────────────────────────────────────────────────────
-const open         = ref(false);
+// Opened externally (a nav button) — no floating launcher of its own.
+const props = defineProps({ open: { type: Boolean, default: false } });
+const emit  = defineEmits(['update:open']);
+const open  = computed({
+    get: () => props.open,
+    set: (v) => emit('update:open', v),
+});
 const dialNumber   = ref('');
 const sipConfig    = ref(null);
 const status       = ref('loading'); // loading | unconfigured | registering | ready | on_call | incoming | error
@@ -317,20 +323,5 @@ onUnmounted(() => {
                 </template>
             </div>
         </Transition>
-
-        <!-- FAB toggle -->
-        <button
-            @click="open = !open"
-            :class="[
-                'h-14 w-14 rounded-full shadow-lg flex items-center justify-center transition-colors',
-                status === 'incoming' ? 'bg-blue-500 hover:bg-blue-600 animate-pulse' :
-                status === 'on_call'  ? 'bg-brand-600 hover:bg-brand-700' :
-                status === 'error'    ? 'bg-red-500 hover:bg-red-600' :
-                                        'bg-brand-600 hover:bg-brand-700',
-            ]"
-        >
-            <PhoneIcon v-if="!open" class="h-6 w-6 text-white" />
-            <XMarkIcon v-else       class="h-6 w-6 text-white" />
-        </button>
     </div>
 </template>

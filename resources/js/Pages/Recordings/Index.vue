@@ -261,6 +261,7 @@ function statusColor(s) {
             v-if="ticketModalCall"
             :call="ticketModalCall"
             @close="closeTicketModal"
+            @minimize="closeTicketModal"
         />
     </AppLayout>
 </template>

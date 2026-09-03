@@ -1,7 +1,7 @@
 <script setup>
 import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { PhoneIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { PhoneIcon, ClockIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 const distressDomains = computed(() => usePage().props.distressDomains ?? []);
 
@@ -9,7 +9,7 @@ const props = defineProps({
     call: Object,   // { call_id, caller, callee, duration, direction, client, recording_id }
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'minimize']);
 
 const form = useForm({
     subject:     '',
@@ -127,12 +127,16 @@ const priorityColor = {
     <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
         <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
 
-            <!-- Header — no close button: a ticket must be logged before this can be dismissed -->
+            <!-- Header — closing doesn't discard this: it goes back to the
+                 floating queue on the side, since a ticket must still be logged. -->
             <div class="flex items-center justify-between bg-brand-600 px-5 py-4 flex-shrink-0">
                 <div class="flex items-center gap-2 text-white">
                     <PhoneIcon class="h-5 w-5" />
                     <span class="font-semibold">Call ended — log a ticket</span>
                 </div>
+                <button type="button" @click="emit('minimize')" class="text-white/70 hover:text-white" title="Minimize — stays in the queue until a ticket is logged">
+                    <XMarkIcon class="h-5 w-5" />
+                </button>
             </div>
 
             <!-- Call summary -->

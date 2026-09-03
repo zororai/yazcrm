@@ -9,11 +9,12 @@ import {
     ExclamationTriangleIcon, ChatBubbleLeftRightIcon, ShieldCheckIcon, TableCellsIcon,
     ServerStackIcon, ShieldExclamationIcon, PhoneArrowUpRightIcon, MicrophoneIcon, BookOpenIcon,
     ClipboardDocumentCheckIcon, ClipboardDocumentListIcon, DocumentTextIcon, TruckIcon,
-    SunIcon, MoonIcon,
+    SunIcon, MoonIcon, CalendarDaysIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
 import Dialer from '@/Components/Dialer.vue';
+import ChatAssistant from '@/Components/ChatAssistant.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
 import CompleteProfileModal from '@/Components/CompleteProfileModal.vue';
 import PendingTicketQueue from '@/Components/PendingTicketQueue.vue';
@@ -39,6 +40,7 @@ function toggleTheme() {
 const isLight = computed(() => theme.value === 'light');
 
 const sidebarOpen     = ref(false);
+const dialerOpen      = ref(false);
 const pendingCall     = ref(null);
 const pendingTicketQueue = ref([]); // calls awaiting a ticket, shown as floating queue buttons
 const ticketPromptedKeys = ref(new Set()); // calls already queued for a ticket, so polling doesn't re-add them
@@ -46,6 +48,15 @@ const ticketPromptedKeys = ref(new Set()); // calls already queued for a ticket,
 function openTicketFromQueue(call) {
     pendingTicketQueue.value = pendingTicketQueue.value.filter(c => c.call_id !== call.call_id);
     pendingCall.value = call;
+}
+
+// Closing the modal without submitting a ticket doesn't discard the call —
+// it goes back onto the floating queue so it can't be lost without a ticket.
+function minimizePendingCall() {
+    if (pendingCall.value && ! pendingTicketQueue.value.some(c => c.call_id === pendingCall.value.call_id)) {
+        pendingTicketQueue.value.push(pendingCall.value);
+    }
+    pendingCall.value = null;
 }
 
 // Load calls that ended >=15s ago and still have no ticket, from the server
@@ -277,6 +288,7 @@ const navigation = computed(() => [
     ...(can('roles')        ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
     ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
     ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) ? [{ name: 'Counsellor Profiles', href: '/counsellor-profiles', icon: UserGroupIcon }] : []),
+    { name: 'Timetable', href: '/timetable', icon: CalendarDaysIcon },
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);
 
@@ -400,6 +412,14 @@ function logout() {
                     </p>
                 </div>
                 <slot name="header-actions" />
+                <!-- Dialer toggle -->
+                <button
+                    @click="dialerOpen = !dialerOpen"
+                    :class="['p-2 rounded-lg transition-colors flex-shrink-0', isLight ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-gray-800']"
+                    title="Dialer"
+                >
+                    <PhoneIcon class="h-5 w-5" />
+                </button>
                 <NotificationBell />
                 <!-- Light / dark toggle -->
                 <button
@@ -535,6 +555,7 @@ function logout() {
         v-if="pendingCall"
         :call="pendingCall"
         @close="pendingCall = null"
+        @minimize="minimizePendingCall"
     />
 
     <!-- Floating queue: calls ≥ 15s awaiting a ticket, stacked on the right.
@@ -551,8 +572,11 @@ function logout() {
         @dismiss="dismissCall"
     />
 
-    <!-- WebRTC Dialer -->
-    <Dialer />
+    <!-- WebRTC Dialer — opened via the header phone icon, not a floating button -->
+    <Dialer v-model:open="dialerOpen" />
+
+    <!-- Floating chat assistant -->
+    <ChatAssistant />
 
     <!-- Complete-profile prompt -->
     <CompleteProfileModal

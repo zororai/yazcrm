@@ -46,6 +46,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('calls/active', [CallController::class, 'active']);
     Route::get('calls/needing-ticket', [CallController::class, 'needingTicket']);
 
+    // Floating chat assistant (general-purpose, no CRM data access) —
+    // conversation is saved per agent so it survives a reload.
+    Route::get('assistant/chat', [\App\Http\Controllers\AssistantChatController::class, 'history']);
+    Route::post('assistant/chat', [\App\Http\Controllers\AssistantChatController::class, 'reply']);
+
     // Dashboard
     Route::get('dashboard/stats',          [DashboardController::class, 'stats']);
     Route::get('dashboard/call-trend',     [DashboardController::class, 'callTrend']);
