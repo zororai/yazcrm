@@ -11,6 +11,7 @@ const props = defineProps({
     isManager: Boolean,
     teamReports: Array,
     allUsers: Array,
+    supervisorOptions: Array,
 });
 
 const month = ref(props.month.slice(0, 7)); // "YYYY-MM" for the <input type="month">
@@ -106,7 +107,10 @@ const statusColor = {
                 </div>
                 <div>
                     <label class="label">Supervisor</label>
-                    <input v-model="form.supervisor" class="input" />
+                    <select v-model="form.supervisor" class="input">
+                        <option value="">— select —</option>
+                        <option v-for="u in supervisorOptions" :key="u.id" :value="u.name">{{ u.name }}</option>
+                    </select>
                 </div>
                 <div>
                     <label class="label">Date Submitted</label>
@@ -153,6 +157,10 @@ const statusColor = {
                         </tbody>
                     </table>
                 </div>
+                <button type="button" @click="addActivityRow"
+                    class="mt-2 w-full flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-brand-300 hover:text-brand-600 py-2 text-sm font-medium transition-colors">
+                    <PlusIcon class="h-4 w-4" /> Add Activity
+                </button>
             </div>
 
             <div class="flex justify-center">

@@ -72,6 +72,9 @@ class ProgressReportController extends Controller
             'isManager'    => $isManager,
             'teamReports'  => $teamReports,
             'allUsers'     => $isManager ? User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name']) : [],
+            // For the Supervisor dropdown — every real user, available to
+            // all roles filing a report (not just managers).
+            'supervisorOptions' => User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
