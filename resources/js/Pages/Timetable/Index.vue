@@ -56,7 +56,7 @@ const showGenerate = ref(false);
 const generateForm = useForm({
     start_date: props.filters.start,
     end_date:   props.filters.end,
-    block_size: 7,
+    block_size: 1,
     agent_ids:  [],
 });
 
@@ -203,8 +203,9 @@ const soleAgent = computed(() => props.agents.length === 1 ? props.agents[0] : n
                 </div>
                 <form @submit.prevent="submitGenerate" class="p-5 space-y-4 overflow-y-auto flex-1">
                     <p class="text-xs text-gray-500">
-                        Each agent gets up to 14 working days in this range (skipping their marked unavailable days),
-                        alternating Day/Night shift in blocks.
+                        Each agent cycles 14 working days on, 14 days resting, repeating for the whole range
+                        (marked unavailable days are skipped without breaking the cycle), alternating Day/Night
+                        shift in blocks across the working days.
                     </p>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -219,7 +220,7 @@ const soleAgent = computed(() => props.agents.length === 1 ? props.agents[0] : n
                     <div>
                         <label class="label">Shift block size (days per block)</label>
                         <input v-model.number="generateForm.block_size" type="number" min="1" max="14" class="input" />
-                        <p class="text-xs text-gray-400 mt-1">e.g. 7 = a week of Day shift, then a week of Night shift.</p>
+                        <p class="text-xs text-gray-400 mt-1">1 = alternates every working day (Day, Night, Day, Night…). 7 = a week of Day shift, then a week of Night shift.</p>
                     </div>
                     <div>
                         <div class="flex items-center justify-between mb-1">

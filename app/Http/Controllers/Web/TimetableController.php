@@ -14,13 +14,15 @@ use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
-// Generates a rotating day/night roster: each agent gets up to 14 working
-// days inside a manager-picked date range, skipping any date they've
-// marked as a special (unavailable) day, alternating Day/Night shift in
-// blocks across those 14 days.
+// Generates a rotating day/night roster: for the whole manager-picked date
+// range, each agent cycles 14 working days on, 14 days resting, repeating —
+// skipping any date they've marked as a special (unavailable) day without
+// breaking the cycle — and alternates Day/Night shift in blocks across the
+// working days.
 class TimetableController extends Controller
 {
     private const WORKING_DAYS_TARGET = 14;
+    private const REST_DAYS_TARGET    = 14;
     private const DAY_START   = '07:30';
     private const DAY_END     = '17:00';
     private const NIGHT_START = '17:00';
@@ -98,7 +100,7 @@ class TimetableController extends Controller
             'agent_ids.*' => 'integer|exists:users,id',
         ]);
 
-        $blockSize = $validated['block_size'] ?? 7;
+        $blockSize = $validated['block_size'] ?? 1;
         $label     = Carbon::parse($validated['start_date'])->format('M Y') . ' – ' . Carbon::parse($validated['end_date'])->format('M Y');
 
         $agents = User::where('role', 'agent')
@@ -121,26 +123,47 @@ class TimetableController extends Controller
                     ->map(fn ($d) => $d->toDateString())
                     ->all();
 
-                $availableDates = array_values(array_filter(
-                    $allDates,
-                    fn (Carbon $d) => ! in_array($d->toDateString(), $specialDates, true)
-                ));
+                // Cycle 14 working days, 14 rest days, repeating across the
+                // whole range. A special day is invisible to both counters —
+                // it's just skipped, the cycle picks up right where it left
+                // off on the next calendar day.
+                $mode          = 'working'; // 'working' | 'resting'
+                $daysInMode    = 0;
+                $workDayIndex  = 0; // drives Day/Night alternation, never resets
+                $rows          = [];
 
-                $workingDates = array_slice($availableDates, 0, self::WORKING_DAYS_TARGET);
+                foreach ($allDates as $date) {
+                    if (in_array($date->toDateString(), $specialDates, true)) {
+                        continue;
+                    }
 
-                $rows = [];
-                foreach ($workingDates as $i => $date) {
-                    $blockIndex = intdiv($i, $blockSize);
-                    $shiftType  = $blockIndex % 2 === 0 ? 'day' : 'night';
+                    if ($mode === 'working') {
+                        $blockIndex = intdiv($workDayIndex, $blockSize);
+                        $shiftType  = $blockIndex % 2 === 0 ? 'day' : 'night';
 
-                    $rows[] = [
-                        'user_id'      => $agent->id,
-                        'work_date'    => $date->toDateString(),
-                        'shift_type'   => $shiftType,
-                        'roster_label' => $label,
-                        'created_at'   => now(),
-                        'updated_at'   => now(),
-                    ];
+                        $rows[] = [
+                            'user_id'      => $agent->id,
+                            'work_date'    => $date->toDateString(),
+                            'shift_type'   => $shiftType,
+                            'roster_label' => $label,
+                            'created_at'   => now(),
+                            'updated_at'   => now(),
+                        ];
+
+                        $workDayIndex++;
+                        $daysInMode++;
+
+                        if ($daysInMode === self::WORKING_DAYS_TARGET) {
+                            $mode       = 'resting';
+                            $daysInMode = 0;
+                        }
+                    } else {
+                        $daysInMode++;
+                        if ($daysInMode === self::REST_DAYS_TARGET) {
+                            $mode       = 'working';
+                            $daysInMode = 0;
+                        }
+                    }
                 }
 
                 if ($rows) {
