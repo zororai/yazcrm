@@ -290,6 +290,8 @@ const navigation = computed(() => [
     ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) ? [{ name: 'Counsellor Profiles', href: '/counsellor-profiles', icon: UserGroupIcon }] : []),
     { name: 'Timetable', href: '/timetable', icon: CalendarDaysIcon },
     { name: 'Progress Report', href: '/progress-reports', icon: ClipboardDocumentListIcon },
+    ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role)
+        ? [{ name: 'Team Reports', href: '/progress-reports/team', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);
 

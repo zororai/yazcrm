@@ -2,9 +2,27 @@
 import { ref, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PhoneIcon, EnvelopeIcon, FlagIcon, TicketIcon, MicrophoneIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PhoneIcon, EnvelopeIcon, FlagIcon, TicketIcon, MicrophoneIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ counsellor: Object, tickets: Object, recordings: Object, filters: Object });
+const props = defineProps({ counsellor: Object, tickets: Object, recordings: Object, progressReports: Array, filters: Object });
+
+const statusLabels = {
+    pending:         'Pending Review',
+    reviewed:        'Reviewed',
+    approved:        'Approved',
+    needs_revision:  'Needs Revision',
+};
+
+const statusColor = {
+    pending:        'bg-gray-100 text-gray-600',
+    reviewed:       'bg-blue-100 text-blue-800',
+    approved:       'bg-green-100 text-green-800',
+    needs_revision: 'bg-amber-100 text-amber-800',
+};
+
+function monthLabel(month) {
+    return new Date(month + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
 
 const period = ref(props.filters.period ?? 'today');
 
@@ -163,6 +181,33 @@ const ticketStatusColor = {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Progress Reports — all submitted, not scoped to the period filter -->
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden mt-5">
+            <div class="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                <p class="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                    <DocumentTextIcon class="h-4 w-4 text-indigo-500" /> Monthly Progress Reports
+                </p>
+                <span class="text-xs text-gray-400">{{ progressReports.length }} submitted</span>
+            </div>
+            <ul class="divide-y divide-gray-100">
+                <li v-for="r in progressReports" :key="r.id" class="px-5 py-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <Link :href="`/progress-reports/${r.id}`" class="text-sm text-brand-600 hover:underline truncate block">
+                            {{ monthLabel(r.month) }}
+                        </Link>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            {{ r.job_title || 'No job title given' }}
+                            <span v-if="r.date_submitted"> · submitted {{ r.date_submitted }}</span>
+                        </p>
+                    </div>
+                    <span :class="['badge shrink-0', statusColor[r.status] ?? 'bg-gray-100 text-gray-600']">
+                        {{ statusLabels[r.status] ?? r.status }}
+                    </span>
+                </li>
+                <li v-if="!progressReports.length" class="px-5 py-10 text-center text-sm text-gray-400">No progress reports submitted yet.</li>
+            </ul>
         </div>
     </AppLayout>
 </template>

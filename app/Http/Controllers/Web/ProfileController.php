@@ -37,6 +37,19 @@ class ProfileController extends Controller
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
+        // /users, /counsellor-profiles, /timetable, etc. all display the
+        // `name` column, not first_name/surname — keep it in sync whenever
+        // either changes, so a self-service profile edit actually shows up
+        // everywhere else in the CRM.
+        if (array_key_exists('first_name', $data) || array_key_exists('surname', $data)) {
+            $firstName = $data['first_name'] ?? $request->user()->first_name;
+            $surname   = $data['surname'] ?? $request->user()->surname;
+            $fullName  = trim("$firstName $surname");
+            if ($fullName !== '') {
+                $data['name'] = $fullName;
+            }
+        }
+
         $request->user()->update($data);
 
         return back()->with('success', 'Profile updated.');

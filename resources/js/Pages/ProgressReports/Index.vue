@@ -9,8 +9,6 @@ const props = defineProps({
     current: Object,
     history: Array,
     isManager: Boolean,
-    teamReports: Array,
-    allUsers: Array,
     supervisorOptions: Array,
 });
 
@@ -186,23 +184,13 @@ const statusColor = {
             </div>
         </div>
 
-        <!-- Manager: team reports for this month -->
-        <div class="card mt-5" v-if="isManager">
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">Team Reports — {{ monthLabel }}</h3>
-            <ul class="divide-y divide-gray-100">
-                <li v-for="r in teamReports" :key="r.id" class="py-2.5 flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <DocumentTextIcon class="h-4 w-4 text-gray-300" />
-                        <span class="text-sm text-gray-800">{{ r.user?.name }}</span>
-                        <span v-if="r.job_title" class="text-xs text-gray-400">· {{ r.job_title }}</span>
-                        <span :class="['badge', statusColor[r.status] ?? 'bg-gray-100 text-gray-600']">
-                            {{ statusLabels[r.status] ?? r.status }}
-                        </span>
-                    </div>
-                    <Link :href="`/progress-reports/${r.id}`" class="text-xs text-brand-600 hover:underline">View</Link>
-                </li>
-                <li v-if="!teamReports.length" class="py-6 text-center text-sm text-gray-400">No reports submitted for this month yet.</li>
-            </ul>
+        <!-- Manager: link out to the dedicated Team Reports page -->
+        <div class="card mt-5 flex items-center justify-between" v-if="isManager">
+            <div class="flex items-center gap-2">
+                <DocumentTextIcon class="h-4 w-4 text-gray-300" />
+                <span class="text-sm text-gray-700">Reviewing the whole team's reports?</span>
+            </div>
+            <Link href="/progress-reports/team" class="btn-secondary btn-sm">Open Team Reports</Link>
         </div>
     </AppLayout>
 </template>

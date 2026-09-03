@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Web\CallTargetController;
 use App\Models\Extension;
+use App\Models\ProgressReport;
 use App\Models\Recording;
 use App\Models\Ticket;
 use App\Models\User;
@@ -122,6 +123,13 @@ class CounsellorProfileController extends Controller
             ->paginate(15, ['id', 'call_id', 'created_at', 'duration', 'transcription_status'], 'recordings_page')
             ->withQueryString();
 
+        // Not period-scoped — a manager reviewing this counsellor wants to
+        // see every monthly report they've ever submitted, not just ones
+        // in the today/week/month/year window used for tickets/recordings.
+        $progressReports = ProgressReport::where('user_id', $counsellor->id)
+            ->orderByDesc('month')
+            ->get(['id', 'month', 'job_title', 'date_submitted', 'status']);
+
         return Inertia::render('Counsellors/Show', [
             'counsellor' => [
                 'id'          => $counsellor->id,
@@ -138,6 +146,7 @@ class CounsellorProfileController extends Controller
             ],
             'tickets'    => $tickets,
             'recordings' => $recordings,
+            'progressReports' => $progressReports,
             'filters'    => ['period' => $period],
         ]);
     }

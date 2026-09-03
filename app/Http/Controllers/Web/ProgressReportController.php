@@ -35,22 +35,6 @@ class ProgressReportController extends Controller
 
         $current = $mine->first(fn (ProgressReport $r) => $r->month->toDateString() === $month);
 
-        $teamReports = [];
-        if ($isManager) {
-            $teamReports = ProgressReport::with('user:id,name,username')
-                ->whereDate('month', $month)
-                ->orderBy('user_id')
-                ->get(['id', 'user_id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'status'])
-                ->map(fn (ProgressReport $r) => [
-                    'id'         => $r->id,
-                    'user'       => $r->user,
-                    'job_title'  => $r->job_title,
-                    'supervisor' => $r->supervisor,
-                    'submitted'  => $r->date_submitted?->toDateString(),
-                    'status'     => $r->status,
-                ])->values();
-        }
-
         return Inertia::render('ProgressReports/Index', [
             'month'    => $month,
             'current'  => $current ? [
@@ -70,11 +54,43 @@ class ProgressReportController extends Controller
                 'status'    => $r->status,
             ])->values(),
             'isManager'    => $isManager,
-            'teamReports'  => $teamReports,
-            'allUsers'     => $isManager ? User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name']) : [],
             // For the Supervisor dropdown — every real user, available to
             // all roles filing a report (not just managers).
             'supervisorOptions' => User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    // Manager-only: every submitted report for a given month, across the
+    // whole team — its own page, not embedded in the personal report view.
+    public function team(Request $request): Response
+    {
+        abort_unless($this->isManager($request), 403);
+
+        $month = Carbon::parse($request->input('month', now()->startOfMonth()->toDateString()))->startOfMonth()->toDateString();
+
+        $reports = ProgressReport::with('user:id,name,username')
+            ->whereDate('month', $month)
+            ->orderBy('user_id')
+            ->get(['id', 'user_id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'status'])
+            ->map(fn (ProgressReport $r) => [
+                'id'         => $r->id,
+                'user'       => $r->user,
+                'job_title'  => $r->job_title,
+                'supervisor' => $r->supervisor,
+                'submitted'  => $r->date_submitted?->toDateString(),
+                'status'     => $r->status,
+            ])->values();
+
+        $submittedUserIds = $reports->pluck('user.id');
+        $notSubmitted = User::where('role', '!=', 'admin')
+            ->whereNotIn('id', $submittedUserIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'username']);
+
+        return Inertia::render('ProgressReports/Team', [
+            'month'         => $month,
+            'reports'       => $reports,
+            'notSubmitted'  => $notSubmitted,
         ]);
     }
 
