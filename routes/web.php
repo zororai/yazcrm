@@ -409,4 +409,9 @@ Route::middleware('auth')->group(function () {
     Route::post('timetable/shift-preference', [Web\TimetableController::class, 'updateShiftPreference'])->name('timetable.shift-preference');
     Route::post('timetable/special-days', [Web\TimetableController::class, 'storeSpecialDay'])->name('timetable.special-days.store');
     Route::delete('timetable/special-days/{specialDay}', [Web\TimetableController::class, 'destroySpecialDay'])->name('timetable.special-days.destroy');
+
+    // Individual Monthly Progress Report
+    Route::get('progress-reports', [Web\ProgressReportController::class, 'index'])->name('progress-reports.index');
+    Route::post('progress-reports', [Web\ProgressReportController::class, 'store'])->name('progress-reports.store');
+    Route::get('progress-reports/{report}', [Web\ProgressReportController::class, 'show'])->name('progress-reports.show');
 });
