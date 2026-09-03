@@ -79,7 +79,7 @@ class TimetableController extends Controller
 
         return Inertia::render('Timetable/Index', [
             'agents'    => $rows,
-            'allAgents' => $isManager ? User::where('role', 'agent')->orderBy('name')->get(['id', 'name']) : [],
+            'allAgents' => $isManager ? User::where('role', 'agent')->orderBy('name')->get(['id', 'name', 'weekly_off_days']) : [],
             'isManager' => $isManager,
             'filters'   => ['start' => $start, 'end' => $end, 'agent_id' => $request->input('agent_id')],
             'shiftTimes' => [
@@ -99,13 +99,16 @@ class TimetableController extends Controller
             'block_size' => 'nullable|integer|min:1|max:14',
             'agent_ids'  => 'nullable|array',
             'agent_ids.*' => 'integer|exists:users,id',
+            'weekly_off'   => 'nullable|array',
+            'weekly_off.*' => 'integer|min:0|max:6',
         ]);
 
         $blockSize = $validated['block_size'] ?? 1;
         $label     = Carbon::parse($validated['start_date'])->format('M Y') . ' – ' . Carbon::parse($validated['end_date'])->format('M Y');
+        $batchWeeklyOff = $validated['weekly_off'] ?? [];
 
-        // Each agent's own weekly-off days (set on their profile), not a
-        // blanket setting for the whole generation batch.
+        // Combines each agent's own persistent weekly-off days (set on
+        // their profile) with any weekdays picked just for this batch.
         $agents = User::where('role', 'agent')
             ->when(! empty($validated['agent_ids']), fn ($q) => $q->whereIn('id', $validated['agent_ids']))
             ->get(['id', 'weekly_off_days']);
@@ -113,9 +116,9 @@ class TimetableController extends Controller
         $allDates = CarbonPeriod::create($validated['start_date'], $validated['end_date'])
             ->toArray();
 
-        DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label) {
+        DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label, $batchWeeklyOff) {
             foreach ($agents as $agent) {
-                $weeklyOff = $agent->weekly_off_days ?? [];
+                $weeklyOff = array_unique(array_merge($agent->weekly_off_days ?? [], $batchWeeklyOff));
                 // Clear any existing shifts in this range before regenerating.
                 TimetableShift::where('user_id', $agent->id)
                     ->whereBetween('work_date', [$validated['start_date'], $validated['end_date']])

@@ -66,6 +66,20 @@ const weekdays = [
     { value: 0, label: 'Sun' },
 ];
 
+// Each agent's own weekly off days, editable right in the Generate modal —
+// keyed by agent id so every agent can have a different pattern.
+const agentWeeklyOffState = ref(
+    Object.fromEntries(props.allAgents.map(a => [a.id, [...(a.weekly_off_days ?? [])]]))
+);
+
+function toggleAgentWeeklyOff(agent, day) {
+    const current = agentWeeklyOffState.value[agent.id] ?? [];
+    const next = current.includes(day) ? current.filter(d => d !== day) : [...current, day];
+    agentWeeklyOffState.value = { ...agentWeeklyOffState.value, [agent.id]: next };
+
+    router.post('/timetable/weekly-off', { user_id: agent.id, weekly_off: next }, { preserveScroll: true });
+}
+
 function submitGenerate() {
     generateForm.post('/timetable/generate', {
         preserveScroll: true,
@@ -233,7 +247,7 @@ function toggleWeeklyOff(day) {
 
         <!-- Generate modal -->
         <div v-if="showGenerate" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 <div class="flex items-center justify-between bg-brand-600 px-5 py-4 flex-shrink-0">
                     <span class="text-white font-semibold">Generate Timetable</span>
                     <button @click="showGenerate = false" class="text-white/70 hover:text-white"><XMarkIcon class="h-5 w-5" /></button>
@@ -261,17 +275,27 @@ function toggleWeeklyOff(day) {
                     </div>
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="label mb-0">Agents (leave empty for all)</label>
+                            <label class="label mb-0">Agents (leave empty for all) — each has their own weekly off days</label>
                             <button type="button" @click="generateForm.agent_ids = []" class="text-xs text-brand-600 hover:underline">
                                 Clear selection
                             </button>
                         </div>
-                        <div class="max-h-40 overflow-y-auto rounded-lg ring-1 ring-gray-200 divide-y divide-gray-100">
-                            <label v-for="a in allAgents" :key="a.id"
-                                class="flex items-center gap-2 px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-50">
-                                <input type="checkbox" :value="a.id" v-model="generateForm.agent_ids" class="rounded border-gray-300 text-brand-600" />
-                                {{ a.name }}
-                            </label>
+                        <div class="max-h-64 overflow-y-auto rounded-lg ring-1 ring-gray-200 divide-y divide-gray-100">
+                            <div v-for="a in allAgents" :key="a.id" class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50">
+                                <label class="flex items-center gap-2 text-sm cursor-pointer w-28 flex-shrink-0">
+                                    <input type="checkbox" :value="a.id" v-model="generateForm.agent_ids" class="rounded border-gray-300 text-brand-600" />
+                                    <span class="truncate">{{ a.name }}</span>
+                                </label>
+                                <div class="flex gap-1">
+                                    <button v-for="w in weekdays" :key="w.value" type="button"
+                                        @click="toggleAgentWeeklyOff(a, w.value)"
+                                        :class="['h-6 w-6 rounded text-[10px] font-medium transition-colors',
+                                            agentWeeklyOffState[a.id]?.includes(w.value) ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200']"
+                                        :title="w.label">
+                                        {{ w.label[0] }}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         <p class="text-xs text-gray-400 mt-1">
                             {{ generateForm.agent_ids.length ? `${generateForm.agent_ids.length} selected` : 'None selected — generating for all agents' }}
