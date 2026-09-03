@@ -41,7 +41,7 @@ class TimetableController extends Controller
         $user      = $request->user();
         $isManager = $this->isManager($request);
 
-        $agentQuery = User::where('role', 'agent')->orderBy('name');
+        $agentQuery = User::where('role', '!=', 'admin')->orderBy('name');
         if ($isManager && $agentId = $request->input('agent_id')) {
             $agentQuery->where('id', $agentId);
         } elseif (! $isManager) {
@@ -88,7 +88,7 @@ class TimetableController extends Controller
 
         return Inertia::render('Timetable/Index', [
             'agents'    => $this->buildRows($request, $start, $end),
-            'allAgents' => $isManager ? User::where('role', 'agent')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']) : [],
+            'allAgents' => $isManager ? User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']) : [],
             'isManager' => $isManager,
             'filters'   => ['start' => $start, 'end' => $end, 'agent_id' => $request->input('agent_id')],
             'shiftTimes' => [
@@ -188,7 +188,7 @@ class TimetableController extends Controller
 
         // Combines each agent's own persistent weekly-off days (set on
         // their profile) with any weekdays picked just for this batch.
-        $agents = User::where('role', 'agent')
+        $agents = User::where('role', '!=', 'admin')
             ->when(! empty($validated['agent_ids']), fn ($q) => $q->whereIn('id', $validated['agent_ids']))
             ->get(['id', 'weekly_off_days', 'shift_preference']);
 
