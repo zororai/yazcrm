@@ -147,23 +147,33 @@ const ticketStatusColor = {
         </div>
 
         <!-- Duty schedule strip — today ± 3 days -->
-        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 mb-5">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                <CalendarDaysIcon class="h-3.5 w-3.5" /> Duty Schedule
+        <div class="rounded-2xl bg-gradient-to-br from-brand-50 via-white to-indigo-50 border border-brand-100 shadow-sm p-5 mb-5">
+            <p class="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                <CalendarDaysIcon class="h-5 w-5 text-brand-500" /> Duty Schedule
             </p>
-            <div class="flex gap-2 overflow-x-auto">
+            <div class="flex gap-3 overflow-x-auto pb-1">
                 <div v-for="d in dutyWindowDates" :key="d"
-                    :class="['flex flex-col items-center gap-1 rounded-xl px-3 py-2 flex-shrink-0 min-w-[64px]',
-                        fmtDay(d).isToday ? 'ring-2 ring-brand-500' : '']">
-                    <span class="text-[10px] text-gray-400">{{ fmtDay(d).weekday }}</span>
-                    <span class="text-xs font-semibold text-gray-700">{{ fmtDay(d).day }}</span>
-                    <span v-if="shiftForDate(d) === 'day'" class="h-7 w-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                        <SunIcon class="h-4 w-4" />
+                    :class="['flex flex-col items-center gap-1.5 rounded-2xl px-4 py-3 flex-shrink-0 min-w-[84px] shadow-sm transition-transform',
+                        fmtDay(d).isToday ? 'ring-2 ring-brand-500 scale-105 bg-white' : 'bg-white/70']">
+                    <span :class="['text-xs font-semibold uppercase tracking-wide', fmtDay(d).isToday ? 'text-brand-600' : 'text-gray-400']">
+                        {{ fmtDay(d).weekday }}
                     </span>
-                    <span v-else-if="shiftForDate(d) === 'night'" class="h-7 w-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
-                        <MoonIcon class="h-4 w-4" />
+                    <span :class="['text-xl font-extrabold', fmtDay(d).isToday ? 'text-brand-700' : 'text-gray-800']">
+                        {{ fmtDay(d).day }}
                     </span>
-                    <span v-else class="h-7 w-7 rounded-lg bg-gray-50 text-gray-300 flex items-center justify-center text-[10px]">off</span>
+                    <span v-if="shiftForDate(d) === 'day'"
+                        class="w-full flex flex-col items-center gap-1 rounded-xl bg-gradient-to-b from-amber-400 to-orange-500 text-white py-2 shadow">
+                        <SunIcon class="h-5 w-5" />
+                        <span class="text-[11px] font-bold uppercase tracking-wide">Day</span>
+                    </span>
+                    <span v-else-if="shiftForDate(d) === 'night'"
+                        class="w-full flex flex-col items-center gap-1 rounded-xl bg-gradient-to-b from-indigo-500 to-purple-600 text-white py-2 shadow">
+                        <MoonIcon class="h-5 w-5" />
+                        <span class="text-[11px] font-bold uppercase tracking-wide">Night</span>
+                    </span>
+                    <span v-else class="w-full flex flex-col items-center gap-1 rounded-xl bg-gray-100 text-gray-400 py-2">
+                        <span class="text-[11px] font-bold uppercase tracking-wide">Off</span>
+                    </span>
                 </div>
             </div>
         </div>
