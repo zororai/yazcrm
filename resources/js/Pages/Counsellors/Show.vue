@@ -2,9 +2,34 @@
 import { ref, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, PhoneIcon, EnvelopeIcon, FlagIcon, TicketIcon, MicrophoneIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, PhoneIcon, EnvelopeIcon, FlagIcon, TicketIcon, MicrophoneIcon, DocumentTextIcon, SunIcon, MoonIcon, CalendarDaysIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ counsellor: Object, tickets: Object, recordings: Object, progressReports: Array, filters: Object });
+const props = defineProps({
+    counsellor: Object, tickets: Object, recordings: Object, progressReports: Array,
+    dutyToday: String, dutySchedule: Array, shiftTimes: Object, filters: Object,
+});
+
+function fmtDay(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    const isToday = dateStr === new Date().toISOString().slice(0, 10);
+    return { weekday: d.toLocaleDateString(undefined, { weekday: 'short' }), day: d.getDate(), isToday };
+}
+
+function shiftForDate(dateStr) {
+    return props.dutySchedule.find(s => s.date === dateStr)?.shift_type ?? null;
+}
+
+// today - 3 to today + 3, matching the backend's dutySchedule window
+const dutyWindowDates = computed(() => {
+    const out = [];
+    const d = new Date();
+    d.setDate(d.getDate() - 3);
+    for (let i = 0; i < 7; i++) {
+        out.push(d.toISOString().slice(0, 10));
+        d.setDate(d.getDate() + 1);
+    }
+    return out;
+});
 
 const statusLabels = {
     pending:         'Pending Review',
@@ -86,6 +111,13 @@ const ticketStatusColor = {
                         <span :class="['badge', counsellor.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500']">
                             {{ counsellor.is_active ? 'Active' : 'Inactive' }}
                         </span>
+                        <span v-if="dutyToday === 'day'" class="badge bg-amber-100 text-amber-800 inline-flex items-center gap-1">
+                            <SunIcon class="h-3.5 w-3.5" /> On duty · Day ({{ shiftTimes.day }})
+                        </span>
+                        <span v-else-if="dutyToday === 'night'" class="badge bg-indigo-100 text-indigo-800 inline-flex items-center gap-1">
+                            <MoonIcon class="h-3.5 w-3.5" /> On duty · Night ({{ shiftTimes.night }})
+                        </span>
+                        <span v-else class="badge bg-gray-100 text-gray-500">Off today</span>
                     </div>
                     <p v-if="counsellor.username" class="text-sm text-gray-400">@{{ counsellor.username }}</p>
                     <p v-if="counsellor.bio" class="text-sm text-gray-600 mt-2 max-w-xl">{{ counsellor.bio }}</p>
@@ -110,6 +142,28 @@ const ticketStatusColor = {
                         <div :class="['h-full rounded-full transition-all', targetBarColor(targetPct())]"
                             :style="{ width: (targetPct() ?? 0) + '%' }" />
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Duty schedule strip — today ± 3 days -->
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 mb-5">
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                <CalendarDaysIcon class="h-3.5 w-3.5" /> Duty Schedule
+            </p>
+            <div class="flex gap-2 overflow-x-auto">
+                <div v-for="d in dutyWindowDates" :key="d"
+                    :class="['flex flex-col items-center gap-1 rounded-xl px-3 py-2 flex-shrink-0 min-w-[64px]',
+                        fmtDay(d).isToday ? 'ring-2 ring-brand-500' : '']">
+                    <span class="text-[10px] text-gray-400">{{ fmtDay(d).weekday }}</span>
+                    <span class="text-xs font-semibold text-gray-700">{{ fmtDay(d).day }}</span>
+                    <span v-if="shiftForDate(d) === 'day'" class="h-7 w-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                        <SunIcon class="h-4 w-4" />
+                    </span>
+                    <span v-else-if="shiftForDate(d) === 'night'" class="h-7 w-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+                        <MoonIcon class="h-4 w-4" />
+                    </span>
+                    <span v-else class="h-7 w-7 rounded-lg bg-gray-50 text-gray-300 flex items-center justify-center text-[10px]">off</span>
                 </div>
             </div>
         </div>

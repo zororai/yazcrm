@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { CalendarDaysIcon, SunIcon, MoonIcon, XMarkIcon, PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 
@@ -128,8 +128,14 @@ function removeSpecialDay(id) {
     });
 }
 
-// Only meaningful when viewing a single agent (self, or manager filtered to one)
-const soleAgent = computed(() => props.agents.length === 1 ? props.agents[0] : null);
+// The logged-in user's own row — used to show their "mark yourself
+// unavailable" controls regardless of whether the full team roster is
+// showing too (everyone can see everyone's timetable now).
+const currentUserId = computed(() => usePage().props.auth.user?.id);
+const soleAgent = computed(() =>
+    props.agents.find(a => a.id === currentUserId.value)
+    ?? (props.agents.length === 1 ? props.agents[0] : null)
+);
 
 // ── Weekly off days — per agent, e.g. always off Sat + Sun ───────────────────
 const weeklyOffSelection = ref([...(soleAgent.value?.weekly_off_days ?? [])]);
@@ -185,7 +191,7 @@ function setShiftPreference(pref) {
                 <label class="label">To</label>
                 <input v-model="end" @change="runFilter" type="date" class="input" />
             </div>
-            <div v-if="isManager">
+            <div>
                 <label class="label">Agent</label>
                 <select v-model="agentId" @change="runFilter" class="input">
                     <option value="">All agents</option>

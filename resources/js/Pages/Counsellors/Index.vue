@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { MagnifyingGlassIcon, PhoneIcon, TicketIcon, FlagIcon, MicrophoneIcon, ChevronRightIcon } from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon, PhoneIcon, TicketIcon, FlagIcon, MicrophoneIcon, ChevronRightIcon, SunIcon, MoonIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 
 const props = defineProps({ counsellors: Array, filters: Object });
@@ -98,8 +98,17 @@ function fmtDuration(s) {
                         <div class="min-w-0 flex-1">
                             <p class="font-semibold text-gray-900 truncate">{{ c.name }}</p>
                             <p v-if="c.username" class="text-xs text-gray-400">@{{ c.username }}</p>
-                            <span :class="['badge mt-1', c.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500']">
-                                {{ c.is_active ? 'Active' : 'Inactive' }}
+                            <span class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span :class="['badge', c.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500']">
+                                    {{ c.is_active ? 'Active' : 'Inactive' }}
+                                </span>
+                                <span v-if="c.duty_today === 'day'" class="badge bg-amber-100 text-amber-800 inline-flex items-center gap-1">
+                                    <SunIcon class="h-3 w-3" /> On duty · Day
+                                </span>
+                                <span v-else-if="c.duty_today === 'night'" class="badge bg-indigo-100 text-indigo-800 inline-flex items-center gap-1">
+                                    <MoonIcon class="h-3 w-3" /> On duty · Night
+                                </span>
+                                <span v-else class="badge bg-gray-100 text-gray-500">Off today</span>
                             </span>
                         </div>
                         <ChevronRightIcon class="h-5 w-5 text-gray-300 flex-shrink-0" />

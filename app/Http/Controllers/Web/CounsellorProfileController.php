@@ -8,6 +8,7 @@ use App\Models\Extension;
 use App\Models\ProgressReport;
 use App\Models\Recording;
 use App\Models\Ticket;
+use App\Models\TimetableShift;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -71,7 +72,13 @@ class CounsellorProfileController extends Controller
             ->groupBy('extensions.user_id')
             ->pluck('cnt', 'agent_id');
 
-        $rows = $counsellors->map(function (User $counsellor) use ($ticketsToday, $recordingsToday) {
+        // "On duty" — today's generated shift, so a manager can see who's
+        // actually working right now at a glance.
+        $todaysShifts = TimetableShift::where('work_date', Carbon::today()->toDateString())
+            ->whereIn('user_id', $counsellors->pluck('id'))
+            ->pluck('shift_type', 'user_id');
+
+        $rows = $counsellors->map(function (User $counsellor) use ($ticketsToday, $recordingsToday, $todaysShifts) {
             $target = CallTargetController::summaryForAgent($counsellor->id);
 
             return [
@@ -88,6 +95,7 @@ class CounsellorProfileController extends Controller
                 'call_target'       => $target,
                 'tickets_today'     => (int) ($ticketsToday[$counsellor->id] ?? 0),
                 'recordings_today'  => (int) ($recordingsToday[$counsellor->id] ?? 0),
+                'duty_today'        => $todaysShifts[$counsellor->id] ?? null, // 'day' | 'night' | null (off)
             ];
         })->values();
 
@@ -130,6 +138,20 @@ class CounsellorProfileController extends Controller
             ->orderByDesc('month')
             ->get(['id', 'month', 'job_title', 'date_submitted', 'status']);
 
+        // Duty schedule — today plus a few days either side for context,
+        // so a manager can see "on duty right now" and what's coming up.
+        $dutyWindowStart = Carbon::today()->subDays(3);
+        $dutyWindowEnd   = Carbon::today()->addDays(3);
+        $dutySchedule = TimetableShift::where('user_id', $counsellor->id)
+            ->whereBetween('work_date', [$dutyWindowStart->toDateString(), $dutyWindowEnd->toDateString()])
+            ->orderBy('work_date')
+            ->get(['work_date', 'shift_type'])
+            ->map(fn (TimetableShift $s) => [
+                'date'       => $s->work_date->toDateString(),
+                'shift_type' => $s->shift_type,
+            ]);
+        $dutyToday = $dutySchedule->firstWhere('date', Carbon::today()->toDateString())['shift_type'] ?? null;
+
         return Inertia::render('Counsellors/Show', [
             'counsellor' => [
                 'id'          => $counsellor->id,
@@ -147,6 +169,12 @@ class CounsellorProfileController extends Controller
             'tickets'    => $tickets,
             'recordings' => $recordings,
             'progressReports' => $progressReports,
+            'dutyToday'      => $dutyToday, // 'day' | 'night' | null
+            'dutySchedule'   => $dutySchedule,
+            'shiftTimes' => [
+                'day'   => '07:30 – 17:00',
+                'night' => '17:00 – 07:30 (+1)',
+            ],
             'filters'    => ['period' => $period],
         ]);
     }

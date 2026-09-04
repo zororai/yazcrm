@@ -34,18 +34,15 @@ class TimetableController extends Controller
     }
 
     /** Shared by index() and exportPdf() — resolves the visible agents plus
-     *  their shifts/special days for a date range, honoring the same
-     *  self-only-vs-all-agents access rule. */
+     *  their shifts/special days for a date range. The generated timetable
+     *  is visible to everyone (any agent can see the whole team's roster,
+     *  not just their own row); only an explicit agent_id filter narrows it,
+     *  and only generating/editing others' settings stays manager-only. */
     private function buildRows(Request $request, string $start, string $end): \Illuminate\Support\Collection
     {
-        $user      = $request->user();
-        $isManager = $this->isManager($request);
-
         $agentQuery = User::where('role', '!=', 'admin')->orderBy('name');
-        if ($isManager && $agentId = $request->input('agent_id')) {
+        if ($agentId = $request->input('agent_id')) {
             $agentQuery->where('id', $agentId);
-        } elseif (! $isManager) {
-            $agentQuery->where('id', $user->id);
         }
         $agents = $agentQuery->get(['id', 'name', 'username', 'weekly_off_days', 'shift_preference']);
         $agentIds = $agents->pluck('id');
@@ -88,7 +85,7 @@ class TimetableController extends Controller
 
         return Inertia::render('Timetable/Index', [
             'agents'    => $this->buildRows($request, $start, $end),
-            'allAgents' => $isManager ? User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']) : [],
+            'allAgents' => User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']),
             'isManager' => $isManager,
             'filters'   => ['start' => $start, 'end' => $end, 'agent_id' => $request->input('agent_id')],
             'shiftTimes' => [
