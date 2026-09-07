@@ -10,6 +10,7 @@ import { debounce } from 'lodash-es';
 
 const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
+const authUserId = computed(() => usePage().props.auth.user?.id);
 const search         = ref(props.filters.search         ?? '');
 const status         = ref(props.filters.status         ?? '');
 const priority       = ref(props.filters.priority       ?? '');
@@ -824,6 +825,16 @@ const statusColor = {
                                 <Link :href="`/tickets/${t.id}`" class="btn-secondary btn-sm">View</Link>
                                 <Link v-if="t.contact_number" :href="`/recordings?search=${t.contact_number}`" class="text-brand-600 hover:underline text-xs font-medium" title="Find recordings for this number">
                                     Recordings
+                                </Link>
+                                <Link v-if="t.success_story" :href="`/success-stories/${t.success_story.id}`"
+                                    class="text-xs font-medium px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                    title="View success story">
+                                    ★ Story
+                                </Link>
+                                <Link v-else-if="t.agent_id === authUserId" :href="`/success-stories?ticket_id=${t.id}`"
+                                    class="text-xs font-medium px-2 py-1 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-amber-600 border border-dashed border-gray-200"
+                                    title="Mark as a success story">
+                                    ☆ Mark Success
                                 </Link>
                                 <button v-if="isAdmin"
                                     @click="deleteTicket(t)"

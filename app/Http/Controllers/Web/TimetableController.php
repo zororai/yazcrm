@@ -302,6 +302,8 @@ class TimetableController extends Controller
                     }
                 }
 
+                $rows = $this->ensureMonthlyWeekendOff($rows, $allDates);
+
                 if ($rows) {
                     TimetableShift::insert($rows);
                 }
@@ -309,6 +311,56 @@ class TimetableController extends Controller
         });
 
         return back()->with('success', 'Timetable generated for ' . $agents->count() . ' agent(s).');
+    }
+
+    /**
+     * Guarantees every calendar month in the range has at least one full
+     * weekend (Saturday + Sunday) where this agent isn't working — even if
+     * the working/resting cycle wouldn't naturally land one there. If a
+     * month has no such weekend already, the first Sat/Sun pair in that
+     * month gets forced off (any shift rows for those two dates removed).
+     *
+     * @param  array<int, array{work_date: string}>  $rows
+     * @param  Carbon[]  $allDates
+     * @return array<int, array{work_date: string}>
+     */
+    private function ensureMonthlyWeekendOff(array $rows, array $allDates): array
+    {
+        $rowsByDate = collect($rows)->keyBy('work_date');
+
+        $monthGroups = collect($allDates)->groupBy(fn (Carbon $d) => $d->format('Y-m'));
+
+        foreach ($monthGroups as $datesInMonth) {
+            $hasFullWeekendOff = false;
+            $firstForceableWeekend = null;
+
+            foreach ($datesInMonth as $date) {
+                if ($date->dayOfWeek !== Carbon::SATURDAY) {
+                    continue;
+                }
+                $sunday = $date->copy()->addDay();
+                if ($sunday->format('Y-m') !== $date->format('Y-m')) {
+                    continue; // Sunday falls in the next month — not a full weekend within this month
+                }
+
+                $satOff = ! $rowsByDate->has($date->toDateString());
+                $sunOff = ! $rowsByDate->has($sunday->toDateString());
+
+                if ($satOff && $sunOff) {
+                    $hasFullWeekendOff = true;
+                    break;
+                }
+
+                $firstForceableWeekend ??= [$date->toDateString(), $sunday->toDateString()];
+            }
+
+            if (! $hasFullWeekendOff && $firstForceableWeekend) {
+                [$sat, $sun] = $firstForceableWeekend;
+                $rowsByDate->forget([$sat, $sun]);
+            }
+        }
+
+        return $rowsByDate->values()->all();
     }
 
     // ── Weekly off days — each agent's own recurring off weekdays ───────────

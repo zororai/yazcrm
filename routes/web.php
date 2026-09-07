@@ -416,4 +416,13 @@ Route::middleware('auth')->group(function () {
     Route::get('progress-reports/team', [Web\ProgressReportController::class, 'team'])->name('progress-reports.team');
     Route::get('progress-reports/{report}', [Web\ProgressReportController::class, 'show'])->name('progress-reports.show');
     Route::post('progress-reports/{report}/status', [Web\ProgressReportController::class, 'updateStatus'])->name('progress-reports.status');
+
+    // Success Stories — an agent writes up a ticket's outcome with photos
+    // and (optionally) the call recording, reviewed by a manager.
+    Route::get('success-stories', [Web\SuccessStoryController::class, 'index'])->name('success-stories.index');
+    Route::post('success-stories', [Web\SuccessStoryController::class, 'store'])->name('success-stories.store');
+    Route::get('success-stories/{successStory}', [Web\SuccessStoryController::class, 'show'])->name('success-stories.show');
+    Route::delete('success-stories/{successStory}', [Web\SuccessStoryController::class, 'destroy'])->name('success-stories.destroy');
+    Route::post('success-stories/{successStory}/status', [Web\SuccessStoryController::class, 'updateStatus'])->name('success-stories.status');
+    Route::get('tickets/{ticket}/recording', [Web\SuccessStoryController::class, 'ticketRecording'])->name('tickets.recording');
 });

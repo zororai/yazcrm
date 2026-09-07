@@ -21,7 +21,7 @@ class TicketController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Ticket::with(['client', 'agent', 'call.recording:id,call_id'])->latest();
+        $query = Ticket::with(['client', 'agent', 'call.recording:id,call_id', 'successStory:id,ticket_id,status'])->latest();
 
         // Agents only see their own tickets
         if ($request->user()->role !== 'admin') {

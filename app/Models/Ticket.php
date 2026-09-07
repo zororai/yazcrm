@@ -39,6 +39,11 @@ class Ticket extends Model
         return $this->belongsTo(Client::class);
     }
 
+    public function successStory()
+    {
+        return $this->hasOne(SuccessStory::class);
+    }
+
     public function agent()
     {
         return $this->belongsTo(User::class, 'agent_id');

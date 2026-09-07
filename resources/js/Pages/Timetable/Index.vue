@@ -318,6 +318,7 @@ function setShiftPreference(pref) {
                         Each agent cycles the working/rest days below, repeating for the whole range
                         (their own marked unavailable days and weekly off days are skipped without breaking
                         the cycle), alternating Day/Night shift in blocks across the working days.
+                        Every calendar month also gets at least one full weekend (Sat + Sun) off.
                     </p>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
