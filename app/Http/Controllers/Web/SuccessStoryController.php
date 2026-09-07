@@ -106,6 +106,7 @@ class SuccessStoryController extends Controller
             'recording_id' => $recordingId,
             'title'        => $validated['title'],
             'story'        => $validated['story'],
+            'status'       => 'pending',
         ]);
 
         foreach ($request->file('photos', []) as $photo) {
@@ -128,6 +129,79 @@ class SuccessStoryController extends Controller
             'isManager' => $this->isManager($request),
             'statuses'  => self::STATUSES,
         ]);
+    }
+
+    public function exportPdf(Request $request, SuccessStory $successStory): \Illuminate\Http\Response
+    {
+        abort_unless($successStory->user_id === $request->user()->id || $this->isManager($request), 403);
+
+        $successStory->load(['ticket:id,subject,contact_number', 'user:id,name', 'photos']);
+
+        $pdf = new \FPDF('P', 'mm', 'A4');
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->AddPage();
+        $usableWidth = 210 - 30;
+
+        // Title
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->MultiCell($usableWidth, 8, $this->ascii($successStory->title));
+        $pdf->Ln(1);
+
+        // Meta line
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(110, 110, 110);
+        $statusLabel = ['pending' => 'Pending Review', 'approved' => 'Approved', 'needs_revision' => 'Needs Revision'][$successStory->status] ?? $successStory->status;
+        $meta = 'By ' . $this->ascii($successStory->user->name)
+            . '  |  Ticket #' . $successStory->ticket->id . ' - ' . $this->ascii($successStory->ticket->subject)
+            . '  |  ' . $statusLabel
+            . '  |  ' . $successStory->created_at->format('d M Y');
+        $pdf->MultiCell($usableWidth, 5, $meta);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->Ln(3);
+
+        // Story body
+        $pdf->SetFont('Arial', '', 11);
+        $pdf->MultiCell($usableWidth, 6, $this->ascii($successStory->story));
+        $pdf->Ln(4);
+
+        // Photos — one per row, scaled to fit the page width, skipping any
+        // format FPDF's core image support doesn't handle (only JPEG/PNG).
+        foreach ($successStory->photos as $photo) {
+            $absolutePath = Storage::disk('public')->path($photo->path);
+            $ext = strtolower(pathinfo($absolutePath, PATHINFO_EXTENSION));
+            if (! file_exists($absolutePath) || ! in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+                continue;
+            }
+
+            [$widthPx, $heightPx] = @getimagesize($absolutePath) ?: [0, 0];
+            if (! $widthPx || ! $heightPx) {
+                continue;
+            }
+
+            $imgWidthMm = min($usableWidth, 120);
+            $imgHeightMm = $imgWidthMm * ($heightPx / $widthPx);
+
+            if ($pdf->GetY() + $imgHeightMm > 280) {
+                $pdf->AddPage();
+            }
+
+            $pdf->Image($absolutePath, null, null, $imgWidthMm, $imgHeightMm);
+            $pdf->Ln(4);
+        }
+
+        $filename = 'success-story-' . $successStory->id . '.pdf';
+
+        return response($pdf->Output('S'), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    // FPDF's core fonts are Latin-1 only — strip anything outside that to
+    // avoid mojibake (matches the same guard used for the Timetable PDF).
+    private function ascii(string $text): string
+    {
+        return mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8');
     }
 
     public function updateStatus(Request $request, SuccessStory $successStory): RedirectResponse

@@ -422,6 +422,7 @@ Route::middleware('auth')->group(function () {
     Route::get('success-stories', [Web\SuccessStoryController::class, 'index'])->name('success-stories.index');
     Route::post('success-stories', [Web\SuccessStoryController::class, 'store'])->name('success-stories.store');
     Route::get('success-stories/{successStory}', [Web\SuccessStoryController::class, 'show'])->name('success-stories.show');
+    Route::get('success-stories/{successStory}/export-pdf', [Web\SuccessStoryController::class, 'exportPdf'])->name('success-stories.export-pdf');
     Route::delete('success-stories/{successStory}', [Web\SuccessStoryController::class, 'destroy'])->name('success-stories.destroy');
     Route::post('success-stories/{successStory}/status', [Web\SuccessStoryController::class, 'updateStatus'])->name('success-stories.status');
     Route::get('tickets/{ticket}/recording', [Web\SuccessStoryController::class, 'ticketRecording'])->name('tickets.recording');

@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { Link, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon, TicketIcon, MicrophoneIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, TicketIcon, MicrophoneIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ story: Object, isManager: Boolean, statuses: Array });
 
@@ -30,6 +30,9 @@ function destroy() {
     <AppLayout>
         <template #title>{{ story.title }}</template>
         <template #header-actions>
+            <a :href="`/success-stories/${story.id}/export-pdf`" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                <ArrowDownTrayIcon class="h-4 w-4" /> Download PDF
+            </a>
             <Link href="/success-stories" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
                 <ArrowLeftIcon class="h-4 w-4" /> Back
             </Link>
