@@ -251,7 +251,7 @@ onUnmounted(() => {
 const navigation = computed(() => [
     ...(can('dashboard')    ? [{ name: 'Dashboard',  href: '/dashboard',   icon: HomeIcon }] : []),
     ...(can('helpline_dashboard') ? [{ name: 'Call Activity', href: '/screen?section=calls', icon: ChartBarIcon }] : []),
-    { name: 'My Work', href: '/my-work', icon: ClipboardDocumentCheckIcon },
+    ...(can('my_work') ? [{ name: 'My Work', href: '/my-work', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('dialer')       ? [{ name: 'Dialer',     href: '/dialer',      icon: PhoneArrowUpRightIcon }] : []),
     ...(can('calls')        ? [{ name: 'Calls',      href: '/calls',       icon: PhoneIcon }] : []),
     ...(can('recordings')   ? [{ name: 'Recordings', href: '/recordings',  icon: MicrophoneIcon }] : []),
@@ -262,7 +262,7 @@ const navigation = computed(() => [
     ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_archive') ? [{ name: 'Appraisal Archive', href: '/appraisal-archive', icon: DocumentTextIcon }] : []),
-    ...(isAdmin.value ? [{ name: 'Audit Trail', href: '/audit-log', icon: ShieldExclamationIcon }] : []),
+    ...(isAdmin.value || can('audit_trail') ? [{ name: 'Audit Trail', href: '/audit-log', icon: ShieldExclamationIcon }] : []),
     ...(can('activity_reports') ? [{ name: 'Activity Reports', href: '/activity-reports', icon: DocumentTextIcon }] : []),
     ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
     ...(can('work_management') && (isAdmin.value || user.value?.role === 'director' || (user.value?.subordinates_count ?? 0) > 0)
@@ -293,18 +293,19 @@ const navigation = computed(() => [
     ...(can('domains')      ? [{ name: 'Domains',     href: '/distress-domains',                 icon: TagIcon }] : []),
     ...(can('bot_contacts') ? [{ name: 'Bot Contacts',href: '/uchat-contacts',                   icon: ChatBubbleLeftRightIcon }] : []),
     ...(isAdmin.value || can('registry') ? [{ name: 'Asset Register', href: '/registry', icon: ServerStackIcon }] : []),
-    ...(isAdmin.value ? [{ name: 'IT Asset Categories', href: '/registry/categories', icon: FolderOpenIcon }] : []),
-    ...(isAdmin.value ? [{ name: 'Transcription Test Tool', href: '/transcription-test', icon: MicrophoneIcon }] : []),
+    ...(isAdmin.value || can('it_asset_categories') ? [{ name: 'IT Asset Categories', href: '/registry/categories', icon: FolderOpenIcon }] : []),
+    ...(isAdmin.value || can('transcription_test') ? [{ name: 'Transcription Test Tool', href: '/transcription-test', icon: MicrophoneIcon }] : []),
     ...(isAdmin.value || can('risk')     ? [{ name: 'Risk Register',  href: '/risk',     icon: ShieldExclamationIcon }] : []),
     ...(can('sbc')          ? [{ name: 'SBC Signups', href: '/sbc',                              icon: TableCellsIcon }] : []),
     ...(can('yalep') ? [{ name: 'YALeP Students', href: '/sbc?sheet=Certificates%20To%20Process', icon: TableCellsIcon }] : []),
     ...(can('roles')        ? [{ name: 'Roles',       href: '/roles',                            icon: ShieldCheckIcon }] : []),
     ...(can('users')        ? [{ name: 'Users',       href: '/users',                            icon: UserGroupIcon }] : []),
-    ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) ? [{ name: 'Counsellor Profiles', href: '/counsellor-profiles', icon: UserGroupIcon }] : []),
-    { name: 'Timetable', href: '/timetable', icon: CalendarDaysIcon },
-    { name: 'Progress Report', href: '/progress-reports', icon: ClipboardDocumentListIcon },
-    { name: 'Success Stories', href: '/success-stories', icon: SunIcon },
-    ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role)
+    ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) || can('counsellor_profiles')
+        ? [{ name: 'Counsellor Profiles', href: '/counsellor-profiles', icon: UserGroupIcon }] : []),
+    ...(can('timetable') ? [{ name: 'Timetable', href: '/timetable', icon: CalendarDaysIcon }] : []),
+    ...(can('progress_reports') ? [{ name: 'Progress Report', href: '/progress-reports', icon: ClipboardDocumentListIcon }] : []),
+    ...(can('success_stories') ? [{ name: 'Success Stories', href: '/success-stories', icon: SunIcon }] : []),
+    ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) || can('team_reports')
         ? [{ name: 'Team Reports', href: '/progress-reports/team', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);

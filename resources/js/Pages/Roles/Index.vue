@@ -44,6 +44,15 @@ const PERM_LABELS = {
     risk:        'Risk Register',
     sbc:         'SBC Signups',
     roles:       'Roles & Permissions',
+    timetable:        'Timetable',
+    progress_reports: 'Progress Report',
+    success_stories:  'Success Stories',
+    my_work:              'My Work',
+    audit_trail:          'Audit Trail',
+    it_asset_categories:  'IT Asset Categories',
+    transcription_test:   'Transcription Test Tool',
+    counsellor_profiles:  'Counsellor Profiles',
+    team_reports:         'Team Reports',
 };
 
 // ── Create ────────────────────────────────────────────────────────────────────

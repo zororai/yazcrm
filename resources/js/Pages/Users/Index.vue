@@ -53,6 +53,15 @@ const NAV_ITEMS = [
     { key: 'roles',       label: 'Roles & Permissions' },
     { key: 'users',       label: 'Users Management' },
     { key: 'yeastar',     label: 'Yeastar Settings' },
+    { key: 'timetable',        label: 'Timetable' },
+    { key: 'progress_reports', label: 'Progress Report' },
+    { key: 'success_stories',  label: 'Success Stories' },
+    { key: 'my_work',             label: 'My Work' },
+    { key: 'audit_trail',         label: 'Audit Trail' },
+    { key: 'it_asset_categories', label: 'IT Asset Categories' },
+    { key: 'transcription_test',  label: 'Transcription Test Tool' },
+    { key: 'counsellor_profiles', label: 'Counsellor Profiles' },
+    { key: 'team_reports',        label: 'Team Reports' },
 ];
 
 const editIsAdmin = computed(() => editForm.role === 'admin');
