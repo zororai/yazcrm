@@ -7,7 +7,7 @@ import { PlusIcon } from '@heroicons/vue/24/outline';
 const props = defineProps({ stores: Array, locations: Array, users: Array, isManager: Boolean });
 
 const showForm = ref(false);
-const form = useForm({ code: '', name: '', description: '', location_id: '', manager_id: '', storekeeper_id: '' });
+const form = useForm({ name: '', description: '', location_id: '', manager_id: '', storekeeper_id: '' });
 
 function submit() {
     form.post('/stores', { onSuccess: () => { showForm.value = false; form.reset(); } });
@@ -31,7 +31,6 @@ function open(store) {
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Code</th>
                         <th class="table-th">Name</th>
                         <th class="table-th">Location</th>
                         <th class="table-th">Storekeeper</th>
@@ -41,8 +40,7 @@ function open(store) {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-for="s in stores" :key="s.id" class="hover:bg-gray-50 cursor-pointer" @click="open(s)">
-                        <td class="table-td font-medium">{{ s.code }}</td>
-                        <td class="table-td">{{ s.name }}</td>
+                        <td class="table-td font-medium">{{ s.name }}</td>
                         <td class="table-td">{{ s.location?.name }}</td>
                         <td class="table-td">{{ s.storekeeper?.name ?? '—' }}</td>
                         <td class="table-td">{{ s.stock_count }}</td>
@@ -53,7 +51,7 @@ function open(store) {
                         </td>
                     </tr>
                     <tr v-if="!stores.length">
-                        <td colspan="6" class="table-td text-center text-gray-400 py-8">No stores yet.</td>
+                        <td colspan="5" class="table-td text-center text-gray-400 py-8">No stores yet.</td>
                     </tr>
                 </tbody>
             </table>
@@ -63,10 +61,6 @@ function open(store) {
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
                 <h3 class="font-semibold text-gray-900 mb-4">New Store</h3>
                 <form @submit.prevent="submit" class="space-y-3">
-                    <div>
-                        <label class="label">Code</label>
-                        <input v-model="form.code" class="input" required />
-                    </div>
                     <div>
                         <label class="label">Name</label>
                         <input v-model="form.name" class="input" required />

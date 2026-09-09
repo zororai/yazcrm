@@ -8,7 +8,7 @@ const props = defineProps({ locations: Array, isManager: Boolean });
 
 const showForm = ref(false);
 const editing = ref(null);
-const form = useForm({ code: '', name: '', address: '' });
+const form = useForm({ name: '', address: '' });
 
 function openNew() {
     editing.value = null;
@@ -18,7 +18,6 @@ function openNew() {
 
 function openEdit(l) {
     editing.value = l;
-    form.code = l.code;
     form.name = l.name;
     form.address = l.address ?? '';
     showForm.value = true;
@@ -51,7 +50,6 @@ function remove(l) {
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Code</th>
                         <th class="table-th">Name</th>
                         <th class="table-th">Stores</th>
                         <th class="table-th w-20" />
@@ -59,8 +57,7 @@ function remove(l) {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-for="l in locations" :key="l.id" class="hover:bg-gray-50">
-                        <td class="table-td font-medium">{{ l.code }}</td>
-                        <td class="table-td">{{ l.name }}</td>
+                        <td class="table-td font-medium">{{ l.name }}</td>
                         <td class="table-td">{{ l.stores_count }}</td>
                         <td class="table-td text-right" v-if="isManager">
                             <button @click="openEdit(l)" class="text-gray-400 hover:text-blue-600 mr-2"><PencilIcon class="h-4 w-4" /></button>
@@ -68,7 +65,7 @@ function remove(l) {
                         </td>
                     </tr>
                     <tr v-if="!locations.length">
-                        <td colspan="4" class="table-td text-center text-gray-400 py-8">No locations yet.</td>
+                        <td colspan="3" class="table-td text-center text-gray-400 py-8">No locations yet.</td>
                     </tr>
                 </tbody>
             </table>
@@ -78,10 +75,6 @@ function remove(l) {
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
                 <h3 class="font-semibold text-gray-900 mb-4">{{ editing ? 'Edit' : 'New' }} Location</h3>
                 <form @submit.prevent="submit" class="space-y-3">
-                    <div>
-                        <label class="label">Code</label>
-                        <input v-model="form.code" class="input" required />
-                    </div>
                     <div>
                         <label class="label">Name</label>
                         <input v-model="form.name" class="input" required />

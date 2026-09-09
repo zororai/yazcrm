@@ -40,7 +40,6 @@ class StoreController extends Controller
         }
 
         $data = $request->validate([
-            'code'            => 'required|string|max:50|unique:stores,code',
             'name'            => 'required|string|max:255',
             'description'     => 'nullable|string',
             'location_id'     => 'required|exists:locations,id',
@@ -71,7 +70,6 @@ class StoreController extends Controller
         }
 
         $data = $request->validate([
-            'code'           => "required|string|max:50|unique:stores,code,{$store->id}",
             'name'           => 'required|string|max:255',
             'description'    => 'nullable|string',
             'location_id'    => 'required|exists:locations,id',

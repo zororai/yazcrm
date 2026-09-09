@@ -59,7 +59,6 @@ function submitAdjust() {
 
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="card text-sm text-gray-600 space-y-1">
-                <p><span class="text-gray-400">Code:</span> {{ store.code }}</p>
                 <p><span class="text-gray-400">Location:</span> {{ store.location?.name }}</p>
                 <p><span class="text-gray-400">Manager:</span> {{ store.manager?.name ?? '—' }}</p>
                 <p><span class="text-gray-400">Storekeeper:</span> {{ store.storekeeper?.name ?? '—' }}</p>

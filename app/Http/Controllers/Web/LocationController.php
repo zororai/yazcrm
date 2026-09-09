@@ -32,7 +32,6 @@ class LocationController extends Controller
         }
 
         $data = $request->validate([
-            'code'    => 'required|string|max:50|unique:locations,code',
             'name'    => 'required|string|max:255',
             'address' => 'nullable|string',
         ]);
@@ -49,7 +48,6 @@ class LocationController extends Controller
         }
 
         $data = $request->validate([
-            'code'      => "required|string|max:50|unique:locations,code,{$location->id}",
             'name'      => 'required|string|max:255',
             'address'   => 'nullable|string',
             'is_active' => 'sometimes|boolean',
