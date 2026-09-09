@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
-use Anthropic\Laravel\Facades\Anthropic;
+use OpenAI\Laravel\Facades\OpenAI;
 use App\Http\Controllers\Controller;
 use App\Models\Call;
 use App\Models\Client;
@@ -399,16 +399,20 @@ class TicketController extends Controller
 
         $context = implode("\n", $lines);
 
-        $message = Anthropic::messages()->create([
-            'model'      => 'claude-haiku-4-5-20251001',
-            'max_tokens' => 400,
-            'system'     => 'You are assisting a counsellor at a helpline. Write a concise, professional counsellor session note in 3-5 sentences based on the intake data provided. Use neutral, non-judgmental clinical language. Do not invent details not present in the data.',
-            'messages'   => [
-                ['role' => 'user', 'content' => "Intake data:\n{$context}\n\nDraft a counsellor note."],
-            ],
-        ]);
+        try {
+            $response = OpenAI::chat()->create([
+                'model'      => 'gpt-4o-mini',
+                'max_tokens' => 400,
+                'messages'   => [
+                    ['role' => 'system', 'content' => 'You are assisting a counsellor at a helpline. Write a concise, professional counsellor session note in 3-5 sentences based on the intake data provided. Use neutral, non-judgmental clinical language. Do not invent details not present in the data.'],
+                    ['role' => 'user', 'content' => "Intake data:\n{$context}\n\nDraft a counsellor note."],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['note' => null, 'error' => 'Could not draft a note right now.'], 502);
+        }
 
-        return response()->json(['note' => $message->content[0]->text]);
+        return response()->json(['note' => trim($response->choices[0]->message->content ?? '')]);
     }
 
     public function destroy(Request $request, Ticket $ticket): RedirectResponse

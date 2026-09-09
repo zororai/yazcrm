@@ -415,6 +415,7 @@ Route::middleware('auth')->group(function () {
     Route::post('progress-reports', [Web\ProgressReportController::class, 'store'])->name('progress-reports.store');
     Route::get('progress-reports/team', [Web\ProgressReportController::class, 'team'])->name('progress-reports.team');
     Route::get('progress-reports/{report}', [Web\ProgressReportController::class, 'show'])->name('progress-reports.show');
+    Route::get('progress-reports/{report}/export-pdf', [Web\ProgressReportController::class, 'exportPdf'])->name('progress-reports.export-pdf');
     Route::post('progress-reports/{report}/status', [Web\ProgressReportController::class, 'updateStatus'])->name('progress-reports.status');
 
     // Success Stories — an agent writes up a ticket's outcome with photos

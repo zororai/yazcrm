@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { ArrowLeftIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ report: Object, isManager: Boolean, statuses: Array });
 
@@ -36,6 +36,9 @@ function submitReview() {
     <AppLayout>
         <template #title>Progress Report — {{ report.user?.name }}</template>
         <template #header-actions>
+            <a :href="`/progress-reports/${report.id}/export-pdf`" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
+                <ArrowDownTrayIcon class="h-4 w-4" /> Download PDF
+            </a>
             <Link href="/progress-reports" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
                 <ArrowLeftIcon class="h-4 w-4" /> Back
             </Link>
@@ -59,9 +62,55 @@ function submitReview() {
                 <p><span class="text-gray-400">Date Submitted:</span> {{ report.date_submitted || '—' }}</p>
             </div>
 
-            <div>
+            <!-- KPI sections -->
+            <div v-if="report.kpis?.length">
+                <p class="label mb-2">Monthly Overall Progress</p>
+                <div v-for="(kpi, i) in report.kpis" :key="i" class="rounded-xl bg-gray-50 p-3 mb-2">
+                    <p class="font-semibold text-sm text-gray-800 mb-1">{{ kpi.title || `KPI ${i + 1}` }}</p>
+                    <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ kpi.description || '—' }}</p>
+                </div>
+            </div>
+            <div v-else-if="report.overall_progress">
                 <p class="label">Monthly Overall Progress</p>
-                <p class="text-sm text-gray-700 whitespace-pre-wrap rounded-xl bg-gray-50 p-3">{{ report.overall_progress || '—' }}</p>
+                <p class="text-sm text-gray-700 whitespace-pre-wrap rounded-xl bg-gray-50 p-3">{{ report.overall_progress }}</p>
+            </div>
+
+            <!-- Province table -->
+            <div v-if="report.provinces?.length">
+                <p class="label mb-2">Clients Reached by Province</p>
+                <table class="w-full text-sm rounded-xl overflow-hidden ring-1 ring-gray-200">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr><th class="px-3 py-2 text-left">Province</th><th class="px-3 py-2 text-left">Number of Clients</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="(row, i) in report.provinces" :key="i">
+                            <td class="px-3 py-2">{{ row.province }}</td>
+                            <td class="px-3 py-2">{{ row.clients }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Gender -->
+            <div v-if="report.male_clients !== null || report.female_clients !== null" class="text-sm text-gray-700">
+                <span class="label">Clients Reached</span>
+                {{ report.male_clients ?? 0 }} males, {{ report.female_clients ?? 0 }} females
+            </div>
+
+            <!-- Services table -->
+            <div v-if="report.services?.length">
+                <p class="label mb-2">Services Requested</p>
+                <table class="w-full text-sm rounded-xl overflow-hidden ring-1 ring-gray-200">
+                    <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                        <tr><th class="px-3 py-2 text-left">Service</th><th class="px-3 py-2 text-left">Number of Clients</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr v-for="(row, i) in report.services" :key="i">
+                            <td class="px-3 py-2">{{ row.service }}</td>
+                            <td class="px-3 py-2">{{ row.clients }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div>
@@ -86,6 +135,17 @@ function submitReview() {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Success stories -->
+            <div v-if="report.success_stories?.length">
+                <p class="label mb-2">Success Stories</p>
+                <div v-for="(s, i) in report.success_stories" :key="i" class="rounded-xl bg-gray-50 p-3 mb-2 text-sm">
+                    <p class="font-semibold text-gray-800 mb-1">{{ i + 1 }}. Challenge</p>
+                    <p class="text-gray-700 whitespace-pre-wrap mb-2">{{ s.challenge || '—' }}</p>
+                    <p class="font-semibold text-gray-800 mb-1">Solution</p>
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ s.solution || '—' }}</p>
                 </div>
             </div>
 
