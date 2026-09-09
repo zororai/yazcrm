@@ -992,16 +992,6 @@ const statusColor = {
                                 </select>
                             </div>
                             <div>
-                                <label class="label">Action Status</label>
-                                <select v-model="addForm.action_status" class="input">
-                                    <option value="">— select —</option>
-                                    <option value="yes">Yes</option>
-                                    <option value="ongoing">Ongoing</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="no">No</option>
-                                </select>
-                            </div>
-                            <div>
                                 <label class="label">Immediate Action Required</label>
                                 <select v-model="addForm.immediate_action_required" class="input">
                                     <option value="">— select —</option>
