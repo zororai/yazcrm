@@ -17,7 +17,7 @@ class StoreController extends Controller
 {
     private function isManager(User $user): bool
     {
-        return in_array($user->role, ['admin', 'director'], true);
+        return in_array($user->role, ['admin', 'director', 'stores', 'accounting_dep'], true);
     }
 
     public function index(Request $request): Response
