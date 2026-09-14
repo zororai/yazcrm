@@ -81,7 +81,7 @@ function submitAdjust() {
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
-                    <tr v-for="s in stock" :key="s.id" class="hover:bg-gray-50">
+                    <tr v-for="s in stock" :key="s.item.id" class="hover:bg-gray-50">
                         <td class="table-td font-medium">{{ s.item?.name }}</td>
                         <td class="table-td">{{ s.item?.unit_of_measure ?? '—' }}</td>
                         <td class="table-td">{{ s.quantity }}</td>

@@ -43,7 +43,7 @@ function open(store) {
                         <td class="table-td font-medium">{{ s.name }}</td>
                         <td class="table-td">{{ s.location?.name }}</td>
                         <td class="table-td">{{ s.storekeeper?.name ?? '—' }}</td>
-                        <td class="table-td">{{ s.stock_count }}</td>
+                        <td class="table-td">{{ s.items_in_stock_count }}</td>
                         <td class="table-td">
                             <span :class="['badge', s.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600']">
                                 {{ s.is_active ? 'Active' : 'Inactive' }}
