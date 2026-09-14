@@ -405,6 +405,8 @@ Route::middleware('auth')->group(function () {
     Route::get('timetable', [Web\TimetableController::class, 'index'])->name('timetable.index');
     Route::get('timetable/export-pdf', [Web\TimetableController::class, 'exportPdf'])->name('timetable.export-pdf');
     Route::post('timetable/generate', [Web\TimetableController::class, 'generate'])->name('timetable.generate');
+    Route::post('timetable/undo-generate', [Web\TimetableController::class, 'undoLastGenerate'])->name('timetable.undo-generate');
+    Route::post('timetable/clear', [Web\TimetableController::class, 'clearRange'])->name('timetable.clear');
     Route::post('timetable/weekly-off', [Web\TimetableController::class, 'updateWeeklyOff'])->name('timetable.weekly-off');
     Route::post('timetable/shift-preference', [Web\TimetableController::class, 'updateShiftPreference'])->name('timetable.shift-preference');
     Route::post('timetable/special-days', [Web\TimetableController::class, 'storeSpecialDay'])->name('timetable.special-days.store');

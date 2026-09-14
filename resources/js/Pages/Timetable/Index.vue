@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { CalendarDaysIcon, SunIcon, MoonIcon, XMarkIcon, PlusIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
+import { CalendarDaysIcon, SunIcon, MoonIcon, XMarkIcon, PlusIcon, ArrowDownTrayIcon, ArrowUturnLeftIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     agents: Array,
@@ -10,6 +10,7 @@ const props = defineProps({
     isManager: Boolean,
     filters: Object,
     shiftTimes: Object,
+    lastSnapshot: Object,
 });
 
 const start = ref(props.filters.start);
@@ -85,7 +86,7 @@ function toggleAgentWeeklyOff(agent, day) {
     const next = current.includes(day) ? current.filter(d => d !== day) : [...current, day];
     agentWeeklyOffState.value = { ...agentWeeklyOffState.value, [agent.id]: next };
 
-    router.post('/timetable/weekly-off', { user_id: agent.id, weekly_off: next }, { preserveScroll: true });
+    router.post('/timetable/weekly-off', { user_id: agent.id, weekly_off: next }, { preserveScroll: true, preserveState: true });
 }
 
 // Each agent's own shift preference — 'rotating' (default), 'day', or 'night'.
@@ -101,13 +102,61 @@ const agentShiftPrefState = ref(
 
 function setAgentShiftPreference(agent, pref) {
     agentShiftPrefState.value = { ...agentShiftPrefState.value, [agent.id]: pref };
-    router.post('/timetable/shift-preference', { user_id: agent.id, shift_preference: pref }, { preserveScroll: true });
+    router.post('/timetable/shift-preference', { user_id: agent.id, shift_preference: pref }, { preserveScroll: true, preserveState: true });
 }
 
 function submitGenerate() {
     generateForm.post('/timetable/generate', {
         preserveScroll: true,
-        onSuccess: () => { showGenerate.value = false; router.reload({ only: ['agents'] }); },
+        onSuccess: () => {
+            showGenerate.value = false;
+            // Snap the visible date range to what was just generated —
+            // otherwise the grid keeps showing whatever range was filtered
+            // before, and the newly generated shifts appear invisible.
+            start.value = generateForm.start_date;
+            end.value = generateForm.end_date;
+            runFilter();
+        },
+    });
+}
+
+// ── Undo last generate (manager) ─────────────────────────────────────────────
+const undoing = ref(false);
+
+function undoLastGenerate() {
+    if (!confirm('Revert to the timetable that existed before the last "Generate" — this cannot be undone further.')) return;
+    undoing.value = true;
+    // Grab the range being reverted to before the request fires — props
+    // will already reflect the post-undo state by the time onSuccess runs.
+    const revertedRange = props.lastSnapshot ? { ...props.lastSnapshot } : null;
+    router.post('/timetable/undo-generate', {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            if (revertedRange) {
+                start.value = revertedRange.start_date;
+                end.value = revertedRange.end_date;
+            }
+            runFilter();
+        },
+        onFinish: () => { undoing.value = false; },
+    });
+}
+
+// ── Clear timetable (manager) — wipes the currently filtered range/agent ────
+const clearing = ref(false);
+
+function clearTimetable() {
+    const scope = agentId.value ? 'this agent' : 'ALL agents';
+    if (!confirm(`Clear the timetable for ${scope} from ${start.value} to ${end.value}? This can be undone with "Undo Last Generate" right after.`)) return;
+    clearing.value = true;
+    router.post('/timetable/clear', {
+        start_date: start.value,
+        end_date: end.value,
+        agent_ids: agentId.value ? [agentId.value] : [],
+    }, {
+        preserveScroll: true,
+        onSuccess: () => router.reload({ only: ['agents', 'lastSnapshot'] }),
+        onFinish: () => { clearing.value = false; },
     });
 }
 
@@ -117,6 +166,7 @@ const specialForm = useForm({ date: '', reason: '' });
 function addSpecialDay() {
     specialForm.post('/timetable/special-days', {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => { specialForm.reset(); router.reload({ only: ['agents'] }); },
     });
 }
@@ -124,6 +174,7 @@ function addSpecialDay() {
 function removeSpecialDay(id) {
     router.delete(`/timetable/special-days/${id}`, {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => router.reload({ only: ['agents'] }),
     });
 }
@@ -151,6 +202,7 @@ function toggleWeeklyOff(day) {
         weekly_off: weeklyOffSelection.value,
     }, {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => router.reload({ only: ['agents'] }),
     });
 }
@@ -166,6 +218,7 @@ function setShiftPreference(pref) {
         shift_preference: pref,
     }, {
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => router.reload({ only: ['agents'] }),
     });
 }
@@ -178,6 +231,14 @@ function setShiftPreference(pref) {
             <a :href="pdfExportUrl" class="btn-secondary btn-sm inline-flex items-center gap-1.5">
                 <ArrowDownTrayIcon class="h-4 w-4" /> Download PDF
             </a>
+            <button v-if="isManager && lastSnapshot" @click="undoLastGenerate" :disabled="undoing"
+                class="btn-secondary btn-sm inline-flex items-center gap-1.5" title="Restore the timetable as it was before the last Generate">
+                <ArrowUturnLeftIcon class="h-4 w-4" /> {{ undoing ? 'Undoing…' : 'Undo Last Generate' }}
+            </button>
+            <button v-if="isManager" @click="clearTimetable" :disabled="clearing"
+                class="btn-secondary btn-sm inline-flex items-center gap-1.5 text-red-600 hover:bg-red-50" title="Clear all shifts in the range/agent currently shown">
+                <TrashIcon class="h-4 w-4" /> {{ clearing ? 'Clearing…' : 'Clear Timetable' }}
+            </button>
             <button v-if="isManager" @click="showGenerate = true" class="btn-primary btn-sm">Generate Timetable</button>
         </template>
 

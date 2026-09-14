@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\SpecialDay;
 use App\Models\TimetableShift;
+use App\Models\TimetableShiftSnapshot;
 use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
@@ -83,6 +84,10 @@ class TimetableController extends Controller
         $end   = $request->input('end', now()->endOfMonth()->toDateString());
         $isManager = $this->isManager($request);
 
+        $lastSnapshot = $isManager
+            ? TimetableShiftSnapshot::latest()->first(['id', 'start_date', 'end_date'])
+            : null;
+
         return Inertia::render('Timetable/Index', [
             'agents'    => $this->buildRows($request, $start, $end),
             'allAgents' => User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name', 'weekly_off_days', 'shift_preference']),
@@ -92,6 +97,10 @@ class TimetableController extends Controller
                 'day'   => self::DAY_START . ' – ' . self::DAY_END,
                 'night' => self::NIGHT_START . ' – ' . self::NIGHT_END . ' (+1)',
             ],
+            'lastSnapshot' => $lastSnapshot ? [
+                'start_date' => $lastSnapshot->start_date->toDateString(),
+                'end_date'   => $lastSnapshot->end_date->toDateString(),
+            ] : null,
         ]);
     }
 
@@ -161,6 +170,49 @@ class TimetableController extends Controller
         ]);
     }
 
+    public function clearRange(Request $request): RedirectResponse
+    {
+        abort_unless($this->isManager($request), 403);
+
+        $validated = $request->validate([
+            'start_date'  => 'required|date',
+            'end_date'    => 'required|date|after_or_equal:start_date',
+            'agent_ids'   => 'nullable|array',
+            'agent_ids.*' => 'integer|exists:users,id',
+        ]);
+
+        $agentIds = ! empty($validated['agent_ids'])
+            ? $validated['agent_ids']
+            : User::where('role', '!=', 'admin')->pluck('id')->all();
+
+        DB::transaction(function () use ($agentIds, $validated, $request) {
+            // Snapshot first so "Undo Last Generate" can bring this back too.
+            $oldShifts = TimetableShift::whereIn('user_id', $agentIds)
+                ->whereBetween('work_date', [$validated['start_date'], $validated['end_date']])
+                ->get(['user_id', 'work_date', 'shift_type', 'roster_label'])
+                ->map(fn ($s) => [
+                    'user_id'      => $s->user_id,
+                    'work_date'    => $s->work_date->toDateString(),
+                    'shift_type'   => $s->shift_type,
+                    'roster_label' => $s->roster_label,
+                ])->all();
+
+            TimetableShiftSnapshot::create([
+                'start_date' => $validated['start_date'],
+                'end_date'   => $validated['end_date'],
+                'agent_ids'  => $agentIds,
+                'old_shifts' => $oldShifts,
+                'created_by' => $request->user()->id,
+            ]);
+
+            TimetableShift::whereIn('user_id', $agentIds)
+                ->whereBetween('work_date', [$validated['start_date'], $validated['end_date']])
+                ->delete();
+        });
+
+        return back()->with('success', 'Timetable cleared for ' . count($agentIds) . ' agent(s).');
+    }
+
     public function generate(Request $request): RedirectResponse
     {
         abort_unless($this->isManager($request), 403);
@@ -192,7 +244,28 @@ class TimetableController extends Controller
         $allDates = CarbonPeriod::create($validated['start_date'], $validated['end_date'])
             ->toArray();
 
-        DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label, $batchWeeklyOff, $workingDaysTarget, $restDaysTarget) {
+        DB::transaction(function () use ($agents, $allDates, $validated, $blockSize, $label, $batchWeeklyOff, $workingDaysTarget, $restDaysTarget, $request) {
+            // Snapshot whatever shifts exist right now for the affected
+            // agents/range, before anything is touched, so "Undo Last
+            // Generate" can restore exactly this state.
+            $oldShifts = TimetableShift::whereIn('user_id', $agents->pluck('id'))
+                ->whereBetween('work_date', [$validated['start_date'], $validated['end_date']])
+                ->get(['user_id', 'work_date', 'shift_type', 'roster_label'])
+                ->map(fn ($s) => [
+                    'user_id'      => $s->user_id,
+                    'work_date'    => $s->work_date->toDateString(),
+                    'shift_type'   => $s->shift_type,
+                    'roster_label' => $s->roster_label,
+                ])->all();
+
+            TimetableShiftSnapshot::create([
+                'start_date' => $validated['start_date'],
+                'end_date'   => $validated['end_date'],
+                'agent_ids'  => $agents->pluck('id')->all(),
+                'old_shifts' => $oldShifts,
+                'created_by' => $request->user()->id,
+            ]);
+
             foreach ($agents as $index => $agent) {
                 $weeklyOff = array_unique(array_merge($agent->weekly_off_days ?? [], $batchWeeklyOff));
                 // Clear any existing shifts in this range before regenerating.
@@ -311,6 +384,35 @@ class TimetableController extends Controller
         });
 
         return back()->with('success', 'Timetable generated for ' . $agents->count() . ' agent(s).');
+    }
+
+    public function undoLastGenerate(Request $request): RedirectResponse
+    {
+        abort_unless($this->isManager($request), 403);
+
+        $snapshot = TimetableShiftSnapshot::latest()->first();
+        abort_unless($snapshot, 404);
+
+        DB::transaction(function () use ($snapshot) {
+            TimetableShift::whereIn('user_id', $snapshot->agent_ids)
+                ->whereBetween('work_date', [$snapshot->start_date, $snapshot->end_date])
+                ->delete();
+
+            if ($snapshot->old_shifts) {
+                TimetableShift::insert(array_map(fn ($s) => [
+                    'user_id'      => $s['user_id'],
+                    'work_date'    => $s['work_date'],
+                    'shift_type'   => $s['shift_type'],
+                    'roster_label' => $s['roster_label'],
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ], $snapshot->old_shifts));
+            }
+
+            $snapshot->delete();
+        });
+
+        return back()->with('success', 'Reverted to the previous timetable.');
     }
 
     /**
