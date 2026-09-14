@@ -52,7 +52,7 @@ class StocktakeController extends Controller
     public function show(Request $request, Stocktake $stocktake): Response
     {
         return Inertia::render('Stocktakes/Show', [
-            'stocktake' => $stocktake->load(['store:id,name', 'startedBy:id,name', 'completedBy:id,name', 'items.item:id,name,item_code,unit_of_measure']),
+            'stocktake' => $stocktake->load(['store:id,name', 'startedBy:id,name', 'completedBy:id,name', 'items.item:id,name,unit_of_measure']),
             'isManager' => $this->isManager($request->user()),
         ]);
     }

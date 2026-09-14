@@ -32,7 +32,7 @@ class StockTransferController extends Controller
                 ->latest()
                 ->get(),
             'stores'    => Store::orderBy('name')->get(['id', 'name']),
-            'items'     => Item::where('is_active', true)->orderBy('name')->get(['id', 'item_code', 'name']),
+            'items'     => Item::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'isManager' => $this->isManager($request->user()),
         ]);
     }
@@ -62,7 +62,7 @@ class StockTransferController extends Controller
     public function show(Request $request, StockTransfer $stockTransfer): Response
     {
         return Inertia::render('StockTransfers/Show', [
-            'transfer' => $stockTransfer->load(['fromStore:id,name', 'toStore:id,name', 'requestedBy:id,name', 'items.item:id,name,item_code']),
+            'transfer' => $stockTransfer->load(['fromStore:id,name', 'toStore:id,name', 'requestedBy:id,name', 'items.item:id,name']),
             'isManager' => $this->isManager($request->user()),
         ]);
     }

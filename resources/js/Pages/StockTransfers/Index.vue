@@ -88,7 +88,7 @@ const statusColor = {
                             <label class="label" v-if="i === 0">Item</label>
                             <select v-model="line.item_id" class="input" required>
                                 <option value="" disabled>Select…</option>
-                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }} ({{ it.item_code }})</option>
+                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }}</option>
                             </select>
                         </div>
                         <div>

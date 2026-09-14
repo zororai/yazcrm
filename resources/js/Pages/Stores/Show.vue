@@ -82,7 +82,7 @@ function submitAdjust() {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-for="s in stock" :key="s.id" class="hover:bg-gray-50">
-                        <td class="table-td font-medium">{{ s.item?.name }} <span class="text-xs text-gray-400">({{ s.item?.item_code }})</span></td>
+                        <td class="table-td font-medium">{{ s.item?.name }}</td>
                         <td class="table-td">{{ s.item?.unit_of_measure ?? '—' }}</td>
                         <td class="table-td">{{ s.quantity }}</td>
                         <td class="table-td">{{ s.reserved_quantity }}</td>
@@ -118,7 +118,7 @@ function submitAdjust() {
                             <label class="label" v-if="i === 0">Item</label>
                             <select v-model="line.item_id" class="input" required>
                                 <option value="" disabled>Select…</option>
-                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }} ({{ it.item_code }})</option>
+                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }}</option>
                             </select>
                         </div>
                         <div>
@@ -167,7 +167,7 @@ function submitAdjust() {
                             <label class="label" v-if="i === 0">Item</label>
                             <select v-model="line.item_id" class="input" required>
                                 <option value="" disabled>Select…</option>
-                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }} ({{ it.item_code }})</option>
+                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }}</option>
                             </select>
                         </div>
                         <div>

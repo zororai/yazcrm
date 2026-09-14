@@ -56,8 +56,8 @@ class StoreController extends Controller
     {
         return Inertia::render('Stores/Show', [
             'store'       => $store->load(['location:id,name', 'manager:id,name', 'storekeeper:id,name']),
-            'stock'       => $store->stock()->with('item:id,item_code,name,unit_of_measure')->get(),
-            'items'       => Item::where('is_active', true)->orderBy('name')->get(['id', 'item_code', 'name']),
+            'stock'       => $store->stock()->with('item:id,name,unit_of_measure')->get(),
+            'items'       => Item::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'departments' => Department::orderBy('name')->get(['id', 'name']),
             'isManager'   => $this->isManager($request->user()),
         ]);

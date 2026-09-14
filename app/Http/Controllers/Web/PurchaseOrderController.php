@@ -42,7 +42,7 @@ class PurchaseOrderController extends Controller
                 ->get(),
             'suppliers' => Supplier::where('status', 'active')->orderBy('name')->get(['id', 'name']),
             'stores'    => Store::orderBy('name')->get(['id', 'name']),
-            'items'     => Item::where('is_active', true)->orderBy('name')->get(['id', 'item_code', 'name']),
+            'items'     => Item::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'isManager' => $this->isManager($request->user()),
         ]);
     }
@@ -75,7 +75,7 @@ class PurchaseOrderController extends Controller
     public function show(Request $request, PurchaseOrder $purchaseOrder): Response
     {
         return Inertia::render('PurchaseOrders/Show', [
-            'order' => $purchaseOrder->load(['supplier', 'store:id,name', 'requestedBy:id,name', 'approvedBy:id,name', 'items.item:id,name,item_code', 'receipts:id,receipt_number,purchase_order_id,created_at']),
+            'order' => $purchaseOrder->load(['supplier', 'store:id,name', 'requestedBy:id,name', 'approvedBy:id,name', 'items.item:id,name', 'receipts:id,receipt_number,purchase_order_id,created_at']),
             'isManager' => $this->isManager($request->user()),
         ]);
     }

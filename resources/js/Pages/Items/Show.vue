@@ -9,7 +9,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 
         <div class="grid grid-cols-2 gap-4 mb-4">
             <div class="card text-sm text-gray-600 space-y-1">
-                <p><span class="text-gray-400">Item Code:</span> {{ item.item_code }}</p>
                 <p><span class="text-gray-400">Category:</span> {{ item.category?.name ?? '—' }}</p>
                 <p><span class="text-gray-400">Unit:</span> {{ item.unit_of_measure ?? '—' }}</p>
                 <p><span class="text-gray-400">Default Store:</span> {{ item.default_store?.name ?? '—' }}</p>

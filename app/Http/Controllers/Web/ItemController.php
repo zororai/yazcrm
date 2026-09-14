@@ -25,9 +25,7 @@ class ItemController extends Controller
 
         return Inertia::render('Items/Index', [
             'items' => Item::with(['category:id,name', 'defaultStore:id,name'])
-                ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")->orWhere('item_code', 'like', "%{$search}%");
-                }))
+                ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
                 ->orderBy('name')
                 ->get(),
             'categories' => ItemCategory::orderBy('name')->get(['id', 'name']),
@@ -43,7 +41,6 @@ class ItemController extends Controller
         }
 
         $data = $request->validate([
-            'item_code'        => 'required|string|max:100|unique:items,item_code',
             'name'             => 'required|string|max:255',
             'category_id'      => 'nullable|exists:item_categories,id',
             'description'      => 'nullable|string',
@@ -75,7 +72,6 @@ class ItemController extends Controller
         }
 
         $data = $request->validate([
-            'item_code'        => "required|string|max:100|unique:items,item_code,{$item->id}",
             'name'             => 'required|string|max:255',
             'category_id'      => 'nullable|exists:item_categories,id',
             'description'      => 'nullable|string',

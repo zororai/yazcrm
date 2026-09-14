@@ -53,7 +53,7 @@ const statusColor = {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-for="line in stocktake.items" :key="line.id">
-                        <td class="table-td font-medium">{{ line.item?.name }} <span class="text-xs text-gray-400">({{ line.item?.item_code }})</span></td>
+                        <td class="table-td font-medium">{{ line.item?.name }}</td>
                         <td class="table-td">{{ line.system_quantity }}</td>
                         <td class="table-td">
                             <input

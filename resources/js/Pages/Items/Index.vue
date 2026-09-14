@@ -17,7 +17,7 @@ watch(search, () => {
 
 const showForm = ref(false);
 const form = useForm({
-    item_code: '', name: '', category_id: '', description: '', unit_of_measure: '',
+    name: '', category_id: '', description: '', unit_of_measure: '',
     minimum_stock: 0, maximum_stock: '', reorder_level: 0, default_store_id: '',
 });
 
@@ -40,14 +40,13 @@ function open(item) {
         </template>
 
         <div class="card mb-4">
-            <input v-model="search" class="input" placeholder="Search by name or item code…" />
+            <input v-model="search" class="input" placeholder="Search by name…" />
         </div>
 
         <div class="card p-0 overflow-hidden">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Code</th>
                         <th class="table-th">Name</th>
                         <th class="table-th">Category</th>
                         <th class="table-th">Unit</th>
@@ -57,15 +56,14 @@ function open(item) {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-for="i in items" :key="i.id" class="hover:bg-gray-50 cursor-pointer" @click="open(i)">
-                        <td class="table-td font-medium">{{ i.item_code }}</td>
-                        <td class="table-td">{{ i.name }}</td>
+                        <td class="table-td font-medium">{{ i.name }}</td>
                         <td class="table-td">{{ i.category?.name ?? '—' }}</td>
                         <td class="table-td">{{ i.unit_of_measure ?? '—' }}</td>
                         <td class="table-td">{{ i.reorder_level }}</td>
                         <td class="table-td">{{ i.default_store?.name ?? '—' }}</td>
                     </tr>
                     <tr v-if="!items.length">
-                        <td colspan="6" class="table-td text-center text-gray-400 py-8">No items match.</td>
+                        <td colspan="5" class="table-td text-center text-gray-400 py-8">No items match.</td>
                     </tr>
                 </tbody>
             </table>
@@ -75,10 +73,6 @@ function open(item) {
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
                 <h3 class="font-semibold text-gray-900 mb-4">New Item</h3>
                 <form @submit.prevent="submit" class="space-y-3">
-                    <div>
-                        <label class="label">Item Code</label>
-                        <input v-model="form.item_code" class="input" required />
-                    </div>
                     <div>
                         <label class="label">Name</label>
                         <input v-model="form.name" class="input" required />

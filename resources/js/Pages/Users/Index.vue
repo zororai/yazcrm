@@ -277,13 +277,18 @@ const roleColor = {
                     <h3 class="font-semibold text-gray-900">Edit {{ editUser.name }}</h3>
                 </div>
                 <form @submit.prevent="update" class="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+                    <div v-if="Object.keys(editForm.errors).length" class="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 space-y-0.5">
+                        <p v-for="(msg, field) in editForm.errors" :key="field">{{ msg }}</p>
+                    </div>
                     <div>
                         <label class="label">Name</label>
                         <input v-model="editForm.name" class="input" required />
+                        <p v-if="editForm.errors.name" class="mt-1 text-xs text-red-600">{{ editForm.errors.name }}</p>
                     </div>
                     <div>
                         <label class="label">Email</label>
                         <input v-model="editForm.email" type="email" class="input" required />
+                        <p v-if="editForm.errors.email" class="mt-1 text-xs text-red-600">{{ editForm.errors.email }}</p>
                     </div>
                     <div>
                         <label class="label">Role</label>
@@ -293,6 +298,7 @@ const roleColor = {
                             </option>
                         </select>
                         <p class="mt-1 text-xs text-gray-400">Changing the role automatically updates permissions below.</p>
+                        <p v-if="editForm.errors.role" class="mt-1 text-xs text-red-600">{{ editForm.errors.role }}</p>
                     </div>
                     <div>
                         <label class="label">Supervisor</label>
@@ -303,6 +309,7 @@ const roleColor = {
                             </option>
                         </select>
                         <p class="mt-1 text-xs text-gray-400">Used to route this staff member's performance appraisals for review.</p>
+                        <p v-if="editForm.errors.supervisor_id" class="mt-1 text-xs text-red-600">{{ editForm.errors.supervisor_id }}</p>
                     </div>
 
                     <!-- Nav permissions (hidden for admins — they get everything) -->
