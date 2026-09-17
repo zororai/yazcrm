@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\Api\BeneficiaryAttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CallbackQueueController;
 use App\Http\Controllers\CallController;
@@ -96,6 +97,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('recordings/{recording}/download',  [RecordingController::class, 'download']);
     Route::get('recordings/{recording}/ai-notes',  [RecordingController::class, 'aiNotes']);
     Route::post('recordings/{recording}/transcribe', [RecordingController::class, 'retranscribe']);
+
+    // Beneficiary attendance (offline-capture Android app)
+    Route::get('beneficiary-attendances',        [BeneficiaryAttendanceController::class, 'index']);
+    Route::get('beneficiary-attendances/search', [BeneficiaryAttendanceController::class, 'search']);
+    Route::post('beneficiary-attendances/sync',  [BeneficiaryAttendanceController::class, 'sync']);
 
     // Analytics
     Route::get('analytics/overview',          [AnalyticsController::class, 'overview']);
