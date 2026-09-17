@@ -8,13 +8,27 @@ use App\Models\BeneficiaryAttendance;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(name: 'Beneficiary Attendance', description: 'Offline-capture Android app data')]
 class BeneficiaryAttendanceController extends Controller
 {
     // Look up whatever phone number the field agent just typed into the app,
     // so the app can show "already captured today" / show past attendance
     // for that beneficiary instead of capturing a duplicate blind.
+    #[OA\Get(
+        path: '/api/beneficiary-attendances/search',
+        summary: 'Search past attendance records by phone number',
+        security: [['sanctum' => []]],
+        parameters: [
+            new OA\Parameter(name: 'phone', in: 'query', required: true, schema: new OA\Schema(type: 'string')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Matching attendance records, most recent first'),
+        ],
+    )]
     public function search(Request $request): JsonResponse
     {
         $phone = trim((string) $request->query('phone', ''));
@@ -46,6 +60,16 @@ class BeneficiaryAttendanceController extends Controller
     // Each activity/attendance carries a client-generated UUID, so resyncing
     // the same batch twice (e.g. a retry after a dropped connection) is a
     // no-op rather than creating duplicates.
+    #[OA\Post(
+        path: '/api/beneficiary-attendances/sync',
+        summary: 'Bulk-upload offline-captured attendance registers',
+        description: 'Idempotent via client_uuid on both activities and attendances — safe to retry the same batch.',
+        security: [['sanctum' => []]],
+        responses: [
+            new OA\Response(response: 200, description: 'Sync complete, with created/skipped counts'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ],
+    )]
     public function sync(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -64,6 +88,7 @@ class BeneficiaryAttendanceController extends Controller
             'activities.*.attendances.*.phone_number'      => 'nullable|string|max:50',
             'activities.*.attendances.*.id_number_or_dob'  => 'nullable|string|max:100',
             'activities.*.attendances.*.captured_at'       => 'nullable|date',
+            'activities.*.attendances.*.signature_base64'  => 'nullable|string',
         ]);
 
         $created = ['activities' => 0, 'attendances' => 0];
@@ -95,6 +120,14 @@ class BeneficiaryAttendanceController extends Controller
                         continue;
                     }
 
+                    $signaturePath = null;
+                    if (!empty($attendanceData['signature_base64'])) {
+                        $signaturePath = $this->storeSignature(
+                            $attendanceData['client_uuid'],
+                            $attendanceData['signature_base64']
+                        );
+                    }
+
                     BeneficiaryAttendance::create([
                         'client_uuid'              => $attendanceData['client_uuid'],
                         'beneficiary_activity_id'  => $activity->id,
@@ -104,6 +137,7 @@ class BeneficiaryAttendanceController extends Controller
                         'district'                 => $attendanceData['district'] ?? null,
                         'phone_number'             => $attendanceData['phone_number'] ?? null,
                         'id_number_or_dob'         => $attendanceData['id_number_or_dob'] ?? null,
+                        'signature_path'           => $signaturePath,
                         'captured_at'              => $attendanceData['captured_at'] ?? now(),
                     ]);
                     $created['attendances']++;
@@ -116,6 +150,19 @@ class BeneficiaryAttendanceController extends Controller
             'created' => $created,
             'skipped' => $skipped, // already-synced records from a previous attempt
         ]);
+    }
+
+    // Decodes the base64 PNG sent from the app's signature pad and stores
+    // it on the public disk. Named by client_uuid, which is already unique
+    // and dedup-safe, so a resync of the same record just overwrites the
+    // same file rather than accumulating duplicates.
+    private function storeSignature(string $clientUuid, string $base64): string
+    {
+        $bytes = base64_decode($base64, true) ?: '';
+        $path  = "signatures/{$clientUuid}.png";
+        Storage::disk('public')->put($path, $bytes);
+
+        return $path;
     }
 
     public function index(Request $request): JsonResponse
