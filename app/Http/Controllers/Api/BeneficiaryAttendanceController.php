@@ -165,6 +165,14 @@ class BeneficiaryAttendanceController extends Controller
         return $path;
     }
 
+    #[OA\Get(
+        path: '/api/beneficiary-attendances',
+        summary: 'List attendance registers (paginated)',
+        security: [['sanctum' => []]],
+        responses: [
+            new OA\Response(response: 200, description: 'Paginated list of activities with their attendances'),
+        ],
+    )]
     public function index(Request $request): JsonResponse
     {
         $activities = BeneficiaryActivity::with('attendances')

@@ -17,7 +17,7 @@ watch(search, () => {
 
 const showForm = ref(false);
 const form = useForm({
-    name: '', category_id: '', description: '', unit_of_measure: '',
+    name: '', category_id: '', new_category_name: '', description: '', unit_of_measure: '',
     minimum_stock: 0, maximum_stock: '', reorder_level: 0, default_store_id: '',
 });
 
@@ -32,7 +32,7 @@ function open(item) {
 // ── Edit ──────────────────────────────────────────────────────────────────
 const editItem = ref(null);
 const editForm = useForm({
-    name: '', category_id: '', description: '', unit_of_measure: '',
+    name: '', category_id: '', new_category_name: '', description: '', unit_of_measure: '',
     minimum_stock: 0, maximum_stock: '', reorder_level: 0, default_store_id: '', is_active: true,
 });
 
@@ -40,6 +40,7 @@ function openEdit(item) {
     editItem.value          = item;
     editForm.name            = item.name;
     editForm.category_id     = item.category_id ?? '';
+    editForm.new_category_name = '';
     editForm.description     = item.description ?? '';
     editForm.unit_of_measure = item.unit_of_measure ?? '';
     editForm.minimum_stock   = item.minimum_stock ?? 0;
@@ -112,7 +113,14 @@ function submitEdit() {
                         <select v-model="form.category_id" class="input">
                             <option value="">None</option>
                             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                            <option value="__new__">+ Add new category…</option>
                         </select>
+                        <input
+                            v-if="form.category_id === '__new__'"
+                            v-model="form.new_category_name"
+                            class="input mt-2"
+                            placeholder="New category name"
+                        />
                     </div>
                     <div>
                         <label class="label">Unit of Measure</label>
@@ -159,7 +167,14 @@ function submitEdit() {
                         <select v-model="editForm.category_id" class="input">
                             <option value="">None</option>
                             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                            <option value="__new__">+ Add new category…</option>
                         </select>
+                        <input
+                            v-if="editForm.category_id === '__new__'"
+                            v-model="editForm.new_category_name"
+                            class="input mt-2"
+                            placeholder="New category name"
+                        />
                     </div>
                     <div>
                         <label class="label">Unit of Measure</label>

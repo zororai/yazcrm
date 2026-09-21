@@ -42,7 +42,7 @@ class ItemController extends Controller
 
         $data = $request->validate([
             'name'             => 'required|string|max:255',
-            'category_id'      => 'nullable|exists:item_categories,id',
+            'new_category_name'=> 'nullable|string|max:255',
             'description'      => 'nullable|string',
             'unit_of_measure'  => 'nullable|string|max:50',
             'minimum_stock'    => 'nullable|integer|min:0',
@@ -51,9 +51,36 @@ class ItemController extends Controller
             'default_store_id' => 'nullable|exists:stores,id',
         ]);
 
+        unset($data['new_category_name']);
+        $data['category_id'] = $this->resolveCategoryId($request);
+
         $item = Item::create($data + ['created_by' => $request->user()->id]);
 
         return redirect()->route('items.show', $item)->with('success', 'Item created.');
+    }
+
+    // Lets the item form create a category on the fly (picking "+ Add new
+    // category…" and typing a name) instead of requiring a separate trip
+    // to the Item Categories page first. firstOrCreate keeps this safe to
+    // resubmit without creating duplicate categories of the same name.
+    private function resolveCategoryId(Request $request): ?int
+    {
+        $raw = $request->input('category_id');
+
+        if ($raw === '__new__') {
+            $name = trim((string) $request->input('new_category_name', ''));
+            abort_if($name === '', 422, 'Category name is required.');
+
+            return ItemCategory::firstOrCreate(['name' => $name])->id;
+        }
+
+        if (empty($raw)) {
+            return null;
+        }
+
+        abort_unless(ItemCategory::where('id', $raw)->exists(), 422, 'Invalid category.');
+
+        return (int) $raw;
     }
 
     public function show(Request $request, Item $item): Response
@@ -73,7 +100,7 @@ class ItemController extends Controller
 
         $data = $request->validate([
             'name'             => 'required|string|max:255',
-            'category_id'      => 'nullable|exists:item_categories,id',
+            'new_category_name'=> 'nullable|string|max:255',
             'description'      => 'nullable|string',
             'unit_of_measure'  => 'nullable|string|max:50',
             'minimum_stock'    => 'nullable|integer|min:0',
@@ -82,6 +109,9 @@ class ItemController extends Controller
             'default_store_id' => 'nullable|exists:stores,id',
             'is_active'        => 'sometimes|boolean',
         ]);
+
+        unset($data['new_category_name']);
+        $data['category_id'] = $this->resolveCategoryId($request);
 
         $item->update($data);
 

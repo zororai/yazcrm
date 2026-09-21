@@ -1,0 +1,117 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "YazCRM API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/beneficiary-attendances/search": {
+            "get": {
+                "summary": "Search past attendance records by phone number",
+                "operationId": "035d47419dd38b24ab8cfbe77935c399",
+                "parameters": [
+                    {
+                        "name": "phone",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching attendance records, most recent first"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/beneficiary-attendances/sync": {
+            "post": {
+                "summary": "Bulk-upload offline-captured attendance registers",
+                "description": "Idempotent via client_uuid on both activities and attendances — safe to retry the same batch.",
+                "operationId": "ca6894162032a6b8ff57ad8287677a08",
+                "responses": {
+                    "200": {
+                        "description": "Sync complete, with created/skipped counts"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/beneficiary-attendances": {
+            "get": {
+                "summary": "List attendance registers (paginated)",
+                "operationId": "e59348c89af15e7b0db6300262e2e7e2",
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of activities with their attendances"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "summary": "Log in and receive a Sanctum API token",
+                "operationId": "535ffeda4b78916efd658b2844ea897a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Returns {user, token} — use the token as a Bearer header on every other request"
+                    },
+                    "422": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "bearerFormat": "Sanctum token from POST /api/auth/login",
+                "scheme": "bearer"
+            }
+        }
+    }
+}

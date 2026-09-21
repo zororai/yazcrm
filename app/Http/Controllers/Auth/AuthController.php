@@ -9,9 +9,29 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use OpenApi\Attributes as OA;
 
+#[OA\Tag(name: 'Auth')]
 class AuthController extends Controller
 {
+    #[OA\Post(
+        path: '/api/auth/login',
+        summary: 'Log in and receive a Sanctum API token',
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['email', 'password'],
+                properties: [
+                    new OA\Property(property: 'email', type: 'string', format: 'email'),
+                    new OA\Property(property: 'password', type: 'string'),
+                ],
+            ),
+        ),
+        responses: [
+            new OA\Response(response: 200, description: 'Returns {user, token} — use the token as a Bearer header on every other request'),
+            new OA\Response(response: 422, description: 'Invalid credentials'),
+        ],
+    )]
     public function login(Request $request): JsonResponse
     {
         $request->validate([
