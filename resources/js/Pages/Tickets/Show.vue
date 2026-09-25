@@ -18,6 +18,25 @@ const props = defineProps({
 
 const editing = ref(false);
 
+const noteForm = useForm({ body: '' });
+
+function addNote() {
+    noteForm.post(`/tickets/${props.ticket.id}/notes`, {
+        preserveScroll: true,
+        onSuccess: () => { noteForm.reset('body'); },
+    });
+}
+
+function removeNote(note) {
+    if (!confirm('Remove this note?')) return;
+    useForm({}).delete(`/tickets/${props.ticket.id}/notes/${note.id}`, { preserveScroll: true });
+}
+
+function initials(name) {
+    if (!name) return '?';
+    return name.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+}
+
 const editForm = useForm({
     subject:                   props.ticket.subject ?? '',
     description:               props.ticket.description ?? '',
@@ -131,6 +150,45 @@ function label(val) {
                         </div>
                         <p v-if="ticket.description" class="text-sm text-gray-600 whitespace-pre-wrap">{{ ticket.description }}</p>
                         <p v-else class="text-sm text-gray-400 italic">No counsellor's notes.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="font-semibold text-gray-800 text-sm">Case Notes</h3>
+                            <span v-if="ticket.status === 'ongoing'" class="badge bg-purple-100 text-purple-800">
+                                Ongoing — multiple counsellors can log updates here
+                            </span>
+                        </div>
+
+                        <form @submit.prevent="addNote" class="mb-4 space-y-2">
+                            <textarea v-model="noteForm.body" rows="2" class="input"
+                                placeholder="Add an update for this case (visible to whoever picks it up next)..."></textarea>
+                            <p v-if="noteForm.errors.body" class="text-xs text-red-500">{{ noteForm.errors.body }}</p>
+                            <div class="flex justify-end">
+                                <button type="submit" class="btn-primary btn-sm" :disabled="noteForm.processing || !noteForm.body.trim()">
+                                    Add Note
+                                </button>
+                            </div>
+                        </form>
+
+                        <div v-if="ticket.notes && ticket.notes.length" class="space-y-3">
+                            <div v-for="note in ticket.notes" :key="note.id" class="flex gap-3">
+                                <div class="h-8 w-8 shrink-0 rounded-full bg-brand-100 text-brand-700 text-xs font-semibold flex items-center justify-center">
+                                    {{ initials(note.user?.name) }}
+                                </div>
+                                <div class="flex-1 bg-gray-50 rounded-lg px-3 py-2">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-xs font-semibold text-gray-700">{{ note.user?.name ?? 'Unknown' }}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-400">{{ new Date(note.created_at).toLocaleString() }}</span>
+                                            <button @click="removeNote(note)" class="text-xs text-gray-300 hover:text-red-500">✕</button>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{{ note.body }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p v-else class="text-sm text-gray-400 italic">No case notes yet.</p>
                     </div>
 
                     <div class="card">

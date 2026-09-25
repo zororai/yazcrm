@@ -8,6 +8,7 @@ use App\Models\Call;
 use App\Models\Client;
 use App\Models\LookupItem;
 use App\Models\Ticket;
+use App\Models\TicketNote;
 use App\Models\UrgentCase;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -204,7 +205,7 @@ class TicketController extends Controller
             abort(403);
         }
 
-        $ticket->load(['client', 'agent', 'call']);
+        $ticket->load(['client', 'agent', 'call', 'notes.user:id,name']);
 
         return Inertia::render('Tickets/Show', [
             'ticket'                  => $ticket,
@@ -424,5 +425,38 @@ class TicketController extends Controller
         $ticket->delete();
 
         return redirect()->route('tickets.index')->with('success', 'Ticket deleted.');
+    }
+
+    public function storeNote(Request $request, Ticket $ticket): RedirectResponse
+    {
+        if ($request->user()->role !== 'admin' && $ticket->agent_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'body' => 'required|string|max:5000',
+        ]);
+
+        $ticket->notes()->create([
+            'user_id' => $request->user()->id,
+            'body'    => $data['body'],
+        ]);
+
+        return back()->with('success', 'Note added.');
+    }
+
+    public function destroyNote(Request $request, Ticket $ticket, TicketNote $note): RedirectResponse
+    {
+        if ($note->ticket_id !== $ticket->id) {
+            abort(404);
+        }
+
+        if ($request->user()->role !== 'admin' && $note->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $note->delete();
+
+        return back()->with('success', 'Note removed.');
     }
 }

@@ -48,4 +48,9 @@ class Ticket extends Model
     {
         return $this->belongsTo(User::class, 'agent_id');
     }
+
+    public function notes()
+    {
+        return $this->hasMany(TicketNote::class)->latest();
+    }
 }
