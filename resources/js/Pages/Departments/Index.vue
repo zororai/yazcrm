@@ -8,7 +8,7 @@ const props = defineProps({ departments: Array, users: Array, isManager: Boolean
 
 const showForm = ref(false);
 const editing = ref(null);
-const form = useForm({ code: '', name: '', manager_id: '' });
+const form = useForm({ name: '', manager_id: '' });
 
 function openNew() {
     editing.value = null;
@@ -18,7 +18,6 @@ function openNew() {
 
 function openEdit(d) {
     editing.value = d;
-    form.code = d.code;
     form.name = d.name;
     form.manager_id = d.manager_id ?? '';
     showForm.value = true;
@@ -78,10 +77,6 @@ function remove(d) {
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
                 <h3 class="font-semibold text-gray-900 mb-4">{{ editing ? 'Edit' : 'New' }} Department</h3>
                 <form @submit.prevent="submit" class="space-y-3">
-                    <div>
-                        <label class="label">Code</label>
-                        <input v-model="form.code" class="input" required />
-                    </div>
                     <div>
                         <label class="label">Name</label>
                         <input v-model="form.name" class="input" required />
