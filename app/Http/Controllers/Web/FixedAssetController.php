@@ -65,6 +65,8 @@ class FixedAssetController extends Controller
             'serial_number'     => 'nullable|string|max:255|unique:fixed_assets,serial_number',
             'purchase_date'     => 'nullable|date',
             'purchase_cost'     => 'nullable|numeric|min:0',
+            'useful_life_years' => 'nullable|integer|min:1|max:100',
+            'salvage_value'     => 'nullable|numeric|min:0',
             'supplier_name'     => 'nullable|string|max:255',
             'warranty_start'    => 'nullable|date',
             'warranty_expiry'   => 'nullable|date',
@@ -103,6 +105,8 @@ class FixedAssetController extends Controller
             'manufacturer'      => 'nullable|string|max:255',
             'model'             => 'nullable|string|max:255',
             'purchase_cost'     => 'nullable|numeric|min:0',
+            'useful_life_years' => 'nullable|integer|min:1|max:100',
+            'salvage_value'     => 'nullable|numeric|min:0',
             'warranty_expiry'   => 'nullable|date',
         ]);
 

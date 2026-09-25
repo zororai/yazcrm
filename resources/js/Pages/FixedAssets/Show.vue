@@ -126,6 +126,18 @@ const statusColor = {
             </div>
         </div>
 
+        <div class="card mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2 text-sm">Depreciation (Straight-Line)</h3>
+            <div v-if="asset.useful_life_years" class="grid grid-cols-5 gap-4 text-sm">
+                <div><p class="text-gray-400 text-xs">Useful Life</p><p class="font-medium">{{ asset.useful_life_years }} yrs</p></div>
+                <div><p class="text-gray-400 text-xs">Salvage Value</p><p class="font-medium">{{ asset.salvage_value ?? '0.00' }}</p></div>
+                <div><p class="text-gray-400 text-xs">Annual Depreciation</p><p class="font-medium">{{ asset.annual_depreciation ?? '—' }}</p></div>
+                <div><p class="text-gray-400 text-xs">Accumulated Depreciation</p><p class="font-medium">{{ asset.accumulated_depreciation ?? '—' }}</p></div>
+                <div><p class="text-gray-400 text-xs">Book Value</p><p class="font-semibold text-gray-900">{{ asset.book_value ?? '—' }}</p></div>
+            </div>
+            <p v-else class="text-sm text-gray-400 italic">Useful life not set for this asset — depreciation cannot be calculated. Book value defaults to purchase cost.</p>
+        </div>
+
         <div class="grid grid-cols-3 gap-4 mb-4">
             <div class="card col-span-2">
                 <h3 class="font-semibold text-gray-900 mb-2 text-sm">Assignment History</h3>

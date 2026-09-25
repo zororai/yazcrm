@@ -13,7 +13,8 @@ class FixedAsset extends Model
 
     protected $fillable = [
         'asset_number', 'asset_category_id', 'name', 'description', 'manufacturer', 'model',
-        'serial_number', 'barcode', 'purchase_date', 'purchase_cost', 'supplier_name', 'supplier_id',
+        'serial_number', 'barcode', 'purchase_date', 'purchase_cost', 'useful_life_years', 'salvage_value',
+        'supplier_name', 'supplier_id',
         'warranty_start', 'warranty_expiry', 'condition', 'status',
         'location_id', 'department_id', 'current_custodian_id', 'created_by',
     ];
@@ -23,13 +24,54 @@ class FixedAsset extends Model
         'warranty_start'  => 'date',
         'warranty_expiry' => 'date',
         'purchase_cost'   => 'decimal:2',
+        'salvage_value'   => 'decimal:2',
+        'useful_life_years' => 'integer',
     ];
 
-    protected $appends = ['warranty_expiring'];
+    protected $appends = ['warranty_expiring', 'annual_depreciation', 'accumulated_depreciation', 'book_value'];
 
     public function getWarrantyExpiringAttribute(): bool
     {
         return $this->isWarrantyExpiring();
+    }
+
+    // Straight-line: (Purchase Cost − Salvage Value) ÷ Useful Life (years).
+    // Requires purchase_cost, purchase_date, and useful_life_years to all be set.
+    public function getAnnualDepreciationAttribute(): ?float
+    {
+        if (! $this->purchase_cost || ! $this->useful_life_years) {
+            return null;
+        }
+
+        $depreciable = (float) $this->purchase_cost - (float) ($this->salvage_value ?? 0);
+
+        return round(max($depreciable, 0) / $this->useful_life_years, 2);
+    }
+
+    public function getAccumulatedDepreciationAttribute(): ?float
+    {
+        $annual = $this->annual_depreciation;
+        if ($annual === null || ! $this->purchase_date) {
+            return null;
+        }
+
+        $yearsElapsed = min(
+            $this->purchase_date->floatDiffInYears(now()),
+            $this->useful_life_years
+        );
+
+        $depreciable = (float) $this->purchase_cost - (float) ($this->salvage_value ?? 0);
+
+        return round(min($annual * $yearsElapsed, max($depreciable, 0)), 2);
+    }
+
+    public function getBookValueAttribute(): ?float
+    {
+        if ($this->accumulated_depreciation === null) {
+            return $this->purchase_cost !== null ? (float) $this->purchase_cost : null;
+        }
+
+        return round((float) $this->purchase_cost - $this->accumulated_depreciation, 2);
     }
 
     public function category(): BelongsTo

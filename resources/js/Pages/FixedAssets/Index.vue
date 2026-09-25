@@ -22,8 +22,14 @@ watch(filters, () => {
 const showForm = ref(false);
 const form = useForm({
     asset_category_id: '', name: '', manufacturer: '', model: '', serial_number: '',
-    purchase_date: '', purchase_cost: '', supplier_name: '', warranty_expiry: '',
+    purchase_date: '', purchase_cost: '', useful_life_years: '', salvage_value: '',
+    supplier_name: '', warranty_expiry: '',
 });
+
+function money(v) {
+    if (v === null || v === undefined) return '—';
+    return Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 function submit() {
     form.post('/fixed-assets', { onSuccess: () => { showForm.value = false; form.reset(); } });
@@ -89,6 +95,7 @@ const statusColor = {
                         <th class="table-th">Category</th>
                         <th class="table-th">Custodian</th>
                         <th class="table-th">Department</th>
+                        <th class="table-th">Book Value</th>
                         <th class="table-th">Status</th>
                     </tr>
                 </thead>
@@ -102,10 +109,11 @@ const statusColor = {
                         <td class="table-td">{{ a.category?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.custodian?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.department?.name ?? '—' }}</td>
+                        <td class="table-td">{{ a.book_value !== null ? money(a.book_value) : '—' }}</td>
                         <td class="table-td"><span :class="['badge', statusColor[a.status]]">{{ a.status.replace('_', ' ') }}</span></td>
                     </tr>
                     <tr v-if="!assets.length">
-                        <td colspan="6" class="table-td text-center text-gray-400 py-8">No assets match.</td>
+                        <td colspan="7" class="table-td text-center text-gray-400 py-8">No assets match.</td>
                     </tr>
                 </tbody>
             </table>
@@ -151,6 +159,17 @@ const statusColor = {
                         <div>
                             <label class="label">Purchase Cost</label>
                             <input v-model.number="form.purchase_cost" type="number" min="0" step="0.01" class="input" />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">Useful Life (years)</label>
+                            <input v-model.number="form.useful_life_years" type="number" min="1" step="1" class="input" placeholder="e.g. 5" />
+                            <p v-if="form.errors.useful_life_years" class="mt-1 text-xs text-red-600">{{ form.errors.useful_life_years }}</p>
+                        </div>
+                        <div>
+                            <label class="label">Salvage Value</label>
+                            <input v-model.number="form.salvage_value" type="number" min="0" step="0.01" class="input" placeholder="0.00" />
                         </div>
                     </div>
                     <div>
