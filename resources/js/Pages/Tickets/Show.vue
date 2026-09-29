@@ -4,6 +4,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { ArrowLeftIcon, PencilSquareIcon, XMarkIcon, MicrophoneIcon } from '@heroicons/vue/24/outline';
+import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
 
 const props = defineProps({
     ticket:                Object,
@@ -84,11 +85,7 @@ function cancelEdit() {
     editing.value = false;
 }
 
-const provinces = [
-    'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
-    'Mashonaland East', 'Mashonaland West', 'Masvingo',
-    'Matabeleland North', 'Matabeleland South', 'Midlands',
-];
+const provinces = PROVINCES;
 
 const priorityColor = {
     low: 'bg-gray-100 text-gray-600', medium: 'bg-blue-100 text-blue-800',
@@ -427,14 +424,17 @@ function label(val) {
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="label">Province</label>
-                            <select v-model="editForm.province" class="input">
+                            <select v-model="editForm.province" @change="editForm.district = ''" class="input">
                                 <option value="">— select —</option>
                                 <option v-for="p in provinces" :key="p" :value="p">{{ p }}</option>
                             </select>
                         </div>
                         <div>
                             <label class="label">District</label>
-                            <input v-model="editForm.district" class="input" />
+                            <select v-model="editForm.district" class="input" :disabled="!editForm.province">
+                                <option value="">{{ editForm.province ? '— select —' : 'Select a province first' }}</option>
+                                <option v-for="d in PROVINCE_DISTRICTS[editForm.province] ?? []" :key="d" :value="d">{{ d }}</option>
+                            </select>
                         </div>
                         <div>
                             <label class="label">Location</label>

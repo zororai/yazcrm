@@ -7,6 +7,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon, NoSymbolIcon, PencilIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
+import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
 
 const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
@@ -568,11 +569,7 @@ function setReferralDate(ticket, date) {
     );
 }
 
-const provinces = [
-    'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
-    'Mashonaland East', 'Mashonaland West', 'Masvingo',
-    'Matabeleland North', 'Matabeleland South', 'Midlands',
-];
+const provinces = PROVINCES;
 
 const priorityColor = {
     low:    'bg-gray-100 text-gray-600',
@@ -1062,14 +1059,17 @@ const statusColor = {
                         <div class="grid grid-cols-3 gap-3">
                             <div>
                                 <label class="label">Province</label>
-                                <select v-model="addForm.province" class="input">
+                                <select v-model="addForm.province" @change="addForm.district = ''" class="input">
                                     <option value="">— select —</option>
                                     <option v-for="p in provinces" :key="p" :value="p">{{ p }}</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="label">District</label>
-                                <input v-model="addForm.district" class="input" />
+                                <select v-model="addForm.district" class="input" :disabled="!addForm.province">
+                                    <option value="">{{ addForm.province ? '— select —' : 'Select a province first' }}</option>
+                                    <option v-for="d in PROVINCE_DISTRICTS[addForm.province] ?? []" :key="d" :value="d">{{ d }}</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="label">Location</label>

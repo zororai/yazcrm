@@ -3,6 +3,7 @@ import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { PhoneIcon, ClockIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
+import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
 
 const page = usePage();
 const distressDomains          = computed(() => page.props.distressDomains ?? []);
@@ -248,11 +249,7 @@ function fmt(s) {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
-const provinces = [
-    'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
-    'Mashonaland East', 'Mashonaland West', 'Masvingo',
-    'Matabeleland North', 'Matabeleland South', 'Midlands',
-];
+const provinces = PROVINCES;
 </script>
 
 <template>
@@ -449,14 +446,17 @@ const provinces = [
                     <div class="grid grid-cols-3 gap-3">
                         <div>
                             <label class="label">Province</label>
-                            <select v-model="form.province" class="input">
+                            <select v-model="form.province" @change="form.district = ''" class="input">
                                 <option value="">— select —</option>
                                 <option v-for="p in provinces" :key="p" :value="p">{{ p }}</option>
                             </select>
                         </div>
                         <div>
                             <label class="label">District</label>
-                            <input v-model="form.district" class="input" />
+                            <select v-model="form.district" class="input" :disabled="!form.province">
+                                <option value="">{{ form.province ? '— select —' : 'Select a province first' }}</option>
+                                <option v-for="d in PROVINCE_DISTRICTS[form.province] ?? []" :key="d" :value="d">{{ d }}</option>
+                            </select>
                         </div>
                         <div>
                             <label class="label">Location</label>
