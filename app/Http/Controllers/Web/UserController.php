@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -113,5 +114,49 @@ class UserController extends Controller
         $user->update(['password' => Hash::make($request->password), 'must_change_password' => true]);
 
         return back()->with('success', 'Password reset.');
+    }
+
+    // Lets an admin log in as another user's account (mainly for helping
+    // agents troubleshoot) without knowing their password. The admin's own
+    // id is stashed in the session so "Return to my account" can restore it.
+    public function impersonate(Request $request, User $user): RedirectResponse
+    {
+        $admin = $request->user();
+
+        if ($request->session()->has('impersonator_id')) {
+            return back()->with('error', 'Already impersonating a user — return to your account first.');
+        }
+
+        if ($user->id === $admin->id) {
+            return back()->with('error', 'You are already logged in as this account.');
+        }
+
+        if ($user->role === 'admin') {
+            return back()->with('error', 'Cannot log in as another administrator account.');
+        }
+
+        if (!$user->is_active) {
+            return back()->with('error', 'Cannot log in as a disabled account.');
+        }
+
+        $request->session()->put('impersonator_id', $admin->id);
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect()->route('dashboard')->with('success', "Now logged in as {$user->name}.");
+    }
+
+    public function stopImpersonating(Request $request): RedirectResponse
+    {
+        $adminId = $request->session()->pull('impersonator_id');
+
+        if (!$adminId) {
+            return redirect()->route('dashboard');
+        }
+
+        Auth::loginUsingId($adminId);
+        $request->session()->regenerate();
+
+        return redirect()->route('users.index')->with('success', 'Returned to your account.');
     }
 }

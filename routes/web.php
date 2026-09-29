@@ -25,6 +25,9 @@ Route::middleware('auth')->group(function () {
     Route::get('change-password',  [Web\AuthController::class, 'showChangePassword'])->name('password.change');
     Route::post('change-password', [Web\AuthController::class, 'changePassword'])->name('password.change.store');
 
+    // Reachable while logged in as the impersonated (non-admin) account.
+    Route::post('impersonate/stop', [Web\UserController::class, 'stopImpersonating'])->name('impersonate.stop');
+
     Route::get('profile',           [Web\ProfileController::class, 'show'])->name('profile.show');
     Route::post('profile',          [Web\ProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/dismiss-prompt', [Web\ProfileController::class, 'dismissPrompt'])->name('profile.dismiss-prompt');
@@ -392,6 +395,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('users/{user}', [Web\UserController::class, 'destroy'])->name('users.destroy');
         Route::post('users/{user}/toggle-active', [Web\UserController::class, 'toggleActive'])->name('users.toggle-active');
         Route::post('users/{user}/reset-password', [Web\UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/{user}/impersonate', [Web\UserController::class, 'impersonate'])->name('users.impersonate');
 
         Route::post('extensions/sync', [Web\ExtensionController::class, 'sync'])->name('extensions.sync');
         Route::put('extensions/{extension}', [Web\ExtensionController::class, 'update'])->name('extensions.update');

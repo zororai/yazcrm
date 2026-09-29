@@ -413,6 +413,17 @@ function logout() {
 
         <!-- Main content -->
         <div class="flex-1 flex flex-col min-w-0">
+            <!-- Impersonation banner -->
+            <div v-if="page.props.impersonator" class="bg-amber-500 text-white text-sm px-4 py-2 flex items-center justify-between gap-3 flex-shrink-0">
+                <span>Logged in as <strong>{{ page.props.auth.user?.name }}</strong> (impersonated by {{ page.props.impersonator.name }})</span>
+                <button
+                    @click="router.post('/impersonate/stop')"
+                    class="bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1 text-xs font-semibold"
+                >
+                    Return to my account
+                </button>
+            </div>
+
             <!-- Top bar -->
             <header :class="['h-16 border-b flex items-center gap-4 px-4 lg:px-6 flex-shrink-0', isLight ? 'bg-white border-gray-200' : 'bg-[#0f1117] border-gray-800']">
                 <button

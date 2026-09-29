@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\DistressDomain;
 use App\Models\LookupItem;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -22,6 +23,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user()?->load('extension')?->loadCount('subordinates'),
             ],
+            'impersonator' => fn () => $request->session()->has('impersonator_id')
+                ? User::find($request->session()->get('impersonator_id'))?->only(['id', 'name'])
+                : null,
             'unreadNotificationsCount' => fn () => $request->user()?->unreadNotifications()->count() ?? 0,
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

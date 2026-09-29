@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon, PencilIcon, TrashIcon, LockClosedIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, LockClosedIcon, ShieldCheckIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ users: Array, roles: Array });
 
@@ -130,6 +130,11 @@ function destroy(user) {
     router.delete(`/users/${user.id}`);
 }
 
+function loginAs(user) {
+    if (!confirm(`Log in as ${user.name}? You'll be viewing the system as this user until you return to your own account.`)) return;
+    router.post(`/users/${user.id}/impersonate`);
+}
+
 const roleColor = {
     admin:      'bg-purple-100 text-purple-800',
     supervisor: 'bg-blue-100 text-blue-800',
@@ -156,6 +161,7 @@ const roleColor = {
                         <th class="table-th">Extension</th>
                         <th class="table-th">Last Login</th>
                         <th class="table-th">Status</th>
+                        <th class="table-th">Account</th>
                         <th class="table-th w-32" />
                     </tr>
                 </thead>
@@ -175,6 +181,18 @@ const roleColor = {
                             >
                                 {{ u.is_active ? 'Active' : 'Inactive' }}
                             </button>
+                        </td>
+                        <td class="table-td">
+                            <button
+                                v-if="u.role !== 'admin'"
+                                @click="loginAs(u)"
+                                :disabled="!u.is_active"
+                                class="btn-secondary btn-sm inline-flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title="Log in as this user"
+                            >
+                                <ArrowRightOnRectangleIcon class="h-3.5 w-3.5" /> Login As
+                            </button>
+                            <span v-else class="text-xs text-gray-400">—</span>
                         </td>
                         <td class="table-td">
                             <div class="flex gap-1">
