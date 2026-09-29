@@ -125,10 +125,14 @@ class PublicDashboardController extends Controller
             ->whereNotNull('services_requested')->where('services_requested', '!=', '')
             ->distinct()->orderBy('services_requested')->pluck('services_requested');
 
-        // Always build unfiltered lists of provinces/districts already in the system, for the dropdowns
-        $allProvinces = DB::table('tickets')->whereNull('deleted_at')
-            ->whereNotNull('province')->where('province', '!=', '')
-            ->distinct()->orderBy('province')->pluck('province');
+        // Zimbabwe's 10 official provinces — the `province` column has accumulated
+        // free-text junk/typos over time (e.g. "MATEBELELAND", "bindura", "N/A"),
+        // so the dropdown uses this fixed list rather than raw distinct values.
+        $allProvinces = collect([
+            'Bulawayo', 'Harare', 'Manicaland', 'Mashonaland Central',
+            'Mashonaland East', 'Mashonaland West', 'Masvingo',
+            'Matabeleland North', 'Matabeleland South', 'Midlands',
+        ]);
 
         $allDistricts = DB::table('tickets')->whereNull('deleted_at')
             ->whereNotNull('district')->where('district', '!=', '')

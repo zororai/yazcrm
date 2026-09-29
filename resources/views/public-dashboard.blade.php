@@ -410,7 +410,7 @@ tr:hover td{background:#f8fafc}
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Province</label>
-      <select id="province-filter"
+      <select id="province-filter" onchange="onProvinceFilterChange()"
         style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:160px">
         <option value="">All Provinces</option>
         @foreach($allProvinces as $prov)
@@ -2696,6 +2696,50 @@ function applyDistrictFilter(value) {
   else url.searchParams.delete('district');
   window.location.href = url.toString();
 }
+
+// ── Province → District dependency ──────────────────────────────────────────
+const PROVINCE_DISTRICTS = {
+  'Bulawayo': ['Bulawayo'],
+  'Harare': ['Harare Urban', 'Harare Rural', 'Chitungwiza', 'Epworth'],
+  'Manicaland': ['Buhera', 'Chimanimani', 'Chipinge', 'Makoni', 'Mutare', 'Mutasa', 'Nyanga'],
+  'Mashonaland Central': ['Bindura', 'Guruve', 'Mazowe', 'Mbire', 'Mount Darwin', 'Muzarabani', 'Rushinga', 'Shamva'],
+  'Mashonaland East': ['Chikomba', 'Goromonzi', 'Hwedza', 'Marondera', 'Mudzi', 'Murewa', 'Mutoko', 'Seke', 'Uzumba-Maramba-Pfungwe'],
+  'Mashonaland West': ['Chegutu', 'Hurungwe', 'Kariba', 'Makonde', 'Mhondoro-Ngezi', 'Sanyati', 'Zvimba'],
+  'Masvingo': ['Bikita', 'Chiredzi', 'Chivi', 'Gutu', 'Masvingo', 'Mwenezi', 'Zaka'],
+  'Matabeleland North': ['Binga', 'Bubi', 'Hwange', 'Lupane', 'Nkayi', 'Tsholotsho', 'Umguza'],
+  'Matabeleland South': ['Beitbridge', 'Bulilima', 'Gwanda', 'Insiza', 'Mangwe', 'Matobo', 'Umzingwane'],
+  'Midlands': ['Chirumanzu', 'Gokwe North', 'Gokwe South', 'Gweru', 'Kwekwe', 'Mberengwa', 'Shurugwi', 'Zvishavane'],
+};
+
+function populateDistrictOptions(selectedDistrict) {
+  const provinceSel  = document.getElementById('province-filter');
+  const districtSel  = document.getElementById('district-filter');
+  const province     = provinceSel.value;
+  const districts     = PROVINCE_DISTRICTS[province] || null;
+
+  districtSel.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = province ? 'All Districts in ' + province : 'All Districts';
+  districtSel.appendChild(allOpt);
+
+  const list = districts || @json($allDistricts);
+  list.forEach(function (d) {
+    const opt = document.createElement('option');
+    opt.value = d;
+    opt.textContent = d;
+    if (d === selectedDistrict) opt.selected = true;
+    districtSel.appendChild(opt);
+  });
+}
+
+function onProvinceFilterChange() {
+  populateDistrictOptions('');
+}
+
+// Initialise district options on page load, keeping the current district
+// selected if it belongs to the currently-selected province.
+populateDistrictOptions(@json($districtFilter ?? ''));
 
 // ── Background data refresh (no page reload) ──────────────────────────────────
 function refreshData() {
