@@ -17,8 +17,12 @@ class RecordingController extends Controller
             ->orderByDesc('created_at');
 
         // Agents only see recordings of calls to their own assigned extension.
-        // Admins, directors, and helpline managers see everything.
-        if (! in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true)) {
+        // Admins, directors, helpline managers, and anyone granted the
+        // "Records Management" nav permission see everything.
+        $canManageAllRecordings = in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true)
+            || in_array('records_management', $request->user()->nav_permissions ?? [], true);
+
+        if (! $canManageAllRecordings) {
             $extNumber = \App\Models\Extension::where('user_id', $request->user()->id)->value('extension_number');
             if ($extNumber) {
                 $query->whereHas('call', fn ($q) => $q->where('extension_number', $extNumber));

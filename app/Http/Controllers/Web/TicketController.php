@@ -20,12 +20,19 @@ use Inertia\Response;
 
 class TicketController extends Controller
 {
+    // Admins, and anyone explicitly granted the "Ticket Management" nav
+    // permission, can see/manage tickets belonging to every agent.
+    private function canManageAllTickets(User $user): bool
+    {
+        return $user->role === 'admin' || in_array('ticket_management', $user->nav_permissions ?? [], true);
+    }
+
     public function index(Request $request): Response
     {
         $query = Ticket::with(['client', 'agent', 'call.recording:id,call_id', 'successStory:id,ticket_id,status'])->latest();
 
         // Agents only see their own tickets
-        if ($request->user()->role !== 'admin') {
+        if (! $this->canManageAllTickets($request->user())) {
             $query->where('agent_id', $request->user()->id);
         }
 
@@ -98,7 +105,7 @@ class TicketController extends Controller
     {
         $query = Ticket::latest();
 
-        if ($request->user()->role !== 'admin') {
+        if (! $this->canManageAllTickets($request->user())) {
             $query->where('agent_id', $request->user()->id);
         }
 
@@ -201,7 +208,7 @@ class TicketController extends Controller
 
     public function show(Request $request, Ticket $ticket): Response
     {
-        if ($request->user()->role !== 'admin' && $ticket->agent_id !== $request->user()->id) {
+        if (! $this->canManageAllTickets($request->user()) && $ticket->agent_id !== $request->user()->id) {
             abort(403);
         }
 
@@ -429,7 +436,7 @@ class TicketController extends Controller
 
     public function storeNote(Request $request, Ticket $ticket): RedirectResponse
     {
-        if ($request->user()->role !== 'admin' && $ticket->agent_id !== $request->user()->id) {
+        if (! $this->canManageAllTickets($request->user()) && $ticket->agent_id !== $request->user()->id) {
             abort(403);
         }
 

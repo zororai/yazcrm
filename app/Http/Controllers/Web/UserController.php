@@ -15,7 +15,7 @@ use Inertia\Response;
 class UserController extends Controller
 {
     private array $validPerms = [
-        'dashboard','helpline_dashboard','dialer','calls','recordings','callbacks','tickets',
+        'dashboard','helpline_dashboard','dialer','calls','recordings','records_management','callbacks','tickets','ticket_management',
         'urgent','directory','appraisals','appraisal_reviews','appraisal_archive','activity_reports','work_management','stores','stock_transfers','stocktakes','item_categories','fixed_assets','procurement','data_collection',
         'extensions','analytics','targets','by_project',
         'domains','bot_contacts','users','yeastar','yalep',
