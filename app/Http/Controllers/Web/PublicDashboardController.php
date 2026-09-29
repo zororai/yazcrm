@@ -22,9 +22,11 @@ class PublicDashboardController extends Controller
         $month        = $request->input('month');
         $dateFrom     = trim($request->input('date_from', ''));
         $dateTo       = trim($request->input('date_to', ''));
-        $genderFilter = trim($request->input('gender', ''));
-        $ageFilter    = trim($request->input('age', ''));
-        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo, $genderFilter, $ageFilter);
+        $genderFilter   = trim($request->input('gender', ''));
+        $ageFilter      = trim($request->input('age', ''));
+        $provinceFilter = trim($request->input('province', ''));
+        $districtFilter = trim($request->input('district', ''));
+        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo, $genderFilter, $ageFilter, $provinceFilter, $districtFilter);
 
         return response()
             ->view('public-dashboard', $d)
@@ -41,9 +43,11 @@ class PublicDashboardController extends Controller
         $month        = $request->input('month');
         $dateFrom     = trim($request->input('date_from', ''));
         $dateTo       = trim($request->input('date_to', ''));
-        $genderFilter = trim($request->input('gender', ''));
-        $ageFilter    = trim($request->input('age', ''));
-        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo, $genderFilter, $ageFilter);
+        $genderFilter   = trim($request->input('gender', ''));
+        $ageFilter      = trim($request->input('age', ''));
+        $provinceFilter = trim($request->input('province', ''));
+        $districtFilter = trim($request->input('district', ''));
+        $d = $this->buildData($service, $year, $month, $project, $dateFrom, $dateTo, $genderFilter, $ageFilter, $provinceFilter, $districtFilter);
 
         return response()->json([
             'periodData'          => $d['periodData'],
@@ -73,6 +77,10 @@ class PublicDashboardController extends Controller
             'dateTo'             => $d['dateTo'],
             'genderFilter'       => $d['genderFilter'],
             'ageFilter'          => $d['ageFilter'],
+            'provinceFilter'     => $d['provinceFilter'],
+            'allProvinces'       => $d['allProvinces'],
+            'districtFilter'     => $d['districtFilter'],
+            'allDistricts'       => $d['allDistricts'],
             'serviceUptake'      => $d['serviceUptake'],
             'availableYears'     => $d['availableYears'],
             'byPurpose'          => $d['byPurpose']->map(fn($r) => ['purpose_of_call' => $r->purpose_of_call, 'cnt' => $r->cnt]),
@@ -92,7 +100,7 @@ class PublicDashboardController extends Controller
         ]);
     }
 
-    private function buildData(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = ''): array
+    private function buildData(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = '', string $provinceFilter = '', string $districtFilter = ''): array
     {
         // The full breakdown below runs ~60 queries against a remote DB host,
         // repeated on every filter change / auto-refresh of the live dashboard.
@@ -100,22 +108,31 @@ class PublicDashboardController extends Controller
         // refreshes and repeated filter picks don't re-pay that cost each time.
         $cacheKey = 'public_dashboard:' . md5(implode('|', [
             $serviceFilter, $selectedYear, $selectedMonth, $projectFilter,
-            $dateFrom, $dateTo, $genderFilter, $ageFilter,
+            $dateFrom, $dateTo, $genderFilter, $ageFilter, $provinceFilter, $districtFilter,
         ]));
 
         return Cache::remember($cacheKey, 30, fn () => $this->buildDataUncached(
             $serviceFilter, $selectedYear, $selectedMonth, $projectFilter,
-            $dateFrom, $dateTo, $genderFilter, $ageFilter
+            $dateFrom, $dateTo, $genderFilter, $ageFilter, $provinceFilter, $districtFilter
         ));
     }
 
-    private function buildDataUncached(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = ''): array
+    private function buildDataUncached(string $serviceFilter = '', ?string $selectedYear = null, ?string $selectedMonth = null, string $projectFilter = '', string $dateFrom = '', string $dateTo = '', string $genderFilter = '', string $ageFilter = '', string $provinceFilter = '', string $districtFilter = ''): array
     {
         // ── All-time scalars ─────────────────────────────────────────────────
         // Always build unfiltered list of services for the dropdown
         $allServices = DB::table('tickets')->whereNull('deleted_at')
             ->whereNotNull('services_requested')->where('services_requested', '!=', '')
             ->distinct()->orderBy('services_requested')->pluck('services_requested');
+
+        // Always build unfiltered lists of provinces/districts already in the system, for the dropdowns
+        $allProvinces = DB::table('tickets')->whereNull('deleted_at')
+            ->whereNotNull('province')->where('province', '!=', '')
+            ->distinct()->orderBy('province')->pluck('province');
+
+        $allDistricts = DB::table('tickets')->whereNull('deleted_at')
+            ->whereNotNull('district')->where('district', '!=', '')
+            ->distinct()->orderBy('district')->pluck('district');
 
         // Always build unfiltered list of projects for the dropdown
         $allProjects = DB::table('tickets')->whereNull('deleted_at')
@@ -139,6 +156,8 @@ class PublicDashboardController extends Controller
             ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
             ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
             ->when($ageFilter,     $applyAge)
+            ->when($provinceFilter, fn ($q) => $q->where('province', $provinceFilter))
+            ->when($districtFilter, fn ($q) => $q->where('district', $districtFilter))
             ->selectRaw('
             COUNT(*) as total,
             SUM(call_validity = "valid")          as valid_total,
@@ -170,7 +189,9 @@ class PublicDashboardController extends Controller
             ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
             ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
             ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
-            ->when($ageFilter,     $applyAge);
+            ->when($ageFilter,     $applyAge)
+            ->when($provinceFilter, fn ($q) => $q->where('province', $provinceFilter))
+            ->when($districtFilter, fn ($q) => $q->where('district', $districtFilter));
 
         $byStatus   = (clone $base)->select('status', DB::raw('count(*) as cnt'))->groupBy('status')->pluck('cnt', 'status');
         $byProvince = (clone $base)->whereNotNull('province')->where('province', '!=', '')->select('province', DB::raw('count(*) as cnt'))->groupBy('province')->orderByDesc('cnt')->get();
@@ -222,6 +243,8 @@ class PublicDashboardController extends Controller
             ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
             ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
             ->when($ageFilter,     $applyAge)
+            ->when($provinceFilter, fn ($q) => $q->where('province', $provinceFilter))
+            ->when($districtFilter, fn ($q) => $q->where('district', $districtFilter))
             ->selectRaw("YEAR(created_at) as yr")
             ->groupBy('yr')->orderByDesc('yr')->pluck('yr')->map(fn ($y) => (int) $y)->values();
 
@@ -268,7 +291,9 @@ class PublicDashboardController extends Controller
                 ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
                 ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
                 ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
-                ->when($ageFilter,     $applyAge);
+                ->when($ageFilter,     $applyAge)
+            ->when($provinceFilter, fn ($q) => $q->where('province', $provinceFilter))
+            ->when($districtFilter, fn ($q) => $q->where('district', $districtFilter));
 
             $ps = (clone $pb)->selectRaw('
                 COUNT(*) as total,
@@ -377,13 +402,15 @@ class PublicDashboardController extends Controller
                 'by_agent'           => DB::table('users')
                     ->where('users.is_active', true)
                     ->leftJoin('extensions', 'extensions.user_id', '=', 'users.id')
-                    ->leftJoin('tickets', function ($join) use ($start, $end, $serviceFilter, $projectFilter, $genderFilter, $ageFilter) {
+                    ->leftJoin('tickets', function ($join) use ($start, $end, $serviceFilter, $projectFilter, $genderFilter, $ageFilter, $provinceFilter, $districtFilter) {
                         $join->on('tickets.agent_id', '=', 'users.id')
                              ->whereNull('tickets.deleted_at')
                              ->whereBetween('tickets.created_at', [$start, $end]);
                         if ($serviceFilter) $join->where('tickets.services_requested', $serviceFilter);
                         if ($projectFilter) $join->where('tickets.project', $projectFilter);
                         if ($genderFilter)  $join->where('tickets.caller_gender', $genderFilter);
+                        if ($provinceFilter) $join->where('tickets.province', $provinceFilter);
+                        if ($districtFilter) $join->where('tickets.district', $districtFilter);
                         if ($ageFilter) {
                             match($ageFilter) {
                                 'u18'   => $join->whereBetween('tickets.caller_age', [1, 17]),
@@ -432,7 +459,9 @@ class PublicDashboardController extends Controller
                 ->when($serviceFilter, fn ($q) => $q->where('services_requested', $serviceFilter))
                 ->when($projectFilter, fn ($q) => $q->where('project', $projectFilter))
                 ->when($genderFilter,  fn ($q) => $q->where('caller_gender', $genderFilter))
-                ->when($ageFilter,     $applyAge);
+                ->when($ageFilter,     $applyAge)
+            ->when($provinceFilter, fn ($q) => $q->where('province', $provinceFilter))
+            ->when($districtFilter, fn ($q) => $q->where('district', $districtFilter));
             $prevPeriodData[$pKey] = [
                 'total'      => (clone $pb)->count(),
                 'by_purpose' => (clone $pb)->whereNotNull('purpose_of_call')->where('purpose_of_call', '!=', '')
@@ -593,6 +622,7 @@ class PublicDashboardController extends Controller
             'projectFilter', 'allProjects',
             'dateFrom', 'dateTo',
             'genderFilter', 'ageFilter',
+            'provinceFilter', 'allProvinces', 'districtFilter', 'allDistricts',
             'availableYears', 'yearVal', 'selectedMonth', 'monthStart'
         );
     }

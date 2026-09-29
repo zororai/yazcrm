@@ -256,6 +256,9 @@ Route::middleware('auth')->group(function () {
     Route::get('fixed-assets/revaluations',              [Web\FixedAssetController::class, 'revaluationsIndex'])->name('fixed-assets.revaluations.index');
     Route::get('fixed-assets/revaluations/export/excel',  [Web\FixedAssetController::class, 'exportRevaluationsExcel'])->name('fixed-assets.revaluations.export.excel');
     Route::get('fixed-assets/revaluations/export/pdf',    [Web\FixedAssetController::class, 'exportRevaluationsPdf'])->name('fixed-assets.revaluations.export.pdf');
+    Route::get('fixed-assets/depreciation-report',             [Web\FixedAssetController::class, 'depreciationReport'])->name('fixed-assets.depreciation-report');
+    Route::get('fixed-assets/depreciation-report/export/excel', [Web\FixedAssetController::class, 'exportDepreciationExcel'])->name('fixed-assets.depreciation-report.export.excel');
+    Route::get('fixed-assets/depreciation-report/export/pdf',   [Web\FixedAssetController::class, 'exportDepreciationPdf'])->name('fixed-assets.depreciation-report.export.pdf');
     Route::get('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'show'])->name('fixed-assets.show');
     Route::put('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'update'])->name('fixed-assets.update');
     Route::post('fixed-assets/{fixedAsset}/assign',   [Web\FixedAssetController::class, 'assign'])->name('fixed-assets.assign');

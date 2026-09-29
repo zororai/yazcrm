@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue';
 import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon, ArrowDownTrayIcon, ClockIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, ArrowDownTrayIcon, ClockIcon, ChartBarIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ assets: Array, categories: Array, isManager: Boolean });
 
@@ -72,6 +72,9 @@ const statusColor = {
             <div class="flex gap-2">
                 <Link href="/fixed-assets/revaluations" class="btn-secondary btn-sm inline-flex items-center gap-1">
                     <ClockIcon class="h-4 w-4" /> Revaluations
+                </Link>
+                <Link href="/fixed-assets/depreciation-report" class="btn-secondary btn-sm inline-flex items-center gap-1">
+                    <ChartBarIcon class="h-4 w-4" /> Depreciation Report
                 </Link>
                 <a :href="exportUrl('excel')" class="btn-secondary btn-sm inline-flex items-center gap-1">
                     <ArrowDownTrayIcon class="h-4 w-4" /> Excel

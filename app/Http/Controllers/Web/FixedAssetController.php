@@ -359,4 +359,56 @@ class FixedAssetController extends Controller
 
         return $pdf->download('asset-revaluations-' . now()->format('Y-m-d') . '.pdf');
     }
+
+    public function depreciationReport(Request $request): Response
+    {
+        return Inertia::render('FixedAssets/DepreciationReport', [
+            'assets'    => $this->filteredAssetsQuery($request)->get(),
+            'isManager' => $this->isManager($request->user()),
+        ]);
+    }
+
+    public function exportDepreciationExcel(Request $request)
+    {
+        $assets = $this->filteredAssetsQuery($request)->get();
+
+        $headers = ['Asset Name', 'Salvage Value', 'Annual Depreciation', 'Accumulated Depreciation', 'Book Value'];
+
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $headers);
+
+        foreach ($assets as $a) {
+            fputcsv($handle, [
+                $a->name,
+                $a->salvage_value ?? '',
+                $a->annual_depreciation ?? '',
+                $a->accumulated_depreciation ?? '',
+                $a->book_value ?? '',
+            ]);
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        $filename = 'depreciation-report-' . now()->format('Y-m-d') . '.csv';
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Cache-Control'       => 'no-store',
+        ]);
+    }
+
+    public function exportDepreciationPdf(Request $request)
+    {
+        $assets = $this->filteredAssetsQuery($request)->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.depreciation-report-pdf', [
+            'assets'      => $assets,
+            'generatedAt' => now(),
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('depreciation-report-' . now()->format('Y-m-d') . '.pdf');
+    }
 }

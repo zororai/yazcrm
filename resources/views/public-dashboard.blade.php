@@ -409,6 +409,34 @@ tr:hover td{background:#f8fafc}
         style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $genderFilter ? '' : 'display:none' }}" id="gender-filter-clear">✕ Clear</a>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Province</label>
+      <select id="province-filter"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:160px">
+        <option value="">All Provinces</option>
+        @foreach($allProvinces as $prov)
+          <option value="{{ $prov }}" {{ $provinceFilter === $prov ? 'selected' : '' }}>{{ $prov }}</option>
+        @endforeach
+      </select>
+      <button onclick="applyProvinceFilter(document.getElementById('province-filter').value)"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply</button>
+      <a href="#" onclick="applyProvinceFilter('');document.getElementById('province-filter').value='';return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $provinceFilter ? '' : 'display:none' }}" id="province-filter-clear">✕ Clear</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">District</label>
+      <select id="district-filter"
+        style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:160px">
+        <option value="">All Districts</option>
+        @foreach($allDistricts as $dist)
+          <option value="{{ $dist }}" {{ $districtFilter === $dist ? 'selected' : '' }}>{{ $dist }}</option>
+        @endforeach
+      </select>
+      <button onclick="applyDistrictFilter(document.getElementById('district-filter').value)"
+        style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:10px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap">Apply</button>
+      <a href="#" onclick="applyDistrictFilter('');document.getElementById('district-filter').value='';return false;"
+        style="font-size:10px;color:#ef4444;text-decoration:none;font-weight:600;white-space:nowrap;{{ $districtFilter ? '' : 'display:none' }}" id="district-filter-clear">✕ Clear</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
       <label style="font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">Age Group</label>
       <select id="age-filter"
         style="font-size:11px;border:1px solid #e2e8f0;border-radius:10px;padding:5px 10px;background:#fff;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;max-width:130px">
@@ -2650,6 +2678,22 @@ function applyAgeFilter(value) {
   const url = new URL(window.location.href);
   if (value) url.searchParams.set('age', value);
   else url.searchParams.delete('age');
+  window.location.href = url.toString();
+}
+
+// ── Province filter ───────────────────────────────────────────────────────────
+function applyProvinceFilter(value) {
+  const url = new URL(window.location.href);
+  if (value) url.searchParams.set('province', value);
+  else url.searchParams.delete('province');
+  window.location.href = url.toString();
+}
+
+// ── District filter ───────────────────────────────────────────────────────────
+function applyDistrictFilter(value) {
+  const url = new URL(window.location.href);
+  if (value) url.searchParams.set('district', value);
+  else url.searchParams.delete('district');
   window.location.href = url.toString();
 }
 
