@@ -7,6 +7,7 @@ use App\Models\FixedAssetActivityLog;
 use App\Models\FixedAssetAssignment;
 use App\Models\FixedAssetInspection;
 use App\Models\FixedAssetMaintenance;
+use App\Models\FixedAssetRevaluation;
 use App\Models\User;
 use App\Support\Assets\AssetStatus;
 use Illuminate\Support\Facades\DB;
@@ -257,6 +258,39 @@ class FixedAssetService
             $this->log($asset, $actor, 'status_changed', oldStatus: $oldStatus, newStatus: $status, reason: $reason);
 
             return $asset;
+        });
+    }
+
+    // §16 Asset Revaluation — records a new valuation and resets the
+    // depreciation base (value + useful life) from the revaluation date,
+    // while keeping a full history of prior revaluations.
+    public function revalueAsset(FixedAsset $asset, User $actor, array $data): FixedAssetRevaluation
+    {
+        return DB::transaction(function () use ($asset, $actor, $data) {
+            $previousValue = $asset->current_value ?? $asset->purchase_cost;
+
+            $revaluation = FixedAssetRevaluation::create([
+                'fixed_asset_id'         => $asset->id,
+                'revalued_by'            => $actor->id,
+                'revaluation_date'       => $data['revaluation_date'],
+                'previous_value'         => $previousValue,
+                'revalued_amount'        => $data['revalued_amount'],
+                'new_useful_life_years'  => $data['new_useful_life_years'],
+                'new_salvage_value'      => $data['new_salvage_value'] ?? null,
+                'notes'                  => $data['notes'] ?? null,
+            ]);
+
+            $asset->update([
+                'current_value'          => $data['revalued_amount'],
+                'depreciation_base_date' => $data['revaluation_date'],
+                'last_revalued_at'       => $data['revaluation_date'],
+                'useful_life_years'      => $data['new_useful_life_years'],
+                'salvage_value'          => $data['new_salvage_value'] ?? $asset->salvage_value,
+            ]);
+
+            $this->log($asset, $actor, 'revalued', reason: "Revalued to {$data['revalued_amount']} on {$data['revaluation_date']}");
+
+            return $revaluation;
         });
     }
 

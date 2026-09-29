@@ -2,15 +2,30 @@
 import { onMounted, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { UserPlusIcon, ArrowUturnLeftIcon, TruckIcon, TrashIcon, WrenchScrewdriverIcon, ClipboardDocumentCheckIcon } from '@heroicons/vue/24/outline';
+import { UserPlusIcon, ArrowUturnLeftIcon, TruckIcon, TrashIcon, WrenchScrewdriverIcon, ClipboardDocumentCheckIcon, CurrencyDollarIcon } from '@heroicons/vue/24/outline';
 import QRCode from 'qrcode';
 
 const props = defineProps({
     asset: Object, assignments: Array, activityLogs: Array,
     maintenanceRecords: { type: Array, default: () => [] },
     inspections: { type: Array, default: () => [] },
+    revaluations: { type: Array, default: () => [] },
     users: Array, departments: Array, locations: Array, isManager: Boolean,
 });
+
+const showRevalue = ref(false);
+const revalueForm = useForm({
+    revaluation_date: new Date().toISOString().slice(0, 10),
+    revalued_amount: props.asset.book_value ?? '',
+    new_useful_life_years: props.asset.useful_life_years ?? '',
+    new_salvage_value: props.asset.salvage_value ?? '',
+    notes: '',
+});
+function submitRevalue() {
+    revalueForm.post(`/fixed-assets/${props.asset.id}/revalue`, {
+        onSuccess: () => { showRevalue.value = false; revalueForm.reset(); },
+    });
+}
 
 const qrDataUrl = ref('');
 onMounted(async () => {
@@ -100,6 +115,7 @@ const statusColor = {
                 <button v-if="!['disposed','retired'].includes(asset.status)" @click="showTransfer = true" class="btn-secondary btn-sm"><TruckIcon class="h-4 w-4" /> Transfer</button>
                 <button v-if="!['assigned','disposed','retired'].includes(asset.status)" @click="showMaintenance = true" class="btn-secondary btn-sm"><WrenchScrewdriverIcon class="h-4 w-4" /> Schedule Maintenance</button>
                 <button @click="showInspection = true" class="btn-secondary btn-sm"><ClipboardDocumentCheckIcon class="h-4 w-4" /> Record Inspection</button>
+                <button @click="showRevalue = true" class="btn-secondary btn-sm"><CurrencyDollarIcon class="h-4 w-4" /> Record Revaluation</button>
                 <button v-if="asset.status !== 'disposed'" @click="dispose" class="btn-danger btn-sm"><TrashIcon class="h-4 w-4" /> Dispose</button>
             </div>
         </template>
@@ -136,6 +152,32 @@ const statusColor = {
                 <div><p class="text-gray-400 text-xs">Book Value</p><p class="font-semibold text-gray-900">{{ asset.book_value ?? '—' }}</p></div>
             </div>
             <p v-else class="text-sm text-gray-400 italic">Useful life not set for this asset — depreciation cannot be calculated. Book value defaults to purchase cost.</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold text-gray-900 text-sm">Revaluation</h3>
+                <span v-if="asset.revaluation_due" class="badge bg-red-100 text-red-800">Revaluation due</span>
+            </div>
+            <div class="grid grid-cols-3 gap-4 text-sm mb-3">
+                <div><p class="text-gray-400 text-xs">Revaluation Cycle</p><p class="font-medium">{{ asset.revaluation_cycle_years }} yrs</p></div>
+                <div><p class="text-gray-400 text-xs">Last Revalued</p><p class="font-medium">{{ asset.last_revalued_at ? new Date(asset.last_revalued_at).toLocaleDateString() : 'Never' }}</p></div>
+                <div><p class="text-gray-400 text-xs">Next Due</p><p class="font-medium">{{ asset.next_revaluation_due ? new Date(asset.next_revaluation_due).toLocaleDateString() : '—' }}</p></div>
+            </div>
+            <div v-if="revaluations.length">
+                <h4 class="text-xs font-semibold text-gray-500 uppercase mb-1">History</h4>
+                <ul class="text-sm divide-y divide-gray-50">
+                    <li v-for="r in revaluations" :key="r.id" class="py-2 flex items-center justify-between">
+                        <div>
+                            <span class="font-medium">{{ r.previous_value ?? '—' }} → {{ r.revalued_amount }}</span>
+                            <span class="text-xs text-gray-400 ml-2">by {{ r.revalued_by?.name }} on {{ new Date(r.revaluation_date).toLocaleDateString() }}</span>
+                            <p v-if="r.notes" class="text-xs text-gray-500">{{ r.notes }}</p>
+                        </div>
+                        <span class="text-xs text-gray-400">Life reset to {{ r.new_useful_life_years }} yrs</span>
+                    </li>
+                </ul>
+            </div>
+            <p v-else class="text-sm text-gray-400 italic">No revaluations recorded yet.</p>
         </div>
 
         <div class="grid grid-cols-3 gap-4 mb-4">
@@ -382,6 +424,41 @@ const statusColor = {
                     <div class="flex gap-2 justify-end pt-1">
                         <button type="button" @click="showInspection = false" class="btn-secondary">Cancel</button>
                         <button type="submit" class="btn-primary" :disabled="inspectionForm.processing">Save Inspection</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div v-if="showRevalue" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-1">Record Revaluation</h3>
+                <p class="text-xs text-gray-400 mb-4">This resets the asset's book value and useful-life countdown from the revaluation date.</p>
+                <form @submit.prevent="submitRevalue" class="space-y-3">
+                    <div>
+                        <label class="label">Revaluation Date</label>
+                        <input v-model="revalueForm.revaluation_date" type="date" class="input" required />
+                    </div>
+                    <div>
+                        <label class="label">Revalued Amount</label>
+                        <input v-model.number="revalueForm.revalued_amount" type="number" min="0" step="0.01" class="input" required />
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">New Useful Life (years)</label>
+                            <input v-model.number="revalueForm.new_useful_life_years" type="number" min="1" step="1" class="input" required />
+                        </div>
+                        <div>
+                            <label class="label">New Salvage Value</label>
+                            <input v-model.number="revalueForm.new_salvage_value" type="number" min="0" step="0.01" class="input" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="label">Notes</label>
+                        <textarea v-model="revalueForm.notes" class="input" rows="2" placeholder="e.g. professional valuation reference"></textarea>
+                    </div>
+                    <div class="flex gap-2 justify-end pt-1">
+                        <button type="button" @click="showRevalue = false" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" :disabled="revalueForm.processing">Save Revaluation</button>
                     </div>
                 </form>
             </div>

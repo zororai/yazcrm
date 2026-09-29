@@ -14,6 +14,7 @@ class FixedAsset extends Model
     protected $fillable = [
         'asset_number', 'asset_category_id', 'name', 'description', 'manufacturer', 'model',
         'serial_number', 'barcode', 'purchase_date', 'purchase_cost', 'useful_life_years', 'salvage_value',
+        'revaluation_cycle_years', 'last_revalued_at', 'current_value', 'depreciation_base_date',
         'supplier_name', 'supplier_id',
         'warranty_start', 'warranty_expiry', 'condition', 'status',
         'location_id', 'department_id', 'current_custodian_id', 'created_by',
@@ -26,52 +27,102 @@ class FixedAsset extends Model
         'purchase_cost'   => 'decimal:2',
         'salvage_value'   => 'decimal:2',
         'useful_life_years' => 'integer',
+        'revaluation_cycle_years' => 'integer',
+        'last_revalued_at' => 'date',
+        'current_value'    => 'decimal:2',
+        'depreciation_base_date' => 'date',
     ];
 
-    protected $appends = ['warranty_expiring', 'annual_depreciation', 'accumulated_depreciation', 'book_value'];
+    protected $appends = [
+        'warranty_expiring', 'annual_depreciation', 'accumulated_depreciation', 'book_value',
+        'next_revaluation_due', 'revaluation_due',
+    ];
 
     public function getWarrantyExpiringAttribute(): bool
     {
         return $this->isWarrantyExpiring();
     }
 
-    // Straight-line: (Purchase Cost − Salvage Value) ÷ Useful Life (years).
-    // Requires purchase_cost, purchase_date, and useful_life_years to all be set.
+    // The value/date depreciation is calculated from: reset to the revalued
+    // amount and revaluation date whenever a revaluation has been recorded,
+    // otherwise falls back to the original purchase cost/date.
+    private function depreciationBaseCost(): ?float
+    {
+        $base = $this->current_value ?? $this->purchase_cost;
+
+        return $base !== null ? (float) $base : null;
+    }
+
+    private function depreciationBaseDate()
+    {
+        return $this->depreciation_base_date ?? $this->purchase_date;
+    }
+
+    // Straight-line: (Base Cost − Salvage Value) ÷ Useful Life (years).
+    // Requires a base cost, base date, and useful_life_years to all be set.
     public function getAnnualDepreciationAttribute(): ?float
     {
-        if (! $this->purchase_cost || ! $this->useful_life_years) {
+        $baseCost = $this->depreciationBaseCost();
+        if (! $baseCost || ! $this->useful_life_years) {
             return null;
         }
 
-        $depreciable = (float) $this->purchase_cost - (float) ($this->salvage_value ?? 0);
+        $depreciable = $baseCost - (float) ($this->salvage_value ?? 0);
 
         return round(max($depreciable, 0) / $this->useful_life_years, 2);
     }
 
     public function getAccumulatedDepreciationAttribute(): ?float
     {
-        $annual = $this->annual_depreciation;
-        if ($annual === null || ! $this->purchase_date) {
+        $annual   = $this->annual_depreciation;
+        $baseDate = $this->depreciationBaseDate();
+        if ($annual === null || ! $baseDate) {
             return null;
         }
 
         $yearsElapsed = min(
-            $this->purchase_date->floatDiffInYears(now()),
+            $baseDate->floatDiffInYears(now()),
             $this->useful_life_years
         );
 
-        $depreciable = (float) $this->purchase_cost - (float) ($this->salvage_value ?? 0);
+        $depreciable = $this->depreciationBaseCost() - (float) ($this->salvage_value ?? 0);
 
         return round(min($annual * $yearsElapsed, max($depreciable, 0)), 2);
     }
 
     public function getBookValueAttribute(): ?float
     {
+        $baseCost = $this->depreciationBaseCost();
+
         if ($this->accumulated_depreciation === null) {
-            return $this->purchase_cost !== null ? (float) $this->purchase_cost : null;
+            return $baseCost;
         }
 
-        return round((float) $this->purchase_cost - $this->accumulated_depreciation, 2);
+        return round($baseCost - $this->accumulated_depreciation, 2);
+    }
+
+    // Revaluation due date = last revaluation (or purchase date if never
+    // revalued) + this asset's revaluation cycle (default 3 years).
+    public function getNextRevaluationDueAttribute(): ?string
+    {
+        $anchor = $this->last_revalued_at ?? $this->purchase_date;
+        if (! $anchor || ! $this->revaluation_cycle_years) {
+            return null;
+        }
+
+        return $anchor->copy()->addYears($this->revaluation_cycle_years)->toDateString();
+    }
+
+    public function getRevaluationDueAttribute(): bool
+    {
+        $due = $this->next_revaluation_due;
+
+        return $due !== null && now()->toDateString() >= $due;
+    }
+
+    public function revaluations(): HasMany
+    {
+        return $this->hasMany(FixedAssetRevaluation::class)->latest('revaluation_date');
     }
 
     public function category(): BelongsTo

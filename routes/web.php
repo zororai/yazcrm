@@ -251,12 +251,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('fixed-assets',              [Web\FixedAssetController::class, 'index'])->name('fixed-assets.index');
     Route::post('fixed-assets',             [Web\FixedAssetController::class, 'store'])->name('fixed-assets.store');
+    Route::get('fixed-assets/export/excel', [Web\FixedAssetController::class, 'exportExcel'])->name('fixed-assets.export.excel');
+    Route::get('fixed-assets/export/pdf',   [Web\FixedAssetController::class, 'exportPdf'])->name('fixed-assets.export.pdf');
+    Route::get('fixed-assets/revaluations',              [Web\FixedAssetController::class, 'revaluationsIndex'])->name('fixed-assets.revaluations.index');
+    Route::get('fixed-assets/revaluations/export/excel',  [Web\FixedAssetController::class, 'exportRevaluationsExcel'])->name('fixed-assets.revaluations.export.excel');
+    Route::get('fixed-assets/revaluations/export/pdf',    [Web\FixedAssetController::class, 'exportRevaluationsPdf'])->name('fixed-assets.revaluations.export.pdf');
     Route::get('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'show'])->name('fixed-assets.show');
     Route::put('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'update'])->name('fixed-assets.update');
     Route::post('fixed-assets/{fixedAsset}/assign',   [Web\FixedAssetController::class, 'assign'])->name('fixed-assets.assign');
     Route::post('fixed-assets/{fixedAsset}/return',   [Web\FixedAssetController::class, 'returnAsset'])->name('fixed-assets.return');
     Route::post('fixed-assets/{fixedAsset}/transfer', [Web\FixedAssetController::class, 'transfer'])->name('fixed-assets.transfer');
     Route::post('fixed-assets/{fixedAsset}/dispose',  [Web\FixedAssetController::class, 'dispose'])->name('fixed-assets.dispose');
+    Route::post('fixed-assets/{fixedAsset}/revalue',  [Web\FixedAssetController::class, 'storeRevaluation'])->name('fixed-assets.revalue');
 
     Route::post('fixed-assets/{fixedAsset}/maintenance', [Web\FixedAssetMaintenanceController::class, 'store'])->name('fixed-assets.maintenance.store');
     Route::post('fixed-assets/{fixedAsset}/maintenance/{maintenance}/complete', [Web\FixedAssetMaintenanceController::class, 'complete'])->name('fixed-assets.maintenance.complete');

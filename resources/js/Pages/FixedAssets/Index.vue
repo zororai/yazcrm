@@ -1,12 +1,22 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, ArrowDownTrayIcon, ClockIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ assets: Array, categories: Array, isManager: Boolean });
 
-const filters = ref({ search: '', status: '', warranty_expiring: false });
+function exportUrl(type) {
+    const params = new URLSearchParams({
+        search: filters.value.search || '',
+        status: filters.value.status || '',
+        warranty_expiring: filters.value.warranty_expiring ? '1' : '',
+        revaluation_due: filters.value.revaluation_due ? '1' : '',
+    });
+    return `/fixed-assets/export/${type}?${params.toString()}`;
+}
+
+const filters = ref({ search: '', status: '', warranty_expiring: false, revaluation_due: false });
 let debounce;
 watch(filters, () => {
     clearTimeout(debounce);
@@ -15,6 +25,7 @@ watch(filters, () => {
             search: filters.value.search || undefined,
             status: filters.value.status || undefined,
             warranty_expiring: filters.value.warranty_expiring || undefined,
+            revaluation_due: filters.value.revaluation_due || undefined,
         }, { preserveState: true, replace: true });
     }, 300);
 }, { deep: true });
@@ -23,6 +34,7 @@ const showForm = ref(false);
 const form = useForm({
     asset_category_id: '', name: '', manufacturer: '', model: '', serial_number: '',
     purchase_date: '', purchase_cost: '', useful_life_years: '', salvage_value: '',
+    revaluation_cycle_years: 3,
     supplier_name: '', warranty_expiry: '',
 });
 
@@ -57,9 +69,20 @@ const statusColor = {
     <AppLayout>
         <template #title>Fixed Assets</template>
         <template #header-actions>
-            <button v-if="isManager" @click="showForm = true" class="btn-primary btn-sm">
-                <PlusIcon class="h-4 w-4" /> Register Asset
-            </button>
+            <div class="flex gap-2">
+                <Link href="/fixed-assets/revaluations" class="btn-secondary btn-sm inline-flex items-center gap-1">
+                    <ClockIcon class="h-4 w-4" /> Revaluations
+                </Link>
+                <a :href="exportUrl('excel')" class="btn-secondary btn-sm inline-flex items-center gap-1">
+                    <ArrowDownTrayIcon class="h-4 w-4" /> Excel
+                </a>
+                <a :href="exportUrl('pdf')" class="btn-secondary btn-sm inline-flex items-center gap-1">
+                    <ArrowDownTrayIcon class="h-4 w-4" /> PDF
+                </a>
+                <button v-if="isManager" @click="showForm = true" class="btn-primary btn-sm">
+                    <PlusIcon class="h-4 w-4" /> Register Asset
+                </button>
+            </div>
         </template>
 
         <div class="card mb-4 flex flex-wrap gap-3 items-end">
@@ -84,9 +107,12 @@ const statusColor = {
             <label class="flex items-center gap-2 text-sm text-gray-600 pb-2">
                 <input type="checkbox" v-model="filters.warranty_expiring" /> Warranty expiring soon
             </label>
+            <label class="flex items-center gap-2 text-sm text-gray-600 pb-2">
+                <input type="checkbox" v-model="filters.revaluation_due" /> Revaluation due
+            </label>
         </div>
 
-        <div class="card p-0 overflow-hidden">
+        <div class="card p-0 overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
@@ -95,7 +121,12 @@ const statusColor = {
                         <th class="table-th">Category</th>
                         <th class="table-th">Custodian</th>
                         <th class="table-th">Department</th>
+                        <th class="table-th">Useful Life</th>
+                        <th class="table-th">Salvage Value</th>
+                        <th class="table-th">Annual Depreciation</th>
+                        <th class="table-th">Accumulated Depreciation</th>
                         <th class="table-th">Book Value</th>
+                        <th class="table-th">Next Revaluation</th>
                         <th class="table-th">Status</th>
                     </tr>
                 </thead>
@@ -109,11 +140,19 @@ const statusColor = {
                         <td class="table-td">{{ a.category?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.custodian?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.department?.name ?? '—' }}</td>
-                        <td class="table-td">{{ a.book_value !== null ? money(a.book_value) : '—' }}</td>
+                        <td class="table-td">{{ a.useful_life_years ? `${a.useful_life_years} yrs` : '—' }}</td>
+                        <td class="table-td">{{ money(a.salvage_value) }}</td>
+                        <td class="table-td">{{ a.annual_depreciation !== null ? money(a.annual_depreciation) : '—' }}</td>
+                        <td class="table-td">{{ a.accumulated_depreciation !== null ? money(a.accumulated_depreciation) : '—' }}</td>
+                        <td class="table-td font-medium">{{ a.book_value !== null ? money(a.book_value) : '—' }}</td>
+                        <td class="table-td">
+                            {{ a.next_revaluation_due ?? '—' }}
+                            <span v-if="a.revaluation_due" class="badge bg-red-100 text-red-800 ml-1 text-[10px]">due</span>
+                        </td>
                         <td class="table-td"><span :class="['badge', statusColor[a.status]]">{{ a.status.replace('_', ' ') }}</span></td>
                     </tr>
                     <tr v-if="!assets.length">
-                        <td colspan="7" class="table-td text-center text-gray-400 py-8">No assets match.</td>
+                        <td colspan="12" class="table-td text-center text-gray-400 py-8">No assets match.</td>
                     </tr>
                 </tbody>
             </table>
@@ -171,6 +210,11 @@ const statusColor = {
                             <label class="label">Salvage Value</label>
                             <input v-model.number="form.salvage_value" type="number" min="0" step="0.01" class="input" placeholder="0.00" />
                         </div>
+                    </div>
+                    <div>
+                        <label class="label">Revaluation Cycle (years)</label>
+                        <input v-model.number="form.revaluation_cycle_years" type="number" min="1" step="1" class="input" placeholder="e.g. 3" />
+                        <p class="mt-1 text-xs text-gray-400">How often this asset should be revalued. Defaults to 3 years.</p>
                     </div>
                     <div>
                         <label class="label">Supplier</label>
