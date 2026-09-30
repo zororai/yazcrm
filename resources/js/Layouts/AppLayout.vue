@@ -23,9 +23,9 @@ const page  = usePage();
 const user  = computed(() => page.props.auth.user);
 const flash = computed(() => page.props.flash);
 const impersonator = computed(() => page.props.impersonator);
-// While an admin is impersonating another account, they keep full sidebar
-// access (they're really an admin just viewing/acting as that user).
-const isAdmin = computed(() => user.value?.role === 'admin' || !!impersonator.value);
+// While impersonating, the sidebar reflects the impersonated user's own
+// permissions (not the admin's) so the admin sees exactly what that user sees.
+const isAdmin = computed(() => user.value?.role === 'admin');
 
 // Prompt once per session to complete phone/bio/avatar — dismissible via
 // "Remind me later", reappears next login if still incomplete.
@@ -258,10 +258,10 @@ const navigation = computed(() => [
     ...(can('dialer')       ? [{ name: 'Dialer',     href: '/dialer',      icon: PhoneArrowUpRightIcon }] : []),
     ...(can('calls')        ? [{ name: 'Calls',      href: '/calls',       icon: PhoneIcon }] : []),
     ...(can('recordings')   ? [{ name: 'Recordings', href: '/recordings',  icon: MicrophoneIcon }] : []),
-    ...(can('records_management') ? [{ name: 'Records Management', href: '/recordings', icon: ServerStackIcon }] : []),
+    ...(can('records_management') ? [{ name: 'Records Management', href: '/recordings?view=management', icon: ServerStackIcon }] : []),
     ...(can('callbacks')    ? [{ name: 'Callbacks',  href: '/callbacks',   icon: QueueListIcon }] : []),
     ...(can('tickets')      ? [{ name: 'Tickets',    href: '/tickets',     icon: TicketIcon }] : []),
-    ...(can('ticket_management') ? [{ name: 'Ticket Management', href: '/tickets', icon: ClipboardDocumentListIcon }] : []),
+    ...(can('ticket_management') ? [{ name: 'Ticket Management', href: '/tickets?view=management', icon: ClipboardDocumentListIcon }] : []),
     ...(can('urgent')       ? [{ name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount }] : []),
     ...(can('directory')    ? [{ name: 'Directory',  href: '/service-directory', icon: BookOpenIcon }] : []),
     ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),

@@ -139,9 +139,14 @@ class UserController extends Controller
             return back()->with('error', 'Cannot log in as a disabled account.');
         }
 
+        // Deliberately NOT regenerating the session id here: this app polls
+        // several endpoints in the background (notifications, pending-ticket
+        // queue), and swapping the session id mid-flight can let a stale
+        // in-flight request silently overwrite the browser's cookie with a
+        // fresh anonymous session a moment later, logging the admin straight
+        // back out. Keeping the same session id avoids that race.
         $request->session()->put('impersonator_id', $admin->id);
         Auth::login($user);
-        $request->session()->regenerate();
 
         return redirect()->route('dashboard')->with('success', "Now logged in as {$user->name}.");
     }
@@ -155,7 +160,6 @@ class UserController extends Controller
         }
 
         Auth::loginUsingId($adminId);
-        $request->session()->regenerate();
 
         return redirect()->route('users.index')->with('success', 'Returned to your account.');
     }
