@@ -5,7 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { TrashIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    requisition: Object, suppliers: Array,
+    requisition: Object, suppliers: Array, stores: Array,
     isProcurementTeam: Boolean, isHop: Boolean, isHof: Boolean, isApprover: Boolean,
 });
 
@@ -49,6 +49,12 @@ function submitEvaluate() {
 function act(action, message) {
     if (! confirm(message)) return;
     router.post(`/procurement-bids/${bid.value.id}/${action}`);
+}
+
+// ── Stage 9: issue PO ────────────────────────────────────────────────────
+const issuePoForm = useForm({ store_id: '', expected_delivery_date: '' });
+function submitIssuePo() {
+    issuePoForm.post(`/procurement-bids/${bid.value.id}/issue-po`);
 }
 
 const showReject = ref(false);
@@ -221,8 +227,33 @@ function submitCancel() {
                 </div>
             </div>
 
-            <div v-if="bid.status === 'approved'" class="card max-w-xl mb-4 bg-green-50 border-green-200">
-                <p class="text-sm text-green-800">Vendor approved — <strong>{{ bid.recommended_supplier?.name }}</strong> can now proceed to Purchase Order / Contract issuance (Stage 9).</p>
+            <div v-if="bid.status === 'approved' && !requisition.purchase_order" class="card max-w-xl mb-4">
+                <h3 class="font-semibold text-gray-900 mb-1">Stage 9 — Issue Purchase Order / Contract</h3>
+                <p class="text-sm text-gray-600 mb-3">Vendor approved: <strong>{{ bid.recommended_supplier?.name }}</strong>. Issue the PO using the requisition's line items.</p>
+                <div v-if="!isHop" class="text-sm text-gray-400 italic">Waiting on the Head of Programs to issue the purchase order.</div>
+                <form v-else @submit.prevent="submitIssuePo" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">Deliver To Store (if physical goods)</label>
+                            <select v-model="issuePoForm.store_id" class="input">
+                                <option value="">None (service / no stock delivery)</option>
+                                <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label">Expected Delivery</label>
+                            <input v-model="issuePoForm.expected_delivery_date" type="date" class="input" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" :disabled="issuePoForm.processing">Issue Purchase Order</button>
+                </form>
+            </div>
+
+            <div v-if="bid.status === 'approved' && requisition.purchase_order" class="card max-w-xl mb-4 bg-green-50 border-green-200">
+                <p class="text-sm text-green-800">
+                    Purchase order <Link :href="`/purchase-orders/${requisition.purchase_order.id}`" class="font-semibold underline">{{ requisition.purchase_order.po_number }}</Link>
+                    issued — status: {{ requisition.purchase_order.status.replace(/_/g, ' ') }}.
+                </p>
             </div>
 
             <div v-if="bid.activity_logs?.length" class="card">

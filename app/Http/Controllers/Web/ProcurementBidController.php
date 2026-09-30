@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementBidProcess;
 use App\Models\ProcurementRequisition;
+use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ProcurementBidService;
+use App\Services\PurchaseOrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -16,8 +18,10 @@ use RuntimeException;
 
 class ProcurementBidController extends Controller
 {
-    public function __construct(private readonly ProcurementBidService $service)
-    {
+    public function __construct(
+        private readonly ProcurementBidService $service,
+        private readonly PurchaseOrderService $poService,
+    ) {
     }
 
     // Stage 4/5 — Procurement / Evaluation team. Mapped to the same group
@@ -49,7 +53,10 @@ class ProcurementBidController extends Controller
     {
         $user = $request->user();
 
-        $procurementRequisition->load(['bidProcess.quotes.supplier', 'bidProcess.activityLogs.user:id,name', 'bidProcess.recommendedSupplier', 'requestedBy:id,name']);
+        $procurementRequisition->load([
+            'bidProcess.quotes.supplier', 'bidProcess.activityLogs.user:id,name', 'bidProcess.recommendedSupplier',
+            'requestedBy:id,name', 'purchaseOrder:id,requisition_id,po_number,status',
+        ]);
 
         if ($procurementRequisition->requested_by !== $user->id && ! $this->isProcurementTeam($user) && ! $this->isHop($user) && ! $this->isHof($user)) {
             abort(403);
@@ -58,11 +65,56 @@ class ProcurementBidController extends Controller
         return Inertia::render('Procurement/VendorSelection/Show', [
             'requisition'         => $procurementRequisition,
             'suppliers'           => Supplier::where('status', 'active')->orderBy('name')->get(['id', 'name']),
+            'stores'              => Store::orderBy('name')->get(['id', 'name']),
             'isProcurementTeam'   => $this->isProcurementTeam($user),
             'isHop'               => $this->isHop($user),
             'isHof'               => $this->isHof($user),
             'isApprover'          => $this->isApprover($user),
         ]);
+    }
+
+    // Stage 9 — Head of Programs issues the Purchase Order / Contract once
+    // the vendor is approved, pre-filled from the requisition's line items.
+    public function issuePurchaseOrder(Request $request, ProcurementBidProcess $bidProcess): RedirectResponse
+    {
+        if (! $this->isHop($request->user())) {
+            abort(403);
+        }
+
+        if ($bidProcess->status !== 'approved') {
+            return back()->with('error', 'The vendor must be approved before a purchase order can be issued.');
+        }
+
+        if ($bidProcess->requisition->purchaseOrder()->exists()) {
+            return back()->with('error', 'A purchase order has already been issued for this requisition.');
+        }
+
+        $data = $request->validate([
+            'store_id'                 => 'nullable|exists:stores,id',
+            'expected_delivery_date'   => 'nullable|date',
+        ]);
+
+        $requisition = $bidProcess->requisition()->with('items')->first();
+
+        $lines = $requisition->items->map(fn ($item) => [
+            'item_id'     => $item->item_id,
+            'description' => $item->description,
+            'quantity'    => $item->quantity,
+            'unit_cost'   => $item->estimated_unit_cost,
+        ])->all();
+
+        $po = $this->poService->create($request->user(), [
+            'supplier_id'             => $bidProcess->recommended_supplier_id,
+            'store_id'                => $data['store_id'] ?? null,
+            'department_id'           => $requisition->department_id,
+            'requisition_id'          => $requisition->id,
+            'bid_process_id'          => $bidProcess->id,
+            'order_date'              => now()->toDateString(),
+            'expected_delivery_date'  => $data['expected_delivery_date'] ?? null,
+            'notes'                   => "Issued from {$requisition->requisition_number} / vendor selection.",
+        ], $lines);
+
+        return redirect()->route('purchase-orders.show', $po)->with('success', 'Purchase order issued.');
     }
 
     public function start(Request $request, ProcurementRequisition $procurementRequisition): RedirectResponse

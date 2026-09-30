@@ -291,6 +291,7 @@ Route::middleware('auth')->group(function () {
     Route::post('purchase-orders/{purchaseOrder}/reject',   [Web\PurchaseOrderController::class, 'reject'])->name('purchase-orders.reject');
     Route::post('purchase-orders/{purchaseOrder}/mark-sent', [Web\PurchaseOrderController::class, 'markSent'])->name('purchase-orders.mark-sent');
     Route::post('purchase-orders/{purchaseOrder}/receive',  [Web\PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+    Route::post('purchase-orders/{purchaseOrder}/confirm-delivery', [Web\PurchaseOrderController::class, 'confirmDelivery'])->name('purchase-orders.confirm-delivery');
     Route::post('purchase-orders/{purchaseOrder}/cancel',   [Web\PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
 
     // ─── Procurement Requisitions — stages 1-3 (Request → Review → Approval) ──
@@ -311,8 +312,23 @@ Route::middleware('auth')->group(function () {
     Route::post('procurement-bids/{bidProcess}/hop-review', [Web\ProcurementBidController::class, 'hopReview'])->name('procurement-bids.hop-review');
     Route::post('procurement-bids/{bidProcess}/hof-review', [Web\ProcurementBidController::class, 'hofReview'])->name('procurement-bids.hof-review');
     Route::post('procurement-bids/{bidProcess}/approve',    [Web\ProcurementBidController::class, 'approve'])->name('procurement-bids.approve');
+    Route::post('procurement-bids/{bidProcess}/issue-po',   [Web\ProcurementBidController::class, 'issuePurchaseOrder'])->name('procurement-bids.issue-po');
     Route::post('procurement-bids/{bidProcess}/reject',     [Web\ProcurementBidController::class, 'reject'])->name('procurement-bids.reject');
     Route::post('procurement-bids/{bidProcess}/cancel',     [Web\ProcurementBidController::class, 'cancel'])->name('procurement-bids.cancel');
+
+    // ─── Payment Requisitions — stages 11-14 (Prepare → Review → Approve → Load → Release → Record) ──
+    Route::get('procurement-payments',                          [Web\ProcurementPaymentController::class, 'index'])->name('procurement-payments.index');
+    Route::post('purchase-orders/{purchaseOrder}/payments',     [Web\ProcurementPaymentController::class, 'store'])->name('procurement-payments.store');
+    Route::get('procurement-payments/{procurementPayment}',     [Web\ProcurementPaymentController::class, 'show'])->name('procurement-payments.show');
+    Route::post('procurement-payments/{procurementPayment}/submit',              [Web\ProcurementPaymentController::class, 'submit'])->name('procurement-payments.submit');
+    Route::post('procurement-payments/{procurementPayment}/review',              [Web\ProcurementPaymentController::class, 'review'])->name('procurement-payments.review');
+    Route::post('procurement-payments/{procurementPayment}/reject-at-review',    [Web\ProcurementPaymentController::class, 'rejectAtReview'])->name('procurement-payments.reject-at-review');
+    Route::post('procurement-payments/{procurementPayment}/approve',             [Web\ProcurementPaymentController::class, 'approve'])->name('procurement-payments.approve');
+    Route::post('procurement-payments/{procurementPayment}/reject-at-approval',  [Web\ProcurementPaymentController::class, 'rejectAtApproval'])->name('procurement-payments.reject-at-approval');
+    Route::post('procurement-payments/{procurementPayment}/load-to-bank',        [Web\ProcurementPaymentController::class, 'loadToBank'])->name('procurement-payments.load-to-bank');
+    Route::post('procurement-payments/{procurementPayment}/release',            [Web\ProcurementPaymentController::class, 'release'])->name('procurement-payments.release');
+    Route::post('procurement-payments/{procurementPayment}/record',             [Web\ProcurementPaymentController::class, 'record'])->name('procurement-payments.record');
+    Route::post('procurement-payments/{procurementPayment}/cancel',             [Web\ProcurementPaymentController::class, 'cancel'])->name('procurement-payments.cancel');
 
     // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
     Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');

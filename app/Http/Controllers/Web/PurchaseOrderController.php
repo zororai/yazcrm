@@ -75,9 +75,31 @@ class PurchaseOrderController extends Controller
     public function show(Request $request, PurchaseOrder $purchaseOrder): Response
     {
         return Inertia::render('PurchaseOrders/Show', [
-            'order' => $purchaseOrder->load(['supplier', 'store:id,name', 'requestedBy:id,name', 'approvedBy:id,name', 'items.item:id,name', 'receipts:id,receipt_number,purchase_order_id,created_at']),
+            'order' => $purchaseOrder->load([
+                'supplier', 'store:id,name', 'requestedBy:id,name', 'approvedBy:id,name', 'items.item:id,name',
+                'receipts:id,receipt_number,purchase_order_id,created_at', 'deliveryConfirmedBy:id,name',
+                'paymentRequisitions:id,purchase_order_id,payment_number,amount,status',
+            ]),
             'isManager' => $this->isManager($request->user()),
         ]);
+    }
+
+    // Stage 10 — confirm delivery of goods/services and record the invoice.
+    public function confirmDelivery(Request $request, PurchaseOrder $purchaseOrder): RedirectResponse
+    {
+        if (! $this->isManager($request->user())) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'notes'              => 'nullable|string|max:2000',
+            'invoice_reference'  => 'nullable|string|max:255',
+            'invoice_date'       => 'nullable|date',
+        ]);
+
+        return $this->act(fn () => $this->service->confirmDelivery(
+            $purchaseOrder, $request->user(), $data['notes'] ?? null, $data['invoice_reference'] ?? null, $data['invoice_date'] ?? null
+        ), $request, 'Delivery confirmed.');
     }
 
     public function submit(Request $request, PurchaseOrder $purchaseOrder): RedirectResponse

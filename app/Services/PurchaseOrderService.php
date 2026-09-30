@@ -81,6 +81,38 @@ class PurchaseOrderService
         });
     }
 
+    // Stage 10 — confirms delivery (goods and/or services) and records the
+    // supplier invoice. For service-only POs (no store, so nothing flows
+    // through stock receiving) this is what actually marks the PO received;
+    // for goods POs it supplements the stock-receipt trail with invoice info.
+    public function confirmDelivery(PurchaseOrder $po, User $actor, ?string $notes, ?string $invoiceReference, ?string $invoiceDate): PurchaseOrder
+    {
+        if (! in_array($po->status, ['approved', 'sent', 'partially_received'], true)) {
+            throw new RuntimeException("Cannot confirm delivery for a purchase order in status '{$po->status}'.");
+        }
+
+        return DB::transaction(function () use ($po, $actor, $notes, $invoiceReference, $invoiceDate) {
+            $update = [
+                'delivery_confirmed_by' => $actor->id,
+                'delivered_at'          => now(),
+                'delivery_notes'        => $notes,
+                'invoice_reference'     => $invoiceReference,
+                'invoice_date'          => $invoiceDate,
+            ];
+
+            // No store means there's nothing to receive into stock (a service
+            // PO) — delivery confirmation itself is what completes it.
+            if (! $po->store_id) {
+                $update['status'] = 'received';
+            }
+
+            $po->update($update);
+            $this->log($actor, 'delivery_confirmed', $po, $notes);
+
+            return $po;
+        });
+    }
+
     // Called after a GRN posts against this PO — recomputes fulfillment
     // status from each line's quantity_received vs quantity ordered.
     public function syncFulfillment(PurchaseOrder $po): PurchaseOrder

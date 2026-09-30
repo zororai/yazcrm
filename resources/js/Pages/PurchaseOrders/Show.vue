@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
 const props = defineProps({ order: Object, isManager: Boolean });
@@ -52,6 +52,20 @@ function submitReceive() {
         lines: data.lines.filter(l => l.quantity > 0).map(l => ({ purchase_order_item_id: l.purchase_order_item_id, quantity: l.quantity })),
     })).post(`/purchase-orders/${props.order.id}/receive`, { onSuccess: () => { showReceive.value = false; } });
 }
+
+// ── Stage 10: confirm delivery / invoice ─────────────────────────────────
+const showDelivery = ref(false);
+const deliveryForm = useForm({ notes: '', invoice_reference: '', invoice_date: '' });
+function submitDelivery() {
+    deliveryForm.post(`/purchase-orders/${props.order.id}/confirm-delivery`, { onSuccess: () => { showDelivery.value = false; } });
+}
+
+// ── Stage 11: raise payment requisition ──────────────────────────────────
+const showPayment = ref(false);
+const paymentForm = useForm({ payee_name: props.order.supplier?.name ?? '', amount: props.order.total, payment_method: 'bank_transfer', description: '' });
+function submitPayment() {
+    paymentForm.post(`/purchase-orders/${props.order.id}/payments`, { onSuccess: () => { showPayment.value = false; } });
+}
 </script>
 
 <template>
@@ -64,6 +78,8 @@ function submitReceive() {
                 <button v-if="order.status === 'pending_approval'" @click="showReject = true" class="btn-secondary btn-sm">Reject</button>
                 <button v-if="order.status === 'approved'" @click="act('mark-sent', 'Mark this purchase order as sent to the supplier?')" class="btn-primary btn-sm">Mark Sent</button>
                 <button v-if="['sent','approved','partially_received'].includes(order.status) && order.store" @click="openReceive" class="btn-primary btn-sm">Receive Goods</button>
+                <button v-if="['approved','sent','partially_received'].includes(order.status)" @click="showDelivery = true" class="btn-primary btn-sm">Confirm Delivery / Invoice</button>
+                <button v-if="order.status === 'received'" @click="showPayment = true" class="btn-primary btn-sm">Raise Payment Requisition</button>
                 <button v-if="!['received','cancelled'].includes(order.status)" @click="showCancel = true" class="btn-secondary btn-sm">Cancel</button>
             </div>
         </template>
@@ -131,10 +147,32 @@ function submitReceive() {
             </table>
         </div>
 
-        <div v-if="order.receipts?.length" class="card">
+        <div v-if="order.receipts?.length" class="card mb-4">
             <h3 class="font-semibold text-gray-900 mb-2">Goods Received Notes</h3>
             <ul class="text-sm space-y-1">
                 <li v-for="r in order.receipts" :key="r.id" class="text-gray-600">{{ r.receipt_number }} — {{ new Date(r.created_at).toLocaleDateString() }}</li>
+            </ul>
+        </div>
+
+        <div v-if="order.delivered_at" class="card mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2">Delivery &amp; Invoice</h3>
+            <div class="text-sm text-gray-600 space-y-1">
+                <div>Confirmed by {{ order.delivery_confirmed_by?.name }} on {{ new Date(order.delivered_at).toLocaleDateString() }}</div>
+                <div v-if="order.invoice_reference">Invoice: {{ order.invoice_reference }} ({{ order.invoice_date }})</div>
+                <div v-if="order.delivery_notes" class="text-gray-500">{{ order.delivery_notes }}</div>
+            </div>
+        </div>
+
+        <div v-if="order.payment_requisitions?.length" class="card mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2">Payment Requisitions</h3>
+            <ul class="text-sm divide-y divide-gray-50">
+                <li v-for="p in order.payment_requisitions" :key="p.id" class="py-2 flex items-center justify-between">
+                    <Link :href="`/procurement-payments/${p.id}`" class="text-brand-600 hover:underline">{{ p.payment_number }}</Link>
+                    <div class="flex items-center gap-2">
+                        <span>{{ Number(p.amount).toFixed(2) }}</span>
+                        <span class="badge bg-gray-100 text-gray-700">{{ p.status.replace(/_/g, ' ') }}</span>
+                    </div>
+                </li>
             </ul>
         </div>
 
@@ -179,6 +217,65 @@ function submitReceive() {
                 <div class="flex gap-2 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
                     <button type="button" @click="showReceive = false" class="btn-secondary">Cancel</button>
                     <button type="button" @click="submitReceive" class="btn-primary" :disabled="receiveForm.processing || !receiveForm.lines.length">Receive</button>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showDelivery" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-1">Confirm Delivery / Invoice</h3>
+                <p class="text-xs text-gray-400 mb-3">Stage 10 — confirms goods/services were delivered and records the supplier invoice.</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="label">Invoice Reference</label>
+                        <input v-model="deliveryForm.invoice_reference" class="input" />
+                    </div>
+                    <div>
+                        <label class="label">Invoice Date</label>
+                        <input v-model="deliveryForm.invoice_date" type="date" class="input" />
+                    </div>
+                    <div>
+                        <label class="label">Notes</label>
+                        <textarea v-model="deliveryForm.notes" class="input" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-4">
+                    <button @click="showDelivery = false" class="btn-secondary">Cancel</button>
+                    <button @click="submitDelivery" class="btn-primary" :disabled="deliveryForm.processing">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showPayment" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                <h3 class="font-semibold text-gray-900 mb-1">Raise Payment Requisition</h3>
+                <p class="text-xs text-gray-400 mb-3">Stage 11 — goes to Head of Finance for review, then Executive Director for approval.</p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="label">Payee</label>
+                        <input v-model="paymentForm.payee_name" class="input" required />
+                    </div>
+                    <div>
+                        <label class="label">Amount</label>
+                        <input v-model.number="paymentForm.amount" type="number" min="0.01" step="0.01" class="input" required />
+                    </div>
+                    <div>
+                        <label class="label">Payment Method</label>
+                        <select v-model="paymentForm.payment_method" class="input">
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="mobile_money">Mobile Money</option>
+                            <option value="cash">Cash</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Description</label>
+                        <textarea v-model="paymentForm.description" class="input" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-2 justify-end mt-4">
+                    <button @click="showPayment = false" class="btn-secondary">Cancel</button>
+                    <button @click="submitPayment" class="btn-primary" :disabled="paymentForm.processing">Create</button>
                 </div>
             </div>
         </div>

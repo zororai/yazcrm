@@ -60,4 +60,9 @@ class ProcurementRequisition extends Model
     {
         return $this->hasOne(ProcurementBidProcess::class, 'requisition_id');
     }
+
+    public function purchaseOrder(): HasOne
+    {
+        return $this->hasOne(PurchaseOrder::class, 'requisition_id');
+    }
 }

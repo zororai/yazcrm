@@ -284,6 +284,7 @@ const navigation = computed(() => [
     ...(can('stock_transfers') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),
     ...(can('stocktakes') ? [{ name: 'Stocktakes', href: '/stocktakes', icon: QueueListIcon }] : []),
     ...(can('procurement') ? [{ name: 'Requisitions', href: '/procurement-requisitions', icon: DocumentTextIcon }] : []),
+    ...(can('procurement') ? [{ name: 'Payment Requisitions', href: '/procurement-payments', icon: DocumentTextIcon }] : []),
     ...(can('procurement') ? [{ name: 'Suppliers', href: '/suppliers', icon: TruckIcon }] : []),
     ...(can('procurement') ? [{ name: 'Purchase Orders', href: '/purchase-orders', icon: ClipboardDocumentListIcon }] : []),
     ...(can('stores') && (isAdmin.value || user.value?.role === 'director')
