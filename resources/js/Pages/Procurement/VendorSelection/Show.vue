@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { TrashIcon, ArrowLeftIcon } from '@heroicons/vue/24/outline';
@@ -9,7 +9,7 @@ const props = defineProps({
     isProcurementTeam: Boolean, isHop: Boolean, isHof: Boolean, isApprover: Boolean,
 });
 
-const bid = props.requisition.bid_process;
+const bid = computed(() => props.requisition.bid_process);
 
 const statusColor = {
     draft: 'bg-gray-200 text-gray-600',
@@ -42,25 +42,25 @@ function submitStart() {
 // ── Stage 5: evaluate ────────────────────────────────────────────────────
 const evalForm = useForm({ recommended_supplier_id: '', notes: '' });
 function submitEvaluate() {
-    evalForm.post(`/procurement-bids/${bid.id}/evaluate`);
+    evalForm.post(`/procurement-bids/${bid.value.id}/evaluate`);
 }
 
 // ── Stages 6-8: review/approve ───────────────────────────────────────────
 function act(action, message) {
     if (! confirm(message)) return;
-    router.post(`/procurement-bids/${bid.id}/${action}`);
+    router.post(`/procurement-bids/${bid.value.id}/${action}`);
 }
 
 const showReject = ref(false);
 const rejectForm = useForm({ reason: '' });
 function submitReject() {
-    rejectForm.post(`/procurement-bids/${bid.id}/reject`, { onSuccess: () => { showReject.value = false; rejectForm.reset(); } });
+    rejectForm.post(`/procurement-bids/${bid.value.id}/reject`, { onSuccess: () => { showReject.value = false; rejectForm.reset(); } });
 }
 
 const showCancel = ref(false);
 const cancelForm = useForm({ reason: '' });
 function submitCancel() {
-    cancelForm.post(`/procurement-bids/${bid.id}/cancel`, { onSuccess: () => { showCancel.value = false; cancelForm.reset(); } });
+    cancelForm.post(`/procurement-bids/${bid.value.id}/cancel`, { onSuccess: () => { showCancel.value = false; cancelForm.reset(); } });
 }
 </script>
 

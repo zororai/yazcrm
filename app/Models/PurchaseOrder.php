@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PurchaseOrder extends Model
 {
     protected $fillable = [
-        'po_number', 'supplier_id', 'store_id', 'department_id', 'requested_by', 'approved_by',
+        'po_number', 'requisition_id', 'bid_process_id', 'supplier_id', 'store_id', 'department_id', 'requested_by', 'approved_by',
         'order_date', 'expected_delivery_date', 'currency', 'subtotal', 'tax', 'total', 'status', 'notes',
+        'delivery_confirmed_by', 'delivered_at', 'delivery_notes', 'invoice_reference', 'invoice_date',
     ];
 
     protected $casts = [
@@ -19,6 +20,8 @@ class PurchaseOrder extends Model
         'subtotal'                => 'decimal:2',
         'tax'                     => 'decimal:2',
         'total'                   => 'decimal:2',
+        'delivered_at'            => 'datetime',
+        'invoice_date'            => 'date',
     ];
 
     public function supplier(): BelongsTo
@@ -54,5 +57,25 @@ class PurchaseOrder extends Model
     public function receipts(): HasMany
     {
         return $this->hasMany(StockReceipt::class);
+    }
+
+    public function requisition(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementRequisition::class, 'requisition_id');
+    }
+
+    public function bidProcess(): BelongsTo
+    {
+        return $this->belongsTo(ProcurementBidProcess::class, 'bid_process_id');
+    }
+
+    public function deliveryConfirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'delivery_confirmed_by');
+    }
+
+    public function paymentRequisitions(): HasMany
+    {
+        return $this->hasMany(ProcurementPaymentRequisition::class, 'purchase_order_id');
     }
 }
