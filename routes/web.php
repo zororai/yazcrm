@@ -293,6 +293,27 @@ Route::middleware('auth')->group(function () {
     Route::post('purchase-orders/{purchaseOrder}/receive',  [Web\PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
     Route::post('purchase-orders/{purchaseOrder}/cancel',   [Web\PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
 
+    // ─── Procurement Requisitions — stages 1-3 (Request → Review → Approval) ──
+    Route::get('procurement-requisitions',                              [Web\ProcurementRequisitionController::class, 'index'])->name('procurement-requisitions.index');
+    Route::post('procurement-requisitions',                             [Web\ProcurementRequisitionController::class, 'store'])->name('procurement-requisitions.store');
+    Route::get('procurement-requisitions/{procurementRequisition}',     [Web\ProcurementRequisitionController::class, 'show'])->name('procurement-requisitions.show');
+    Route::post('procurement-requisitions/{procurementRequisition}/submit',            [Web\ProcurementRequisitionController::class, 'submit'])->name('procurement-requisitions.submit');
+    Route::post('procurement-requisitions/{procurementRequisition}/review',            [Web\ProcurementRequisitionController::class, 'review'])->name('procurement-requisitions.review');
+    Route::post('procurement-requisitions/{procurementRequisition}/reject-at-review',  [Web\ProcurementRequisitionController::class, 'rejectAtReview'])->name('procurement-requisitions.reject-at-review');
+    Route::post('procurement-requisitions/{procurementRequisition}/approve',           [Web\ProcurementRequisitionController::class, 'approve'])->name('procurement-requisitions.approve');
+    Route::post('procurement-requisitions/{procurementRequisition}/reject-at-approval', [Web\ProcurementRequisitionController::class, 'rejectAtApproval'])->name('procurement-requisitions.reject-at-approval');
+    Route::post('procurement-requisitions/{procurementRequisition}/cancel',            [Web\ProcurementRequisitionController::class, 'cancel'])->name('procurement-requisitions.cancel');
+
+    // ─── Vendor Selection — stages 4-8 (Bids → Evaluation → HoP → HoF → Approval) ──
+    Route::get('procurement-requisitions/{procurementRequisition}/selection',  [Web\ProcurementBidController::class, 'show'])->name('procurement-bids.show');
+    Route::post('procurement-requisitions/{procurementRequisition}/selection', [Web\ProcurementBidController::class, 'start'])->name('procurement-bids.start');
+    Route::post('procurement-bids/{bidProcess}/evaluate',   [Web\ProcurementBidController::class, 'evaluate'])->name('procurement-bids.evaluate');
+    Route::post('procurement-bids/{bidProcess}/hop-review', [Web\ProcurementBidController::class, 'hopReview'])->name('procurement-bids.hop-review');
+    Route::post('procurement-bids/{bidProcess}/hof-review', [Web\ProcurementBidController::class, 'hofReview'])->name('procurement-bids.hof-review');
+    Route::post('procurement-bids/{bidProcess}/approve',    [Web\ProcurementBidController::class, 'approve'])->name('procurement-bids.approve');
+    Route::post('procurement-bids/{bidProcess}/reject',     [Web\ProcurementBidController::class, 'reject'])->name('procurement-bids.reject');
+    Route::post('procurement-bids/{bidProcess}/cancel',     [Web\ProcurementBidController::class, 'cancel'])->name('procurement-bids.cancel');
+
     // ─── Notifications (bell dropdown, JSON) ─────────────────────────────────
     Route::get('notifications',              [Web\NotificationController::class, 'index'])->name('notifications.index');
     Route::post('notifications/{id}/read',   [Web\NotificationController::class, 'markRead'])->name('notifications.read');
