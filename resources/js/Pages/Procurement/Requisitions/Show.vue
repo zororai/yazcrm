@@ -2,8 +2,16 @@
 import { ref } from 'vue';
 import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
+import { PrinterIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ requisition: Object, isReviewer: Boolean, isApprover: Boolean, isOwner: Boolean });
+const props = defineProps({ requisition: Object, signatures: Array, isReviewer: Boolean, isApprover: Boolean, isOwner: Boolean });
+
+function printDoc() {
+    const originalTitle = document.title;
+    document.title = `Requisition ${props.requisition.requisition_number}`;
+    window.print();
+    setTimeout(() => { document.title = originalTitle; }, 500);
+}
 
 const statusColor = {
     draft: 'bg-gray-200 text-gray-600',
@@ -55,7 +63,9 @@ function submitCancel() {
         <template #title>{{ requisition.requisition_number }}</template>
         <template #subtitle>{{ requisition.title }}</template>
         <template #header-actions>
-            <div class="flex gap-2 flex-wrap">
+            <div class="flex gap-2 flex-wrap no-print">
+                <button @click="printDoc" class="btn-secondary btn-sm"><PrinterIcon class="h-4 w-4" /> Print</button>
+
                 <button v-if="isOwner && requisition.status === 'draft'" @click="act('submit', 'Submit this requisition for review?')" class="btn-primary btn-sm">Submit for Review</button>
 
                 <button v-if="isReviewer && requisition.status === 'pending_review'" @click="showReview = true" class="btn-primary btn-sm">Review &amp; Send to Approval</button>
@@ -129,7 +139,24 @@ function submitCancel() {
             </table>
         </div>
 
-        <div v-if="requisition.activity_logs?.length" class="card">
+        <div v-if="requisition.status !== 'draft'" class="card mb-4">
+            <h3 class="font-semibold text-gray-900 mb-2">Sign-off</h3>
+            <table class="w-full text-sm">
+                <tbody class="divide-y divide-gray-50">
+                    <tr v-for="s in signatures" :key="s.label">
+                        <td class="py-2 pr-4 text-gray-500 w-32">{{ s.label }}</td>
+                        <td class="py-2 pr-4 font-medium">{{ s.name ?? '—' }}</td>
+                        <td class="py-2 pr-4">
+                            <span v-if="s.signed_at" class="italic text-green-700">Signed electronically</span>
+                            <span v-else class="text-gray-400">Not yet signed</span>
+                        </td>
+                        <td class="py-2 text-gray-500 text-right">{{ s.signed_at ? new Date(s.signed_at).toLocaleString() : '—' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div v-if="requisition.activity_logs?.length" class="card no-print">
             <h3 class="font-semibold text-gray-900 mb-2">History</h3>
             <ul class="text-sm divide-y divide-gray-50">
                 <li v-for="log in requisition.activity_logs" :key="log.id" class="py-2 flex items-center justify-between">
@@ -194,3 +221,11 @@ function submitCancel() {
         </div>
     </AppLayout>
 </template>
+
+<style>
+@media print {
+    aside, header, .no-print { display: none !important; }
+    main { padding: 0 !important; background: #fff !important; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+}
+</style>

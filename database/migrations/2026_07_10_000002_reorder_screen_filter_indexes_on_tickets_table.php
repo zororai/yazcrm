@@ -21,6 +21,11 @@ return new class extends Migration
 
     public function up(): void
     {
+        // MySQL-only (SHOW INDEX / prefix indexes); performance indexes are skipped on other drivers.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         $existing = collect(DB::select("SHOW INDEX FROM `tickets`"))->pluck('Key_name')->unique();
 
         foreach ($this->indexes as $name => $cols) {
@@ -39,6 +44,11 @@ return new class extends Migration
 
     public function down(): void
     {
+        // MySQL-only (SHOW INDEX / prefix indexes); performance indexes are skipped on other drivers.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         $existing = collect(DB::select("SHOW INDEX FROM `tickets`"))->pluck('Key_name')->unique();
 
         foreach (array_keys($this->indexes) as $name) {

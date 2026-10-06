@@ -58,7 +58,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('procurement_requisition_activity_logs');
+        Schema::dropIfExists('procurement_req_activity_logs');
         Schema::dropIfExists('procurement_requisition_items');
         Schema::dropIfExists('procurement_requisitions');
     }

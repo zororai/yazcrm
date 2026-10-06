@@ -20,6 +20,11 @@ return new class extends Migration
 
     public function up(): void
     {
+        // MySQL-only (SHOW INDEX / prefix indexes); performance indexes are skipped on other drivers.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         $existing = collect(DB::select("SHOW INDEX FROM `tickets`"))->pluck('Key_name')->unique();
 
         Schema::table('tickets', function (Blueprint $table) use ($existing) {
@@ -33,6 +38,11 @@ return new class extends Migration
 
     public function down(): void
     {
+        // MySQL-only (SHOW INDEX / prefix indexes); performance indexes are skipped on other drivers.
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         $existing = collect(DB::select("SHOW INDEX FROM `tickets`"))->pluck('Key_name')->unique();
 
         Schema::table('tickets', function (Blueprint $table) use ($existing) {

@@ -16,6 +16,10 @@ return new class extends Migration
         });
 
         // Backfill from existing classification JSON for any already-saved tickets
+        if (\Illuminate\Support\Facades\DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         \Illuminate\Support\Facades\DB::statement(
             "UPDATE tickets SET psychosocial_type = JSON_UNQUOTE(JSON_EXTRACT(classification, '$.psychosocial_type'))
              WHERE classification IS NOT NULL

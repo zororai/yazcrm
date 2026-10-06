@@ -30,6 +30,13 @@ function removeLine(i) {
     form.lines.splice(i, 1);
 }
 
+// The item field accepts free text: picking (or typing) a catalogue item's
+// exact name links it via item_id; anything else is kept as a custom line.
+function onItemInput(line) {
+    const name = line.description.trim().toLowerCase();
+    line.item_id = props.items.find(it => it.name.toLowerCase() === name)?.id ?? '';
+}
+
 const estimatedTotal = computed(() => form.lines.reduce((sum, l) => sum + (Number(l.quantity) || 0) * (Number(l.estimated_unit_cost) || 0), 0));
 
 function submit() {
@@ -139,18 +146,21 @@ const statusColor = {
                             <label class="label mb-0">Line Items</label>
                             <button type="button" @click="addLine" class="text-xs text-brand-600 hover:underline">+ Add line</button>
                         </div>
-                        <div v-for="(line, i) in form.lines" :key="i" class="grid grid-cols-12 gap-2 items-center mb-2">
-                            <select v-model="line.item_id" class="input col-span-4">
-                                <option value="">Custom / other…</option>
-                                <option v-for="it in items" :key="it.id" :value="it.id">{{ it.name }}</option>
-                            </select>
-                            <input v-model="line.description" class="input col-span-3" placeholder="Description" />
-                            <input v-model.number="line.quantity" type="number" min="1" class="input col-span-2" placeholder="Qty" />
-                            <input v-model.number="line.estimated_unit_cost" type="number" min="0" step="0.01" class="input col-span-2" placeholder="Est. unit cost" />
-                            <button type="button" @click="removeLine(i)" class="col-span-1 text-gray-400 hover:text-red-600" :disabled="form.lines.length === 1">
-                                <TrashIcon class="h-4 w-4" />
-                            </button>
+                        <div v-for="(line, i) in form.lines" :key="i" class="mb-2">
+                            <div class="grid grid-cols-12 gap-2 items-center">
+                                <input v-model="line.description" @input="onItemInput(line)" list="requisition-item-options" class="input col-span-7" placeholder="Pick an item or type a new one" required />
+                                <input v-model.number="line.quantity" type="number" min="1" class="input col-span-2" placeholder="Qty" />
+                                <input v-model.number="line.estimated_unit_cost" type="number" min="0" step="0.01" class="input col-span-2" placeholder="Est. unit cost" />
+                                <button type="button" @click="removeLine(i)" class="col-span-1 text-gray-400 hover:text-red-600" :disabled="form.lines.length === 1">
+                                    <TrashIcon class="h-4 w-4" />
+                                </button>
+                            </div>
+                            <p v-if="line.description && !line.item_id" class="mt-0.5 text-xs text-gray-400">Not in the item list — will be saved as a custom line.</p>
+                            <p v-if="form.errors[`lines.${i}.description`]" class="mt-0.5 text-xs text-red-600">{{ form.errors[`lines.${i}.description`] }}</p>
                         </div>
+                        <datalist id="requisition-item-options">
+                            <option v-for="it in items" :key="it.id" :value="it.name" />
+                        </datalist>
                     </div>
 
                     <div class="text-sm font-medium text-gray-700">

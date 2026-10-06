@@ -9,7 +9,7 @@ import {
     ExclamationTriangleIcon, ChatBubbleLeftRightIcon, ShieldCheckIcon, TableCellsIcon,
     ServerStackIcon, ShieldExclamationIcon, PhoneArrowUpRightIcon, MicrophoneIcon, BookOpenIcon,
     ClipboardDocumentCheckIcon, ClipboardDocumentListIcon, DocumentTextIcon, TruckIcon,
-    SunIcon, MoonIcon, CalendarDaysIcon,
+    SunIcon, MoonIcon, CalendarDaysIcon, MagnifyingGlassIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon,
 } from '@heroicons/vue/24/outline';
 import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
@@ -277,6 +277,8 @@ const navigation = computed(() => [
     ...(can('data_collection') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Review Queue', href: '/data-collection/review-queue', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Fixed Assets', href: '/fixed-assets', icon: ServerStackIcon }] : []),
+    ...(can('fixed_assets') ? [{ name: 'Asset Revaluations', href: '/fixed-assets/revaluations', icon: ArrowTrendingUpIcon }] : []),
+    ...(can('fixed_assets') ? [{ name: 'Depreciation Report', href: '/fixed-assets/depreciation-report', icon: ArrowTrendingDownIcon }] : []),
     ...(can('fixed_assets') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Asset Categories', href: '/asset-categories', icon: FolderOpenIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
@@ -326,6 +328,73 @@ function isActive(href) {
     return !moreSpecific;
 }
 
+// ── Sidebar sections ─────────────────────────────────────────────────────────
+// Visibility is still decided per item by `navigation` above; this only sorts
+// the visible items into sections. Sections with no visible items are hidden.
+// Items not listed here fall into "Other" so nothing silently disappears.
+const navSections = [
+    { name: null,                  items: ['Dashboard', 'Call Activity', 'My Work'] },
+    { name: 'Helpline',            items: ['Dialer', 'Calls', 'Recordings', 'Records Management', 'Callbacks', 'Tickets', 'Ticket Management', 'Urgent', 'Directory', 'Extensions', 'Bot Contacts'] },
+    { name: 'Counselling',         items: ['Counsellor Profiles', 'Timetable', 'Progress Report', 'Team Reports', 'Success Stories'] },
+    { name: 'Reports & Analytics', items: ['Analytics', 'Targets', 'By Project', 'Domains', 'Activity Reports'] },
+    { name: 'Work & Appraisals',   items: ['Work Management', "My Team's Tasks", 'Appraisals', 'Appraisal Reviews', 'Appraisal Archive'] },
+    { name: 'Programs',            items: ['Data Collection', 'My Collection', 'Review Queue', 'SBC Signups', 'YALeP Students'] },
+    { name: 'Procurement',         items: ['Requisitions', 'Payment Requisitions', 'Purchase Orders', 'Suppliers'] },
+    { name: 'Assets',              items: ['Asset Register', 'Fixed Assets', 'Asset Revaluations', 'Depreciation Report', 'Asset Categories', 'IT Asset Categories'] },
+    { name: 'Inventory',           items: ['Stores', 'Items', 'Stock Transfers', 'Stocktakes', 'Item Categories', 'Departments', 'Locations'] },
+    { name: 'Administration',      items: ['Users', 'Roles', 'Audit Trail', 'Risk Register', 'Yeastar', 'Transcription Test Tool'] },
+];
+
+// Sidebar search: matches item names and their section name, so typing
+// "procurement" lists every Procurement link.
+const navSearch = ref('');
+const navSearchQuery = computed(() => navSearch.value.trim().toLowerCase());
+
+const groupedNavigation = computed(() => {
+    const q = navSearchQuery.value;
+    const matches = (item, sectionName) => !q
+        || item.name.toLowerCase().includes(q)
+        || (sectionName ?? '').toLowerCase().includes(q);
+
+    const placed = new Set(navSections.flatMap(s => s.items));
+    const sections = navSections.map(s => ({
+        name: s.name,
+        items: navigation.value.filter(item => s.items.includes(item.name) && matches(item, s.name)),
+    }));
+    sections.push({ name: 'Other', items: navigation.value.filter(item => !placed.has(item.name) && matches(item, 'Other')) });
+
+    return sections
+        .filter(s => s.items.length)
+        .map(s => ({
+            ...s,
+            hasActive: s.items.some(item => isActive(item.href)),
+            badge: s.items.reduce((sum, item) => sum + (item.badge?.value ?? 0), 0),
+        }));
+});
+
+// Collapsed sections are remembered per browser. The section holding the
+// current page is always shown open.
+const collapsedSections = ref((() => {
+    try { return JSON.parse(localStorage.getItem('navCollapsed') ?? '[]'); } catch { return []; }
+})());
+function isSectionOpen(section) {
+    return !section.name || section.hasActive || !!navSearchQuery.value || !collapsedSections.value.includes(section.name);
+}
+
+function openFirstNavMatch() {
+    const first = groupedNavigation.value[0]?.items[0];
+    if (!first) return;
+    navSearch.value = '';
+    sidebarOpen.value = false;
+    router.visit(first.href);
+}
+function toggleSection(section) {
+    collapsedSections.value = isSectionOpen(section)
+        ? [...collapsedSections.value, section.name]
+        : collapsedSections.value.filter(n => n !== section.name);
+    try { localStorage.setItem('navCollapsed', JSON.stringify(collapsedSections.value)); } catch {}
+}
+
 function logout() {
     router.post('/logout');
 }
@@ -370,29 +439,71 @@ function logout() {
                 </div>
             </div>
 
+            <!-- Nav search -->
+            <div class="px-3 pt-4">
+                <div class="relative">
+                    <MagnifyingGlassIcon :class="['absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none', isLight ? 'text-gray-400' : 'text-gray-500']" />
+                    <input
+                        v-model="navSearch"
+                        type="search"
+                        placeholder="Search menu…"
+                        aria-label="Search menu"
+                        @keydown.enter.prevent="openFirstNavMatch"
+                        @keydown.esc="navSearch = ''"
+                        :class="[
+                            'w-full rounded-lg pl-9 pr-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-brand-500',
+                            isLight ? 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500',
+                        ]"
+                    />
+                </div>
+            </div>
+
             <!-- Nav -->
-            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-                <Link
-                    v-for="item in navigation"
-                    :key="item.name"
-                    :href="item.href"
-                    :class="[
-                        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                        isActive(item.href)
-                            ? 'bg-brand-600 text-white'
-                            : item.badge?.value > 0
-                                ? (isLight ? 'text-red-600 hover:bg-red-50' : 'text-red-300 hover:bg-gray-800 hover:text-red-200')
-                                : (isLight ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' : 'text-gray-300 hover:bg-gray-800 hover:text-white'),
-                    ]"
-                    @click="sidebarOpen = false"
-                >
-                    <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
-                    <span class="flex-1">{{ item.name }}</span>
-                    <span v-if="item.badge?.value > 0"
-                        class="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full text-xs font-bold bg-red-500 text-white">
-                        {{ item.badge.value }}
-                    </span>
-                </Link>
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+                <p v-if="navSearchQuery && !groupedNavigation.length" :class="['px-3 text-sm', isLight ? 'text-gray-400' : 'text-gray-500']">
+                    No menu items match “{{ navSearch.trim() }}”.
+                </p>
+                <div v-for="section in groupedNavigation" :key="section.name ?? 'main'">
+                    <button
+                        v-if="section.name"
+                        type="button"
+                        @click="toggleSection(section)"
+                        :class="[
+                            'w-full flex items-center gap-2 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider transition-colors',
+                            isLight ? 'text-gray-400 hover:text-gray-700' : 'text-gray-500 hover:text-gray-300',
+                        ]"
+                    >
+                        <span class="flex-1 text-left">{{ section.name }}</span>
+                        <span v-if="!isSectionOpen(section) && section.badge > 0"
+                            class="inline-flex items-center justify-center h-4 min-w-[1rem] px-1 rounded-full text-[10px] font-bold bg-red-500 text-white normal-case">
+                            {{ section.badge }}
+                        </span>
+                        <ChevronDownIcon :class="['h-3.5 w-3.5 transition-transform', isSectionOpen(section) ? '' : '-rotate-90']" />
+                    </button>
+                    <div v-show="isSectionOpen(section)" class="space-y-1">
+                        <Link
+                            v-for="item in section.items"
+                            :key="item.name"
+                            :href="item.href"
+                            :class="[
+                                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                                isActive(item.href)
+                                    ? 'bg-brand-600 text-white'
+                                    : item.badge?.value > 0
+                                        ? (isLight ? 'text-red-600 hover:bg-red-50' : 'text-red-300 hover:bg-gray-800 hover:text-red-200')
+                                        : (isLight ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' : 'text-gray-300 hover:bg-gray-800 hover:text-white'),
+                            ]"
+                            @click="sidebarOpen = false"
+                        >
+                            <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+                            <span class="flex-1">{{ item.name }}</span>
+                            <span v-if="item.badge?.value > 0"
+                                class="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full text-xs font-bold bg-red-500 text-white">
+                                {{ item.badge.value }}
+                            </span>
+                        </Link>
+                    </div>
+                </div>
             </nav>
 
             <!-- User -->

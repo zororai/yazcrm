@@ -65,7 +65,7 @@ class ProcurementRequisitionController extends Controller
             'required_by_date'   => 'nullable|date',
             'lines'              => 'required|array|min:1',
             'lines.*.item_id'             => 'nullable|exists:items,id',
-            'lines.*.description'         => 'nullable|string|max:255',
+            'lines.*.description'         => 'nullable|required_without:lines.*.item_id|string|max:255',
             'lines.*.quantity'            => 'required|integer|min:1',
             'lines.*.estimated_unit_cost' => 'required|numeric|min:0',
         ]);
@@ -88,10 +88,37 @@ class ProcurementRequisitionController extends Controller
                 'requestedBy:id,name', 'department:id,name', 'reviewedBy:id,name', 'approvedBy:id,name',
                 'items.item:id,name', 'activityLogs.user:id,name',
             ]),
+            'signatures'  => $this->signatures($procurementRequisition),
             'isReviewer'  => $this->isReviewer($user),
             'isApprover'  => $this->isApprover($user),
             'isOwner'     => $procurementRequisition->requested_by === $user->id,
         ]);
+    }
+
+    // Electronic sign-off block (Prepared / Reviewed / Authorized / Paid).
+    // Each row is signed by the person who performed that step, at the time
+    // they performed it — taken from the activity log and, for "Paid by",
+    // the Finance Officer who recorded the linked payment requisition.
+    private function signatures(ProcurementRequisition $requisition): array
+    {
+        $logged = function (string $action) use ($requisition) {
+            $log = $requisition->activityLogs->firstWhere('action', $action);
+
+            return ['name' => $log?->user?->name, 'signed_at' => $log?->created_at];
+        };
+
+        $payment = $requisition->purchaseOrder?->paymentRequisitions()
+            ->where('status', 'recorded')
+            ->with('recordedBy:id,name')
+            ->latest('recorded_at')
+            ->first();
+
+        return [
+            ['label' => 'Prepared by']   + $logged('requisition_submitted'),
+            ['label' => 'Reviewed by']   + $logged('requisition_reviewed'),
+            ['label' => 'Authorized by'] + $logged('requisition_approved'),
+            ['label' => 'Paid by', 'name' => $payment?->recordedBy?->name, 'signed_at' => $payment?->recorded_at],
+        ];
     }
 
     public function submit(Request $request, ProcurementRequisition $procurementRequisition): RedirectResponse
