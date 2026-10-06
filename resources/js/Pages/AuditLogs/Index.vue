@@ -75,6 +75,7 @@ function statusColor(code) {
                         <th class="table-th">User</th>
                         <th class="table-th">Method</th>
                         <th class="table-th">Action</th>
+                        <th class="table-th">Details</th>
                         <th class="table-th">Path</th>
                         <th class="table-th">Status</th>
                         <th class="table-th">IP</th>
@@ -86,12 +87,13 @@ function statusColor(code) {
                         <td class="table-td font-medium">{{ log.user?.name ?? log.user_name ?? 'Guest' }}</td>
                         <td class="table-td"><span :class="['badge', methodColor[log.method] ?? 'bg-gray-100 text-gray-700']">{{ log.method }}</span></td>
                         <td class="table-td text-xs">{{ log.route_name ?? '—' }}</td>
+                        <td class="table-td text-xs max-w-md whitespace-normal">{{ log.description ?? '—' }}</td>
                         <td class="table-td text-xs font-mono">{{ log.path }}</td>
                         <td class="table-td text-xs font-medium" :class="statusColor(log.status_code)">{{ log.status_code ?? '—' }}</td>
                         <td class="table-td text-xs text-gray-400">{{ log.ip_address ?? '—' }}</td>
                     </tr>
                     <tr v-if="!logs.data.length">
-                        <td colspan="7" class="table-td text-center text-gray-400 py-8">No activity recorded yet.</td>
+                        <td colspan="8" class="table-td text-center text-gray-400 py-8">No activity recorded yet.</td>
                     </tr>
                 </tbody>
             </table>

@@ -10,7 +10,7 @@ class AuditLog extends Model
     const UPDATED_AT = null;
 
     protected $fillable = [
-        'user_id', 'user_name', 'method', 'route_name', 'path',
+        'user_id', 'user_name', 'method', 'route_name', 'path', 'description',
         'status_code', 'ip_address', 'user_agent',
     ];
 

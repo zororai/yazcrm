@@ -36,9 +36,23 @@ class FixedAssetService
         return DB::transaction(function () use ($asset, $actor, $data) {
             $asset->update($data);
 
-            $this->log($asset, $actor, 'updated', changedFields: array_keys($data));
+            // Only the fields whose value actually changed.
+            $changed = array_values(array_diff(array_keys($asset->getChanges()), ['updated_at']));
+            if ($changed) {
+                $this->log($asset, $actor, 'updated', changedFields: $changed);
+            }
 
             return $asset;
+        });
+    }
+
+    // Soft delete for assets registered by mistake — disposal is the proper
+    // end-of-life path. Kept recoverable; history stays attached.
+    public function deleteAsset(FixedAsset $asset, User $actor, string $reason): void
+    {
+        DB::transaction(function () use ($asset, $actor, $reason) {
+            $this->log($asset, $actor, 'deleted', oldStatus: $asset->status, reason: $reason);
+            $asset->delete();
         });
     }
 

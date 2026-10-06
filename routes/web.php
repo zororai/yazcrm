@@ -262,6 +262,8 @@ Route::middleware('auth')->group(function () {
     Route::post('fixed-assets',             [Web\FixedAssetController::class, 'store'])->name('fixed-assets.store');
     Route::get('fixed-assets/export/excel', [Web\FixedAssetController::class, 'exportExcel'])->name('fixed-assets.export.excel');
     Route::get('fixed-assets/export/pdf',   [Web\FixedAssetController::class, 'exportPdf'])->name('fixed-assets.export.pdf');
+    Route::get('fixed-assets/import-template', [Web\FixedAssetImportController::class, 'template'])->name('fixed-assets.import-template');
+    Route::post('fixed-assets/import',         [Web\FixedAssetImportController::class, 'import'])->name('fixed-assets.import');
     Route::get('fixed-assets/dashboard',            [Web\FixedAssetController::class, 'dashboard'])->name('fixed-assets.dashboard');
     Route::get('fixed-assets/dashboard/export/pdf', [Web\FixedAssetController::class, 'exportDashboardPdf'])->name('fixed-assets.dashboard.export.pdf');
     Route::get('fixed-assets/revaluations',              [Web\FixedAssetController::class, 'revaluationsIndex'])->name('fixed-assets.revaluations.index');
@@ -272,6 +274,7 @@ Route::middleware('auth')->group(function () {
     Route::get('fixed-assets/depreciation-report/export/pdf',   [Web\FixedAssetController::class, 'exportDepreciationPdf'])->name('fixed-assets.depreciation-report.export.pdf');
     Route::get('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'show'])->name('fixed-assets.show');
     Route::put('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'update'])->name('fixed-assets.update');
+    Route::delete('fixed-assets/{fixedAsset}', [Web\FixedAssetController::class, 'destroy'])->name('fixed-assets.destroy');
     Route::post('fixed-assets/{fixedAsset}/assign',   [Web\FixedAssetController::class, 'assign'])->name('fixed-assets.assign');
     Route::post('fixed-assets/{fixedAsset}/return',   [Web\FixedAssetController::class, 'returnAsset'])->name('fixed-assets.return');
     Route::post('fixed-assets/{fixedAsset}/transfer', [Web\FixedAssetController::class, 'transfer'])->name('fixed-assets.transfer');

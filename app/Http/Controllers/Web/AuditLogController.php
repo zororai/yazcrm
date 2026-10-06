@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,11 +22,16 @@ class AuditLogController extends Controller
         $method = $request->string('method')->toString() ?: null;
         $search = $request->string('search')->toString() ?: null;
 
+        $hasDescription = Schema::hasColumn('audit_logs', 'description');
+
         $logs = AuditLog::with('user:id,name')
             ->when($userId, fn ($q) => $q->where('user_id', $userId))
             ->when($method, fn ($q) => $q->where('method', $method))
-            ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
+            ->when($search, fn ($q) => $q->where(function ($q) use ($search, $hasDescription) {
                 $q->where('path', 'like', "%{$search}%")->orWhere('route_name', 'like', "%{$search}%");
+                if ($hasDescription) {
+                    $q->orWhere('description', 'like', "%{$search}%");
+                }
             }))
             ->latest('created_at')
             ->paginate(50)

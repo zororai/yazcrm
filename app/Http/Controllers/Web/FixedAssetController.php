@@ -58,6 +58,7 @@ class FixedAssetController extends Controller
             'assets'     => $assets,
             'categories' => AssetCategory::orderBy('name')->get(['id', 'name']),
             'isManager'  => $this->isManager($request->user()),
+            'canDelete'  => in_array($request->user()->role, ['admin', 'director'], true),
         ]);
     }
 
@@ -113,20 +114,91 @@ class FixedAssetController extends Controller
         }
 
         $data = $request->validate([
+            'asset_category_id' => 'nullable|exists:asset_categories,id',
             'name'              => 'required|string|max:255',
             'description'       => 'nullable|string',
             'manufacturer'      => 'nullable|string|max:255',
             'model'             => 'nullable|string|max:255',
+            'serial_number'     => 'nullable|string|max:255|unique:fixed_assets,serial_number,'.$fixedAsset->id,
+            'purchase_date'     => 'nullable|date',
             'purchase_cost'     => 'nullable|numeric|min:0',
             'useful_life_years' => 'nullable|integer|min:1|max:100',
             'salvage_value'     => 'nullable|numeric|min:0',
             'revaluation_cycle_years' => 'nullable|integer|min:1|max:50',
+            'supplier_name'     => 'nullable|string|max:255',
             'warranty_expiry'   => 'nullable|date',
         ]);
 
         $this->service->updateAsset($fixedAsset, $request->user(), $data);
 
-        return back()->with('success', 'Saved.');
+        $changes = $this->describeChanges($fixedAsset);
+        $request->attributes->set('audit_description', $changes
+            ? "Edited fixed asset {$this->assetLabel($fixedAsset)}: ".implode('; ', $changes)
+            : "Saved fixed asset {$this->assetLabel($fixedAsset)} (no changes)");
+
+        return back()->with('success', $changes ? 'Asset updated.' : 'No changes to save.');
+    }
+
+    public function destroy(Request $request, FixedAsset $fixedAsset): RedirectResponse
+    {
+        // Deleting is reserved for admin/director; everyday corrections use Edit,
+        // and real end-of-life goes through Dispose.
+        if (! in_array($request->user()->role, ['admin', 'director'], true)) {
+            abort(403);
+        }
+
+        $data = $request->validate(['reason' => 'required|string|max:1000']);
+
+        $this->service->deleteAsset($fixedAsset, $request->user(), $data['reason']);
+
+        $request->attributes->set('audit_description', sprintf(
+            'Deleted fixed asset %s (status: %s, book value: %s). Reason: %s',
+            $this->assetLabel($fixedAsset),
+            str_replace('_', ' ', $fixedAsset->status),
+            $fixedAsset->book_value !== null ? number_format($fixedAsset->book_value, 2) : '—',
+            $data['reason'],
+        ));
+
+        return redirect()->route('fixed-assets.index')->with('success', "Asset {$fixedAsset->asset_number} deleted.");
+    }
+
+    private function assetLabel(FixedAsset $asset): string
+    {
+        return trim("{$asset->asset_number} ({$asset->name})");
+    }
+
+    // "Name: 'Old' → 'New'" for each field the last save actually changed.
+    private function describeChanges(FixedAsset $asset): array
+    {
+        $labels = [
+            'asset_category_id' => 'Category', 'name' => 'Name', 'description' => 'Description',
+            'manufacturer' => 'Manufacturer', 'model' => 'Model', 'serial_number' => 'Serial number',
+            'purchase_date' => 'Purchase date', 'purchase_cost' => 'Purchase cost',
+            'useful_life_years' => 'Useful life (yrs)', 'salvage_value' => 'Salvage value',
+            'revaluation_cycle_years' => 'Revaluation cycle (yrs)', 'supplier_name' => 'Supplier',
+            'warranty_expiry' => 'Warranty expiry',
+        ];
+
+        $previous = $asset->getPrevious();
+        $show = function ($field, $value) {
+            if ($value === null || $value === '') {
+                return '(blank)';
+            }
+            if ($field === 'asset_category_id') {
+                return AssetCategory::find($value)?->name ?? "#{$value}";
+            }
+            if (in_array($field, ['purchase_cost', 'salvage_value'], true)) {
+                return number_format((float) $value, 2);
+            }
+
+            return "'".str($value)->replaceMatches('/ 00:00:00$/', '')->limit(80)."'";
+        };
+
+        return collect($asset->getChanges())
+            ->except('updated_at')
+            ->map(fn ($new, $field) => ($labels[$field] ?? $field).': '.$show($field, $previous[$field] ?? null).' → '.$show($field, $new))
+            ->values()
+            ->all();
     }
 
     public function assign(Request $request, FixedAsset $fixedAsset): RedirectResponse
