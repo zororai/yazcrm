@@ -228,6 +228,9 @@ Route::middleware('auth')->group(function () {
     Route::put('items/{item}', [Web\ItemController::class, 'update'])->name('items.update');
     Route::delete('items/{item}', [Web\ItemController::class, 'destroy'])->name('items.destroy');
 
+    Route::get('programmes/dashboard',            [Web\ProgrammesDashboardController::class, 'index'])->name('programmes.dashboard');
+    Route::get('programmes/dashboard/export/pdf', [Web\ProgrammesDashboardController::class, 'exportPdf'])->name('programmes.dashboard.export.pdf');
+
     Route::get('inventory/dashboard',            [Web\InventoryDashboardController::class, 'index'])->name('inventory.dashboard');
     Route::get('inventory/dashboard/export/pdf', [Web\InventoryDashboardController::class, 'exportPdf'])->name('inventory.dashboard.export.pdf');
 

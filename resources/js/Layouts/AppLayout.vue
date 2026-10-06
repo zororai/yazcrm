@@ -272,6 +272,7 @@ const navigation = computed(() => [
     ...(can('work_management') ? [{ name: 'Work Management', href: '/workspaces', icon: TableCellsIcon }] : []),
     ...(can('work_management') && (isAdmin.value || user.value?.role === 'director' || (user.value?.subordinates_count ?? 0) > 0)
         ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
+    ...(can('programmes_dashboard') ? [{ name: 'Programmes Dashboard', href: '/programmes/dashboard', icon: ChartBarIcon }] : []),
     ...(can('data_collection') ? [{ name: 'Data Collection', href: '/data-collection', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('data_collection') ? [{ name: 'My Collection', href: '/my-collection', icon: QueueListIcon }] : []),
     ...(can('data_collection') && (isAdmin.value || user.value?.role === 'director')
@@ -340,7 +341,7 @@ const navSections = [
     { name: 'Counselling',         items: ['Counsellor Profiles', 'Timetable', 'Progress Report', 'Team Reports', 'Success Stories'] },
     { name: 'Reports & Analytics', items: ['Analytics', 'Targets', 'By Project', 'Domains', 'Activity Reports'] },
     { name: 'Work & Appraisals',   items: ['Work Management', "My Team's Tasks", 'Appraisals', 'Appraisal Reviews', 'Appraisal Archive'] },
-    { name: 'Programs',            items: ['Data Collection', 'My Collection', 'Review Queue', 'SBC Signups', 'YALeP Students'] },
+    { name: 'Programs',            items: ['Programmes Dashboard', 'Data Collection', 'My Collection', 'Review Queue', 'SBC Signups', 'YALeP Students'] },
     { name: 'Procurement',         items: ['Requisitions', 'Payment Requisitions', 'Purchase Orders', 'Suppliers'] },
     { name: 'Assets',              items: ['Asset Dashboard', 'Asset Register', 'Fixed Assets', 'Asset Revaluations', 'Depreciation Report', 'Asset Categories', 'IT Asset Categories'] },
     { name: 'Inventory',           items: ['Inventory Dashboard', 'Stores', 'Items', 'Stock Transfers', 'Stocktakes', 'Item Categories', 'Departments', 'Locations'] },

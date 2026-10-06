@@ -37,6 +37,7 @@ const PERM_LABELS = {
     analytics:   'Analytics',
     targets:     'Call Targets',
     by_project:  'By Project (Stats)',
+    programmes_dashboard: 'Programmes Dashboard',
     domains:     'Distress Domains',
     bot_contacts:'Bot Contacts',
     users:       'Users Management',
