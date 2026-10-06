@@ -276,11 +276,13 @@ const navigation = computed(() => [
     ...(can('data_collection') ? [{ name: 'My Collection', href: '/my-collection', icon: QueueListIcon }] : []),
     ...(can('data_collection') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Review Queue', href: '/data-collection/review-queue', icon: ClipboardDocumentCheckIcon }] : []),
+    ...(can('fixed_assets') ? [{ name: 'Asset Dashboard', href: '/fixed-assets/dashboard', icon: ChartBarIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Fixed Assets', href: '/fixed-assets', icon: ServerStackIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Asset Revaluations', href: '/fixed-assets/revaluations', icon: ArrowTrendingUpIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Depreciation Report', href: '/fixed-assets/depreciation-report', icon: ArrowTrendingDownIcon }] : []),
     ...(can('fixed_assets') && (isAdmin.value || user.value?.role === 'director')
         ? [{ name: 'Asset Categories', href: '/asset-categories', icon: FolderOpenIcon }] : []),
+    ...(can('stores') ? [{ name: 'Inventory Dashboard', href: '/inventory/dashboard', icon: ChartBarIcon }] : []),
     ...(can('stores') ? [{ name: 'Stores', href: '/stores', icon: ServerStackIcon }] : []),
     ...(can('stores') ? [{ name: 'Items', href: '/items', icon: TableCellsIcon }] : []),
     ...(can('stock_transfers') ? [{ name: 'Stock Transfers', href: '/stock-transfers', icon: TruckIcon }] : []),
@@ -340,8 +342,8 @@ const navSections = [
     { name: 'Work & Appraisals',   items: ['Work Management', "My Team's Tasks", 'Appraisals', 'Appraisal Reviews', 'Appraisal Archive'] },
     { name: 'Programs',            items: ['Data Collection', 'My Collection', 'Review Queue', 'SBC Signups', 'YALeP Students'] },
     { name: 'Procurement',         items: ['Requisitions', 'Payment Requisitions', 'Purchase Orders', 'Suppliers'] },
-    { name: 'Assets',              items: ['Asset Register', 'Fixed Assets', 'Asset Revaluations', 'Depreciation Report', 'Asset Categories', 'IT Asset Categories'] },
-    { name: 'Inventory',           items: ['Stores', 'Items', 'Stock Transfers', 'Stocktakes', 'Item Categories', 'Departments', 'Locations'] },
+    { name: 'Assets',              items: ['Asset Dashboard', 'Asset Register', 'Fixed Assets', 'Asset Revaluations', 'Depreciation Report', 'Asset Categories', 'IT Asset Categories'] },
+    { name: 'Inventory',           items: ['Inventory Dashboard', 'Stores', 'Items', 'Stock Transfers', 'Stocktakes', 'Item Categories', 'Departments', 'Locations'] },
     { name: 'Administration',      items: ['Users', 'Roles', 'Audit Trail', 'Risk Register', 'Yeastar', 'Transcription Test Tool'] },
 ];
 

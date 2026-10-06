@@ -228,6 +228,9 @@ Route::middleware('auth')->group(function () {
     Route::put('items/{item}', [Web\ItemController::class, 'update'])->name('items.update');
     Route::delete('items/{item}', [Web\ItemController::class, 'destroy'])->name('items.destroy');
 
+    Route::get('inventory/dashboard',            [Web\InventoryDashboardController::class, 'index'])->name('inventory.dashboard');
+    Route::get('inventory/dashboard/export/pdf', [Web\InventoryDashboardController::class, 'exportPdf'])->name('inventory.dashboard.export.pdf');
+
     // ─── Stores & Assets Management — Phase 2 (stock movements) ──────────────
     Route::post('stores/{store}/receipts', [Web\StockReceiptController::class, 'store'])->name('stores.receipts.store');
     Route::post('stores/{store}/issues',   [Web\StockIssueController::class, 'store'])->name('stores.issues.store');
@@ -256,6 +259,8 @@ Route::middleware('auth')->group(function () {
     Route::post('fixed-assets',             [Web\FixedAssetController::class, 'store'])->name('fixed-assets.store');
     Route::get('fixed-assets/export/excel', [Web\FixedAssetController::class, 'exportExcel'])->name('fixed-assets.export.excel');
     Route::get('fixed-assets/export/pdf',   [Web\FixedAssetController::class, 'exportPdf'])->name('fixed-assets.export.pdf');
+    Route::get('fixed-assets/dashboard',            [Web\FixedAssetController::class, 'dashboard'])->name('fixed-assets.dashboard');
+    Route::get('fixed-assets/dashboard/export/pdf', [Web\FixedAssetController::class, 'exportDashboardPdf'])->name('fixed-assets.dashboard.export.pdf');
     Route::get('fixed-assets/revaluations',              [Web\FixedAssetController::class, 'revaluationsIndex'])->name('fixed-assets.revaluations.index');
     Route::get('fixed-assets/revaluations/export/excel',  [Web\FixedAssetController::class, 'exportRevaluationsExcel'])->name('fixed-assets.revaluations.export.excel');
     Route::get('fixed-assets/revaluations/export/pdf',    [Web\FixedAssetController::class, 'exportRevaluationsPdf'])->name('fixed-assets.revaluations.export.pdf');
