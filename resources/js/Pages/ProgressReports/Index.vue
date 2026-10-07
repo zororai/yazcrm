@@ -9,7 +9,9 @@ const props = defineProps({
     current: Object,
     history: Array,
     isManager: Boolean,
+    canViewTeam: Boolean,
     supervisorOptions: Array,
+    myStories: Array,
 });
 
 const month = ref(props.month.slice(0, 7)); // "YYYY-MM" for the <input type="month">
@@ -43,7 +45,21 @@ const form = useForm({
     services:          props.current?.services?.length ? [...props.current.services] : [blankService()],
     activities:        props.current?.activities?.length ? [...props.current.activities] : [blankActivity()],
     success_stories:   props.current?.success_stories?.length ? [...props.current.success_stories] : [blankStory()],
+    attached_story_ids: [...(props.current?.attached_story_ids ?? [])],
 });
+
+// Own Success Stories, ones from the report's month listed first.
+const reportMonth = computed(() => props.month.slice(0, 7));
+const sortedStories = computed(() => [...(props.myStories ?? [])].sort((a, b) => {
+    const am = a.created_at?.startsWith(reportMonth.value) ? 0 : 1;
+    const bm = b.created_at?.startsWith(reportMonth.value) ? 0 : 1;
+    return am - bm || (b.created_at ?? '').localeCompare(a.created_at ?? '');
+}));
+function toggleStory(id) {
+    const i = form.attached_story_ids.indexOf(id);
+    if (i === -1) form.attached_story_ids.push(id);
+    else form.attached_story_ids.splice(i, 1);
+}
 
 watch(() => props.current, (c) => {
     form.job_title        = c?.job_title ?? '';
@@ -57,6 +73,7 @@ watch(() => props.current, (c) => {
     form.services        = c?.services?.length ? [...c.services] : [blankService()];
     form.activities       = c?.activities?.length ? [...c.activities] : [blankActivity()];
     form.success_stories = c?.success_stories?.length ? [...c.success_stories] : [blankStory()];
+    form.attached_story_ids = [...(c?.attached_story_ids ?? [])];
     form.month            = props.month;
 });
 
@@ -95,6 +112,9 @@ const statusColor = {
 <template>
     <AppLayout>
         <template #title>Individual Monthly Progress Report</template>
+        <template v-if="canViewTeam" #header-actions>
+            <Link href="/progress-reports/team" class="btn-secondary btn-sm">View all team reports</Link>
+        </template>
 
         <div class="card mb-4 flex flex-wrap items-end gap-3">
             <div>
@@ -297,6 +317,33 @@ const statusColor = {
                         <textarea v-model="s.solution" rows="3" class="input resize-none" placeholder="How it was resolved…" />
                     </div>
                 </div>
+            </div>
+
+            <!-- ── Attach Success Stories (from the Success Stories section) ── -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <label class="label mb-0">Attach Success Stories</label>
+                        <p class="text-xs text-gray-400">Tick the success stories you've written to include them in this report. Ones from {{ monthLabel }} are listed first.</p>
+                    </div>
+                    <Link href="/success-stories" class="text-xs text-brand-600 hover:underline flex-shrink-0">Write a new story →</Link>
+                </div>
+                <div v-if="sortedStories.length" class="rounded-xl ring-1 ring-gray-200 divide-y divide-gray-100 max-h-72 overflow-y-auto">
+                    <label v-for="s in sortedStories" :key="s.id" class="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50">
+                        <input type="checkbox" :checked="form.attached_story_ids.includes(s.id)" @change="toggleStory(s.id)" class="h-4 w-4 rounded border-gray-300 text-brand-600" />
+                        <img v-if="s.photo" :src="`/storage/${s.photo}`" alt="" class="h-10 w-10 rounded object-cover flex-shrink-0" />
+                        <div class="min-w-0 flex-1">
+                            <div class="text-sm font-medium text-gray-800 truncate">{{ s.title }}</div>
+                            <div class="text-xs text-gray-400">{{ s.created_at }}</div>
+                        </div>
+                        <span :class="['badge flex-shrink-0', statusColor[s.status] ?? 'bg-gray-100 text-gray-600']">{{ statusLabels[s.status] ?? s.status }}</span>
+                    </label>
+                </div>
+                <p v-else class="text-sm text-gray-400 rounded-xl ring-1 ring-gray-200 p-3">
+                    You haven't written any success stories yet. <Link href="/success-stories" class="text-brand-600 hover:underline">Write one</Link>, then come back to attach it.
+                </p>
+                <p v-if="form.attached_story_ids.length" class="mt-1 text-xs text-gray-500">{{ form.attached_story_ids.length }} attached</p>
+                <p v-for="(e, k) in Object.entries(form.errors).filter(([key]) => key.startsWith('attached_story_ids')).map(([, v]) => v)" :key="k" class="mt-1 text-xs text-red-600">{{ e }}</p>
             </div>
 
             <div class="flex justify-center">

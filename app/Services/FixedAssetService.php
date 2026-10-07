@@ -23,7 +23,11 @@ class FixedAssetService
                 'condition'  => $attributes['condition'] ?? 'good',
                 'created_by' => $actor->id,
             ]);
-            $asset->update(['asset_number' => 'AST-'.str_pad((string) $asset->id, 6, '0', STR_PAD_LEFT)]);
+            // The user enters the asset number; AST-000123 is only a fallback
+            // for callers that don't supply one.
+            if (blank($asset->asset_number)) {
+                $asset->update(['asset_number' => 'AST-'.str_pad((string) $asset->id, 6, '0', STR_PAD_LEFT)]);
+            }
 
             $this->log($asset, $actor, 'created', newStatus: $asset->status);
 

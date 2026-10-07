@@ -35,6 +35,7 @@ class FixedAssetImportController extends Controller
 
     // Column key => [heading, required, help text, example]
     private const COLUMNS = [
+        'asset_number'            => ['Asset Number', true, 'Your asset number / tag. Must be unique — not already in the register or repeated in the file.', 'YAZ/IT/0001'],
         'name'                    => ['Name', true, 'Asset name.', 'Dell Latitude 5440 Laptop'],
         'category'                => ['Category', false, 'Must match an existing asset category (pick from the list).', null],
         'description'             => ['Description', false, 'Free text.', '16GB RAM, 512GB SSD'],
@@ -51,7 +52,8 @@ class FixedAssetImportController extends Controller
         'warranty_expiry'         => ['Warranty Expiry', false, 'Date, same formats as Purchase Date.', '2028-01-31'],
         'condition'               => ['Condition', false, 'One of: '.'%CONDITIONS%'.'. Defaults to good.', 'good'],
         'department'              => ['Department', false, 'Must match an existing department (pick from the list).', null],
-        'location'                => ['Location', false, 'Must match an existing location (pick from the list).', null],
+        'asset_location'          => ['Asset Location', true, 'Where the asset is normally kept. Must match an existing location (pick from the list).', null],
+        'issued_location'         => ['Issued Location', false, 'Where it is issued and in use now. Must match an existing location; leave blank if not issued.', null],
     ];
 
     private const DATE_COLUMNS = ['purchase_date', 'warranty_start', 'warranty_expiry'];
@@ -93,8 +95,10 @@ class FixedAssetImportController extends Controller
                     ?? $lists['Category'][0] ?? null;
             } elseif ($key === 'department') {
                 $example = $lists['Department'][0] ?? null;
-            } elseif ($key === 'location') {
+            } elseif ($key === 'asset_location') {
                 $example = $lists['Location'][0] ?? null;
+            } elseif ($key === 'issued_location') {
+                $example = $lists['Location'][1] ?? $lists['Location'][0] ?? null;
             }
             if ($example !== null) {
                 $sheet->setCellValue("{$letter}2", $example);
@@ -128,7 +132,10 @@ class FixedAssetImportController extends Controller
         }
         $listSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
 
-        $dropdowns = ['category' => 'Category', 'condition' => 'Condition', 'department' => 'Department', 'location' => 'Location'];
+        $dropdowns = [
+            'category' => 'Category', 'condition' => 'Condition', 'department' => 'Department',
+            'asset_location' => 'Location', 'issued_location' => 'Location',
+        ];
         foreach ($dropdowns as $key => $title) {
             if (! $ranges[$title]) {
                 continue;
@@ -163,8 +170,8 @@ class FixedAssetImportController extends Controller
         foreach ([
             'How to use:',
             '1. Fill one asset per row on the "Assets" sheet, starting at row 2 (replace the grey example row).',
-            '2. Only Name is required. Leave a cell blank if you don\'t have the value.',
-            '3. Asset numbers are created automatically — do not add them.',
+            '2. Asset Number, Name and Asset Location are required (marked *). Leave other cells blank if you don\'t have the value.',
+            '3. Asset Number is your own asset tag/number — each one must be unique.',
             '4. Upload the file on Fixed Assets → Import. Every row is checked first; if any row has a problem nothing is imported and the errors are listed by row number.',
             '5. Up to '.self::MAX_ROWS.' assets per file. Excel (.xlsx) and CSV files with the same headings both work.',
         ] as $line) {
@@ -226,7 +233,7 @@ class FixedAssetImportController extends Controller
         $map = $this->mapHeadings($headings);
 
         if (! isset($map['name'])) {
-            return [collect(), ['The first row must contain the column headings from the template (at least "Name").']];
+            return [collect(), ['The first row must contain the column headings from the template (at least "Asset Number", "Name" and "Asset Location").']];
         }
 
         $categories  = AssetCategory::pluck('id', 'name')->mapWithKeys(fn ($id, $n) => [mb_strtolower(trim($n)) => $id]);
@@ -234,10 +241,13 @@ class FixedAssetImportController extends Controller
         $locations   = Location::pluck('id', 'name')->mapWithKeys(fn ($id, $n) => [mb_strtolower(trim($n)) => $id]);
         $existingSerials = FixedAsset::withTrashed()->whereNotNull('serial_number')->pluck('serial_number')
             ->map(fn ($s) => mb_strtolower(trim($s)))->flip();
+        $existingNumbers = FixedAsset::withTrashed()->whereNotNull('asset_number')->pluck('asset_number')
+            ->map(fn ($s) => mb_strtolower(trim($s)))->flip();
 
         $assets = collect();
         $errors = [];
         $seenSerials = [];
+        $seenNumbers = [];
 
         foreach ($rows as $i => $row) {
             $rowNumber = $i + 2; // heading is row 1
@@ -270,7 +280,12 @@ class FixedAssetImportController extends Controller
                 }
 
                 $heading = self::COLUMNS[$key][0];
-                $lookups = ['category' => [$categories, 'asset_category_id'], 'department' => [$departments, 'department_id'], 'location' => [$locations, 'location_id']];
+                $lookups = [
+                    'category'        => [$categories, 'asset_category_id'],
+                    'department'      => [$departments, 'department_id'],
+                    'asset_location'  => [$locations, 'home_location_id'],
+                    'issued_location' => [$locations, 'location_id'],
+                ];
 
                 if (in_array($key, self::DATE_COLUMNS, true)) {
                     if ($date = $this->toDate($value)) {
@@ -300,6 +315,7 @@ class FixedAssetImportController extends Controller
             }
 
             $validator = Validator::make($attrs, [
+                'asset_number'            => 'required|string|max:50',
                 'name'                    => 'required|string|max:255',
                 'manufacturer'            => 'nullable|string|max:255',
                 'model'                   => 'nullable|string|max:255',
@@ -311,7 +327,8 @@ class FixedAssetImportController extends Controller
                 'revaluation_cycle_years' => 'nullable|integer|min:1|max:50',
                 'condition'               => 'nullable|in:'.implode(',', AssetStatus::CONDITIONS),
             ], [
-                'name.required'   => 'Name is required',
+                'name.required'         => 'Name is required',
+                'asset_number.required' => 'Asset Number is required',
                 'condition.in'    => 'Condition must be one of: '.implode(', ', AssetStatus::CONDITIONS),
                 'integer'         => ':attribute must be a whole number',
             ], [
@@ -319,6 +336,21 @@ class FixedAssetImportController extends Controller
                 'purchase_cost' => 'Purchase Cost', 'salvage_value' => 'Salvage Value',
             ]);
             $rowErrors = array_merge($rowErrors, $validator->errors()->all());
+
+            // Asset location is required; an unknown name was already reported above.
+            if (trim((string) $cell('asset_location')) === '') {
+                $rowErrors[] = 'Asset Location is required';
+            }
+
+            if (! empty($attrs['asset_number'])) {
+                $number = mb_strtolower($attrs['asset_number']);
+                if (isset($existingNumbers[$number])) {
+                    $rowErrors[] = "Asset Number \"{$attrs['asset_number']}\" is already in the register";
+                } elseif (isset($seenNumbers[$number])) {
+                    $rowErrors[] = "Asset Number \"{$attrs['asset_number']}\" is repeated (also on row {$seenNumbers[$number]})";
+                }
+                $seenNumbers[$number] ??= $rowNumber;
+            }
 
             if (! empty($attrs['serial_number'])) {
                 $serial = mb_strtolower($attrs['serial_number']);
@@ -361,6 +393,9 @@ class FixedAssetImportController extends Controller
         $lookup['usefullife'] = 'useful_life_years';
         $lookup['revaluationcycle'] = 'revaluation_cycle_years';
         $lookup['supplier'] = 'supplier_name';
+        $lookup['location'] = 'asset_location';
+        $lookup['assettag'] = 'asset_number';
+        $lookup['assetno'] = 'asset_number';
 
         $map = [];
         foreach ($headings as $index => $heading) {

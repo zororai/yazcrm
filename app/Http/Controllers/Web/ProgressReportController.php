@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProgressReport;
+use App\Models\SuccessStory;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,6 +25,15 @@ class ProgressReportController extends Controller
         return in_array($request->user()->role, ['admin', 'director', 'helpline_manager'], true);
     }
 
+    // Who can read everyone's reports: managers, plus anyone granted the
+    // "Team Reports" permission (matches the sidebar's "View All Team Reports").
+    // Reviewing/approving stays manager-only.
+    private function canViewTeam(Request $request): bool
+    {
+        return $this->isManager($request)
+            || in_array('team_reports', $request->user()->nav_permissions ?? [], true);
+    }
+
     public function index(Request $request): Response
     {
         $user      = $request->user();
@@ -34,6 +45,19 @@ class ProgressReportController extends Controller
             ->get(['id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'kpis', 'provinces', 'male_clients', 'female_clients', 'services', 'activities', 'success_stories', 'status', 'review_notes']);
 
         $current = $mine->first(fn (ProgressReport $r) => $r->month->toDateString() === $month);
+
+        // The user's own Success Stories, which can be attached to the report.
+        $myStories = SuccessStory::with('photos:id,success_story_id,path')
+            ->where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'title', 'status', 'created_at'])
+            ->map(fn (SuccessStory $s) => [
+                'id'         => $s->id,
+                'title'      => $s->title,
+                'status'     => $s->status,
+                'created_at' => $s->created_at?->toDateString(),
+                'photo'      => $s->photos->first()?->path,
+            ]);
 
         return Inertia::render('ProgressReports/Index', [
             'month'    => $month,
@@ -50,9 +74,11 @@ class ProgressReportController extends Controller
                 'services'          => $current->services ?? [],
                 'activities'        => $current->activities ?? [],
                 'success_stories'   => $current->success_stories ?? [],
+                'attached_story_ids' => $current->attachedStories()->pluck('success_stories.id'),
                 'status'            => $current->status,
                 'review_notes'      => $current->review_notes,
             ] : null,
+            'myStories' => $myStories,
             'history' => $mine->map(fn (ProgressReport $r) => [
                 'id'    => $r->id,
                 'month' => $r->month->toDateString(),
@@ -60,43 +86,63 @@ class ProgressReportController extends Controller
                 'status'    => $r->status,
             ])->values(),
             'isManager'    => $isManager,
+            'canViewTeam'  => $this->canViewTeam($request),
             // For the Supervisor dropdown — every real user, available to
             // all roles filing a report (not just managers).
             'supervisorOptions' => User::where('role', '!=', 'admin')->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
-    // Manager-only: every submitted report for a given month, across the
-    // whole team — its own page, not embedded in the personal report view.
+    // Manager-only: the whole team's reports — every month by default
+    // (month=all), or one month, which also lists who hasn't submitted.
     public function team(Request $request): Response
     {
-        abort_unless($this->isManager($request), 403);
+        abort_unless($this->canViewTeam($request), 403);
 
-        $month = Carbon::parse($request->input('month', now()->startOfMonth()->toDateString()))->startOfMonth()->toDateString();
+        $allMonths = $request->input('month', 'all') === 'all';
+        $month = $allMonths ? null : Carbon::parse($request->input('month'))->startOfMonth()->toDateString();
+        $status = $request->string('status')->toString() ?: null;
+        $userId = $request->integer('user_id') ?: null;
 
         $reports = ProgressReport::with('user:id,name,username')
-            ->whereDate('month', $month)
+            ->when($month, fn ($q) => $q->whereDate('month', $month))
+            ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->orderByDesc('month')
             ->orderBy('user_id')
             ->get(['id', 'user_id', 'month', 'job_title', 'supervisor', 'date_submitted', 'overall_progress', 'status'])
             ->map(fn (ProgressReport $r) => [
                 'id'         => $r->id,
                 'user'       => $r->user,
+                'month'      => $r->month->toDateString(),
                 'job_title'  => $r->job_title,
                 'supervisor' => $r->supervisor,
                 'submitted'  => $r->date_submitted?->toDateString(),
                 'status'     => $r->status,
             ])->values();
 
-        $submittedUserIds = $reports->pluck('user.id');
-        $notSubmitted = User::where('role', '!=', 'admin')
-            ->whereNotIn('id', $submittedUserIds)
-            ->orderBy('name')
-            ->get(['id', 'name', 'username']);
+        // "Not submitted" only makes sense for a single month.
+        $notSubmitted = $month
+            ? User::where('role', '!=', 'admin')
+                ->whereNotIn('id', ProgressReport::whereDate('month', $month)->pluck('user_id'))
+                ->orderBy('name')
+                ->get(['id', 'name', 'username'])
+            : collect();
+
+        // Months that have reports, newest first, for quick switching.
+        $availableMonths = ProgressReport::get(['month'])
+            ->groupBy(fn (ProgressReport $r) => $r->month->format('Y-m-01'))
+            ->map(fn ($rows, $m) => ['month' => $m, 'count' => $rows->count()])
+            ->sortKeysDesc()
+            ->values();
 
         return Inertia::render('ProgressReports/Team', [
-            'month'         => $month,
-            'reports'       => $reports,
-            'notSubmitted'  => $notSubmitted,
+            'month'           => $month ?? 'all',
+            'reports'         => $reports,
+            'notSubmitted'    => $notSubmitted,
+            'availableMonths' => $availableMonths,
+            'staff'           => User::whereIn('id', ProgressReport::distinct()->pluck('user_id'))->orderBy('name')->get(['id', 'name']),
+            'filters'         => ['status' => $status ?? '', 'user_id' => $userId ? (string) $userId : ''],
         ]);
     }
 
@@ -126,17 +172,27 @@ class ProgressReportController extends Controller
             'success_stories'                => 'nullable|array',
             'success_stories.*.challenge'    => 'nullable|string',
             'success_stories.*.solution'     => 'nullable|string',
+            // Attach only your own Success Stories.
+            'attached_story_ids'             => 'nullable|array',
+            'attached_story_ids.*'           => ['integer', Rule::exists('success_stories', 'id')->where('user_id', $request->user()->id)],
+        ], [
+            'attached_story_ids.*.exists' => 'You can only attach your own success stories.',
         ]);
 
         // Always the authenticated user's own report — a report can't be
         // filed on someone else's behalf, even by a manager. Any edit
         // (including editing a previously reviewed/approved report) puts
         // it back to "pending" — it needs a fresh look from a reviewer.
-        ProgressReport::updateOrCreate(
-            [
-                'user_id' => $request->user()->id,
-                'month'   => Carbon::parse($validated['month'])->startOfMonth()->toDateString(),
-            ],
+        $monthStart = Carbon::parse($validated['month'])->startOfMonth()->toDateString();
+
+        // Match by date (not raw string) so the existing report is found
+        // whether the column stores '2026-10-01' or '2026-10-01 00:00:00'.
+        $report = ProgressReport::where('user_id', $request->user()->id)
+            ->whereDate('month', $monthStart)
+            ->first()
+            ?? new ProgressReport(['user_id' => $request->user()->id, 'month' => $monthStart]);
+
+        $report->fill(
             [
                 'job_title'        => $validated['job_title'] ?? null,
                 'supervisor'       => $validated['supervisor'] ?? null,
@@ -169,7 +225,9 @@ class ProgressReportController extends Controller
                 'reviewed_at'  => null,
                 'review_notes' => null,
             ],
-        );
+        )->save();
+
+        $report->attachedStories()->sync($validated['attached_story_ids'] ?? []);
 
         return back()->with('success', 'Progress report saved.');
     }
@@ -177,7 +235,7 @@ class ProgressReportController extends Controller
     // Manager viewing one agent's report for a given month.
     public function show(Request $request, ProgressReport $report): Response
     {
-        abort_unless($report->user_id === $request->user()->id || $this->isManager($request), 403);
+        abort_unless($report->user_id === $request->user()->id || $this->canViewTeam($request), 403);
 
         return Inertia::render('ProgressReports/Show', [
             'report' => [
@@ -195,6 +253,18 @@ class ProgressReportController extends Controller
                 'services'          => $report->services ?? [],
                 'activities'        => $report->activities ?? [],
                 'success_stories'   => $report->success_stories ?? [],
+                // Shown in full here, so anyone who can read the report can
+                // read the attached stories without opening each one.
+                'attached_stories'  => $report->attachedStories()->with('photos:id,success_story_id,path')
+                    ->orderBy('success_stories.created_at')->get()
+                    ->map(fn (SuccessStory $s) => [
+                        'id'         => $s->id,
+                        'title'      => $s->title,
+                        'story'      => $s->story,
+                        'status'     => $s->status,
+                        'created_at' => $s->created_at?->toDateString(),
+                        'photos'     => $s->photos->pluck('path'),
+                    ]),
                 'status'            => $report->status,
                 'reviewer'          => $report->reviewer()->first(['id', 'name']),
                 'reviewed_at'       => $report->reviewed_at?->toDateTimeString(),
@@ -207,7 +277,7 @@ class ProgressReportController extends Controller
 
     public function exportPdf(Request $request, ProgressReport $report): \Illuminate\Http\Response
     {
-        abort_unless($report->user_id === $request->user()->id || $this->isManager($request), 403);
+        abort_unless($report->user_id === $request->user()->id || $this->canViewTeam($request), 403);
 
         $report->load('user:id,name');
 
@@ -313,6 +383,23 @@ class ProgressReportController extends Controller
                 $pdf->Cell(0, 6, 'Solution:', 0, 1);
                 $pdf->SetFont('Arial', '', 10);
                 $pdf->MultiCell($usableWidth, 5, $this->ascii($s['solution'] ?? ''));
+                $pdf->Ln(3);
+            }
+        }
+
+        // Success Stories attached from the Success Stories module
+        $attached = $report->attachedStories()->orderBy('success_stories.created_at')->get();
+        if ($attached->isNotEmpty()) {
+            if ($pdf->GetY() > 230) $pdf->AddPage();
+            $pdf->SetFont('Arial', 'B', 14);
+            $pdf->Cell(0, 8, 'ATTACHED SUCCESS STORIES', 0, 1, 'C');
+            $pdf->Ln(2);
+            foreach ($attached as $i => $story) {
+                if ($pdf->GetY() > 250) $pdf->AddPage();
+                $pdf->SetFont('Arial', 'B', 10);
+                $pdf->MultiCell($usableWidth, 6, $this->ascii(($i + 1) . '. ' . $story->title . ' (' . $story->created_at?->format('d M Y') . ')'));
+                $pdf->SetFont('Arial', '', 10);
+                $pdf->MultiCell($usableWidth, 5, $this->ascii($story->story));
                 $pdf->Ln(3);
             }
         }

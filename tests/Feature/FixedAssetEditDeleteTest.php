@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\FixedAsset;
 use App\Models\FixedAssetActivityLog;
+use App\Models\Location;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,14 +15,19 @@ class FixedAssetEditDeleteTest extends TestCase
     use RefreshDatabase;
 
     private FixedAsset $asset;
+    private Location $store;
+    private Location $field;
 
     protected function setUp(): void
     {
         parent::setUp();
         $creator = $this->makeUser('admin');
+        $this->store = Location::forceCreate(['name' => 'Main Store']);
+        $this->field = Location::forceCreate(['name' => 'Field Office']);
         $this->asset = FixedAsset::forceCreate([
             'asset_number' => 'FA-0001', 'name' => 'Laptop', 'purchase_cost' => 10000, 'useful_life_years' => 5,
             'purchase_date' => '2025-01-10', 'status' => 'available', 'created_by' => $creator->id,
+            'home_location_id' => $this->store->id,
         ]);
     }
 
@@ -36,8 +42,39 @@ class FixedAssetEditDeleteTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return $overrides + [
+            'asset_number' => 'FA-0001', 'home_location_id' => $this->store->id, 'location_id' => null,
             'name' => 'Laptop', 'purchase_cost' => 10000, 'useful_life_years' => 5, 'purchase_date' => '2025-01-10',
         ];
+    }
+
+    public function test_adding_an_asset_requires_a_unique_asset_number_and_asset_location(): void
+    {
+        $manager = $this->makeUser('stores');
+        $add = fn (array $data) => $this->actingAs($manager)->from('/fixed-assets')->post('/fixed-assets', $data);
+
+        $add(['name' => 'Printer'])->assertSessionHasErrors(['asset_number', 'home_location_id']);
+        $add(['name' => 'Printer', 'asset_number' => 'FA-0001', 'home_location_id' => $this->store->id])
+            ->assertSessionHasErrors(['asset_number' => 'Another asset already has this asset number.']);
+
+        $add(['name' => 'Printer', 'asset_number' => 'YAZ/IT/0042', 'home_location_id' => $this->store->id, 'location_id' => $this->field->id])
+            ->assertSessionHasNoErrors();
+
+        $printer = FixedAsset::where('name', 'Printer')->firstOrFail();
+        $this->assertSame('YAZ/IT/0042', $printer->asset_number); // kept as entered, not auto-numbered
+        $this->assertSame($this->store->id, $printer->home_location_id);
+        $this->assertSame($this->field->id, $printer->location_id);
+    }
+
+    public function test_editing_number_and_locations_is_audited_with_location_names(): void
+    {
+        $this->actingAs($this->makeUser('stores'))->from('/fixed-assets')
+            ->put("/fixed-assets/{$this->asset->id}", $this->payload(['asset_number' => 'FA-0001-B', 'location_id' => $this->field->id]))
+            ->assertSessionHas('success', 'Asset updated.');
+
+        $this->assertSame('FA-0001-B', $this->asset->fresh()->asset_number);
+        $audit = AuditLog::latest('id')->value('description');
+        $this->assertStringContainsString("Asset number: 'FA-0001' → 'FA-0001-B'", $audit);
+        $this->assertStringContainsString('Issued location: (blank) → Field Office', $audit);
     }
 
     public function test_edit_records_old_and_new_values_in_audit_trail(): void

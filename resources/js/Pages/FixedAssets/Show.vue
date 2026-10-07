@@ -131,7 +131,8 @@ const statusColor = {
                 <p><span class="text-gray-400">Serial Number:</span> {{ asset.serial_number ?? '—' }}</p>
                 <p><span class="text-gray-400">Custodian:</span> {{ asset.custodian?.name ?? '—' }}</p>
                 <p><span class="text-gray-400">Department:</span> {{ asset.department?.name ?? '—' }}</p>
-                <p><span class="text-gray-400">Location:</span> {{ asset.location?.name ?? '—' }}</p>
+                <p><span class="text-gray-400">Asset Location:</span> {{ asset.home_location?.name ?? '—' }}</p>
+                <p><span class="text-gray-400">Issued Location:</span> {{ asset.location?.name ?? 'Not issued' }}</p>
             </div>
             <div class="card text-sm text-gray-600 space-y-1">
                 <p><span class="text-gray-400">Purchase Date:</span> {{ asset.purchase_date ? new Date(asset.purchase_date).toLocaleDateString() : '—' }}</p>
@@ -277,7 +278,7 @@ const statusColor = {
                         </select>
                     </div>
                     <div>
-                        <label class="label">Location</label>
+                        <label class="label">Issued Location</label>
                         <select v-model="assignForm.location_id" class="input">
                             <option value="">None</option>
                             <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
@@ -331,7 +332,7 @@ const statusColor = {
                         </select>
                     </div>
                     <div>
-                        <label class="label">New Location</label>
+                        <label class="label">New Issued Location</label>
                         <select v-model="transferForm.location_id" class="input">
                             <option value="">No change</option>
                             <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>

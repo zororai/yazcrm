@@ -34,7 +34,7 @@ class FixedAssetController extends Controller
         $status = $request->string('status')->toString() ?: null;
         $warrantyExpiring = $request->boolean('warranty_expiring');
 
-        return FixedAsset::with(['category:id,name', 'custodian:id,name', 'department:id,name', 'location:id,name'])
+        return FixedAsset::with(['category:id,name', 'custodian:id,name', 'department:id,name', 'location:id,name', 'homeLocation:id,name'])
             ->when($search, fn ($q) => $q->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('asset_number', 'like', "%{$search}%")
@@ -57,6 +57,7 @@ class FixedAssetController extends Controller
         return Inertia::render('FixedAssets/Index', [
             'assets'     => $assets,
             'categories' => AssetCategory::orderBy('name')->get(['id', 'name']),
+            'locations'  => Location::orderBy('name')->get(['id', 'name']),
             'isManager'  => $this->isManager($request->user()),
             'canDelete'  => in_array($request->user()->role, ['admin', 'director'], true),
         ]);
@@ -69,6 +70,9 @@ class FixedAssetController extends Controller
         }
 
         $data = $request->validate([
+            'asset_number'      => 'required|string|max:50|unique:fixed_assets,asset_number',
+            'home_location_id'  => 'required|exists:locations,id',   // Asset location
+            'location_id'       => 'nullable|exists:locations,id',   // Issued location
             'asset_category_id' => 'nullable|exists:asset_categories,id',
             'name'              => 'required|string|max:255',
             'description'       => 'nullable|string',
@@ -84,6 +88,9 @@ class FixedAssetController extends Controller
             'warranty_start'    => 'nullable|date',
             'warranty_expiry'   => 'nullable|date',
             'condition'         => 'nullable|string|in:'.implode(',', AssetStatus::CONDITIONS),
+        ], [
+            'asset_number.unique'       => 'Another asset already has this asset number.',
+            'home_location_id.required' => 'Choose the asset location (where it is normally kept).',
         ]);
 
         $asset = $this->service->registerAsset($request->user(), $data);
@@ -94,7 +101,7 @@ class FixedAssetController extends Controller
     public function show(Request $request, FixedAsset $fixedAsset): Response
     {
         return Inertia::render('FixedAssets/Show', [
-            'asset'       => $fixedAsset->load(['category:id,name', 'custodian:id,name', 'department:id,name', 'location:id,name']),
+            'asset'       => $fixedAsset->load(['category:id,name', 'custodian:id,name', 'department:id,name', 'location:id,name', 'homeLocation:id,name']),
             'assignments' => $fixedAsset->assignments()->with(['assignee:id,name', 'assignedBy:id,name', 'department:id,name', 'location:id,name'])->get(),
             'activityLogs' => $fixedAsset->activityLogs()->with('user:id,name')->get(),
             'maintenanceRecords' => $fixedAsset->maintenanceRecords()->with(['performedBy:id,name', 'creator:id,name'])->get(),
@@ -114,6 +121,9 @@ class FixedAssetController extends Controller
         }
 
         $data = $request->validate([
+            'asset_number'      => 'required|string|max:50|unique:fixed_assets,asset_number,'.$fixedAsset->id,
+            'home_location_id'  => 'required|exists:locations,id',
+            'location_id'       => 'nullable|exists:locations,id',
             'asset_category_id' => 'nullable|exists:asset_categories,id',
             'name'              => 'required|string|max:255',
             'description'       => 'nullable|string',
@@ -127,6 +137,9 @@ class FixedAssetController extends Controller
             'revaluation_cycle_years' => 'nullable|integer|min:1|max:50',
             'supplier_name'     => 'nullable|string|max:255',
             'warranty_expiry'   => 'nullable|date',
+        ], [
+            'asset_number.unique'       => 'Another asset already has this asset number.',
+            'home_location_id.required' => 'Choose the asset location (where it is normally kept).',
         ]);
 
         $this->service->updateAsset($fixedAsset, $request->user(), $data);
@@ -171,6 +184,7 @@ class FixedAssetController extends Controller
     private function describeChanges(FixedAsset $asset): array
     {
         $labels = [
+            'asset_number' => 'Asset number', 'home_location_id' => 'Asset location', 'location_id' => 'Issued location',
             'asset_category_id' => 'Category', 'name' => 'Name', 'description' => 'Description',
             'manufacturer' => 'Manufacturer', 'model' => 'Model', 'serial_number' => 'Serial number',
             'purchase_date' => 'Purchase date', 'purchase_cost' => 'Purchase cost',
@@ -186,6 +200,9 @@ class FixedAssetController extends Controller
             }
             if ($field === 'asset_category_id') {
                 return AssetCategory::find($value)?->name ?? "#{$value}";
+            }
+            if (in_array($field, ['home_location_id', 'location_id'], true)) {
+                return Location::find($value)?->name ?? "#{$value}";
             }
             if (in_array($field, ['purchase_cost', 'salvage_value'], true)) {
                 return number_format((float) $value, 2);

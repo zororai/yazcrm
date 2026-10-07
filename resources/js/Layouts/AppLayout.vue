@@ -319,7 +319,7 @@ const navigation = computed(() => [
     ...(can('progress_reports') ? [{ name: 'Progress Report', href: '/progress-reports', icon: ClipboardDocumentListIcon }] : []),
     ...(can('success_stories') ? [{ name: 'Success Stories', href: '/success-stories', icon: SunIcon }] : []),
     ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) || can('team_reports')
-        ? [{ name: 'Team Reports', href: '/progress-reports/team', icon: ClipboardDocumentCheckIcon }] : []),
+        ? [{ name: 'View All Team Reports', href: '/progress-reports/team', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);
 
@@ -339,7 +339,7 @@ function isActive(href) {
 const navSections = [
     { name: null,                  items: ['Dashboard', 'Call Activity', 'My Work'] },
     { name: 'Helpline',            items: ['Dialer', 'Calls', 'Recordings', 'Records Management', 'Callbacks', 'Tickets', 'Ticket Management', 'Urgent', 'Directory', 'Extensions', 'Bot Contacts'] },
-    { name: 'Counselling',         items: ['Counsellor Profiles', 'Timetable', 'Progress Report', 'Team Reports', 'Success Stories'] },
+    { name: 'Counselling',         items: ['Counsellor Profiles', 'Timetable', 'Progress Report', 'View All Team Reports', 'Success Stories'] },
     { name: 'Reports & Analytics', items: ['Analytics', 'Targets', 'By Project', 'Domains', 'Activity Reports'] },
     { name: 'Work & Appraisals',   items: ['Work Management', "My Team's Tasks", 'Appraisals', 'Appraisal Reviews', 'Appraisal Archive'] },
     { name: 'Programs',            items: ['Programmes Dashboard', 'LSJP Register', 'Data Collection', 'My Collection', 'Review Queue', 'SBC Signups', 'YALeP Students'] },

@@ -17,7 +17,7 @@ class FixedAsset extends Model
         'revaluation_cycle_years', 'last_revalued_at', 'current_value', 'depreciation_base_date',
         'supplier_name', 'supplier_id',
         'warranty_start', 'warranty_expiry', 'condition', 'status',
-        'location_id', 'department_id', 'current_custodian_id', 'created_by',
+        'location_id', 'home_location_id', 'department_id', 'current_custodian_id', 'created_by',
     ];
 
     protected $casts = [
@@ -135,9 +135,16 @@ class FixedAsset extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    // "Issued location" — where the asset is in use now (Assign/Transfer update it).
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    // "Asset location" — where the asset is normally kept.
+    public function homeLocation(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'home_location_id');
     }
 
     public function department(): BelongsTo

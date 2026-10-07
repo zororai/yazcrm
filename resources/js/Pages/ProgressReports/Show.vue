@@ -149,6 +149,23 @@ function submitReview() {
                 </div>
             </div>
 
+            <!-- Success Stories attached from the Success Stories section -->
+            <div v-if="report.attached_stories?.length">
+                <p class="label mb-2">Attached Success Stories ({{ report.attached_stories.length }})</p>
+                <div v-for="(s, i) in report.attached_stories" :key="s.id" class="rounded-xl bg-gray-50 p-3 mb-2 text-sm">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <p class="font-semibold text-gray-800">{{ i + 1 }}. {{ s.title }}</p>
+                        <span class="text-xs text-gray-400 flex-shrink-0">{{ s.created_at }}</span>
+                    </div>
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ s.story }}</p>
+                    <div v-if="s.photos.length" class="flex flex-wrap gap-2 mt-2">
+                        <a v-for="p in s.photos" :key="p" :href="`/storage/${p}`" target="_blank" rel="noopener">
+                            <img :src="`/storage/${p}`" alt="Success story photo" class="h-16 w-16 rounded object-cover hover:opacity-80" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <div v-if="report.reviewer" class="text-xs text-gray-400">
                 Last reviewed by {{ report.reviewer.name }} on {{ new Date(report.reviewed_at).toLocaleString() }}
             </div>

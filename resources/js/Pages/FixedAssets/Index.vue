@@ -4,7 +4,7 @@ import { router, useForm, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ClockIcon, ChartBarIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ assets: Array, categories: Array, isManager: Boolean, canDelete: Boolean });
+const props = defineProps({ assets: Array, categories: Array, locations: Array, isManager: Boolean, canDelete: Boolean });
 
 function exportUrl(type) {
     const params = new URLSearchParams({
@@ -32,6 +32,7 @@ watch(filters, () => {
 
 const showForm = ref(false);
 const form = useForm({
+    asset_number: '', home_location_id: '', location_id: '',
     asset_category_id: '', name: '', manufacturer: '', model: '', serial_number: '',
     purchase_date: '', purchase_cost: '', useful_life_years: '', salvage_value: '',
     revaluation_cycle_years: 3,
@@ -55,6 +56,7 @@ function open(asset) {
 // Saved changes are written to the Audit Trail as field: old → new.
 const editing = ref(null);
 const editForm = useForm({
+    asset_number: '', home_location_id: '', location_id: '',
     asset_category_id: '', name: '', description: '', manufacturer: '', model: '', serial_number: '',
     purchase_date: '', purchase_cost: '', useful_life_years: '', salvage_value: '',
     revaluation_cycle_years: '', supplier_name: '', warranty_expiry: '',
@@ -64,6 +66,9 @@ function startEdit(asset) {
     editing.value = asset;
     editForm.clearErrors();
     Object.assign(editForm, {
+        asset_number: asset.asset_number ?? '',
+        home_location_id: asset.home_location_id ?? '',
+        location_id: asset.location_id ?? '',
         asset_category_id: asset.asset_category_id ?? '',
         name: asset.name ?? '',
         description: asset.description ?? '',
@@ -192,6 +197,7 @@ const statusColor = {
                         <th class="table-th">Category</th>
                         <th class="table-th">Custodian</th>
                         <th class="table-th">Department</th>
+                        <th class="table-th">Location</th>
                         <th class="table-th">Useful Life</th>
                         <th class="table-th">Salvage Value</th>
                         <th class="table-th">Annual Depreciation</th>
@@ -212,6 +218,10 @@ const statusColor = {
                         <td class="table-td">{{ a.category?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.custodian?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.department?.name ?? '—' }}</td>
+                        <td class="table-td">
+                            <div>{{ a.home_location?.name ?? '—' }}</div>
+                            <div v-if="a.location && a.location_id !== a.home_location_id" class="text-xs text-amber-700">Issued: {{ a.location.name }}</div>
+                        </td>
                         <td class="table-td">{{ a.useful_life_years ? `${a.useful_life_years} yrs` : '—' }}</td>
                         <td class="table-td">{{ money(a.salvage_value) }}</td>
                         <td class="table-td">{{ a.annual_depreciation !== null ? money(a.annual_depreciation) : '—' }}</td>
@@ -232,7 +242,7 @@ const statusColor = {
                         </td>
                     </tr>
                     <tr v-if="!assets.length">
-                        <td :colspan="isManager || canDelete ? 13 : 12" class="table-td text-center text-gray-400 py-8">No assets match.</td>
+                        <td :colspan="isManager || canDelete ? 14 : 13" class="table-td text-center text-gray-400 py-8">No assets match.</td>
                     </tr>
                 </tbody>
             </table>
@@ -245,8 +255,33 @@ const statusColor = {
                 </div>
                 <form @submit.prevent="submit" class="overflow-y-auto flex-1 px-6 py-4 space-y-3">
                     <div>
-                        <label class="label">Name</label>
+                        <label class="label">Asset Number *</label>
+                        <input v-model="form.asset_number" class="input" required placeholder="e.g. YAZ/IT/0042" />
+                        <p v-if="form.errors.asset_number" class="mt-1 text-xs text-red-600">{{ form.errors.asset_number }}</p>
+                    </div>
+                    <div>
+                        <label class="label">Name *</label>
                         <input v-model="form.name" class="input" required />
+                        <p v-if="form.errors.name" class="mt-1 text-xs text-red-600">{{ form.errors.name }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">Asset Location *</label>
+                            <select v-model="form.home_location_id" class="input" required>
+                                <option value="">Choose…</option>
+                                <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-400">Where it is normally kept.</p>
+                            <p v-if="form.errors.home_location_id" class="mt-1 text-xs text-red-600">{{ form.errors.home_location_id }}</p>
+                        </div>
+                        <div>
+                            <label class="label">Issued Location</label>
+                            <select v-model="form.location_id" class="input">
+                                <option value="">Not issued yet</option>
+                                <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-400">Where it is issued and in use now.</p>
+                        </div>
                     </div>
                     <div>
                         <label class="label">Category</label>
@@ -326,7 +361,7 @@ const statusColor = {
                             — it has drop-down lists for Category, Condition, Department and Location, and an
                             <em>Instructions</em> sheet explaining every column.
                         </li>
-                        <li>Fill one asset per row on the <em>Assets</em> sheet. Only <strong>Name</strong> is required; asset numbers are created automatically.</li>
+                        <li>Fill one asset per row on the <em>Assets</em> sheet. <strong>Asset Number</strong>, <strong>Name</strong> and <strong>Asset Location</strong> are required.</li>
                         <li>Upload the file below. Every row is checked first — if any row has a problem, nothing is imported and you'll see what to fix.</li>
                     </ol>
                     <div>
@@ -359,9 +394,31 @@ const statusColor = {
                 </div>
                 <form @submit.prevent="saveEdit" class="overflow-y-auto flex-1 px-6 py-4 space-y-3">
                     <div>
-                        <label class="label">Name</label>
+                        <label class="label">Asset Number *</label>
+                        <input v-model="editForm.asset_number" class="input" required />
+                        <p v-if="editForm.errors.asset_number" class="mt-1 text-xs text-red-600">{{ editForm.errors.asset_number }}</p>
+                    </div>
+                    <div>
+                        <label class="label">Name *</label>
                         <input v-model="editForm.name" class="input" required />
                         <p v-if="editForm.errors.name" class="mt-1 text-xs text-red-600">{{ editForm.errors.name }}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="label">Asset Location *</label>
+                            <select v-model="editForm.home_location_id" class="input" required>
+                                <option value="">Choose…</option>
+                                <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+                            </select>
+                            <p v-if="editForm.errors.home_location_id" class="mt-1 text-xs text-red-600">{{ editForm.errors.home_location_id }}</p>
+                        </div>
+                        <div>
+                            <label class="label">Issued Location</label>
+                            <select v-model="editForm.location_id" class="input">
+                                <option value="">Not issued</option>
+                                <option v-for="l in locations" :key="l.id" :value="l.id">{{ l.name }}</option>
+                            </select>
+                        </div>
                     </div>
                     <div>
                         <label class="label">Category</label>

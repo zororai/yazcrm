@@ -33,4 +33,11 @@ class ProgressReport extends Model
     {
         return $this->belongsTo(User::class, 'reviewed_by');
     }
+
+    // Success Stories (from the Success Stories module) attached to this
+    // report. Separate from the free-text `success_stories` column above.
+    public function attachedStories()
+    {
+        return $this->belongsToMany(SuccessStory::class, 'progress_report_success_story')->withTimestamps();
+    }
 }
