@@ -403,10 +403,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/report', [Web\RiskReportController::class, 'export'])->name('risk.report');
     });
 
+    // ─── Read-only reports: admin, or anyone granted the matching permission ──
+    Route::get('analytics', [Web\AnalyticsController::class, 'index'])->middleware('nav:analytics')->name('analytics.index');
+    Route::get('uchat-contacts', [Web\UchatContactsController::class, 'index'])->middleware('nav:bot_contacts')->name('uchat-contacts.index');
+    // "By Project" stats (sidebar: /distress-domains/section/project). Other
+    // sections are lookup editors and stay in the admin group below.
+    Route::get('distress-domains/section/project', [Web\DistressDomainController::class, 'section'])
+        ->defaults('type', 'project')->middleware('nav:by_project,domains')->name('distress-domains.by-project');
+
     // ─── Admin only ───────────────────────────────────────────────────────────
     Route::middleware('admin')->group(function () {
-        Route::get('analytics', [Web\AnalyticsController::class, 'index'])->name('analytics.index');
-        Route::get('uchat-contacts', [Web\UchatContactsController::class, 'index'])->name('uchat-contacts.index');
 
         // SBC — admin-only actions (sync, template upload, WhatsApp send)
         Route::post('sbc/sync',                   [Web\SbcController::class, 'sync'])->name('sbc.sync');
