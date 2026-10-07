@@ -65,6 +65,7 @@ const NAV_ITEMS = [
     { key: 'counsellor_profiles', label: 'Counsellor Profiles' },
     { key: 'team_reports',        label: 'Team Reports' },
     { key: 'programmes_dashboard', label: 'Programmes Dashboard' },
+    { key: 'lsjp', label: 'LSJP Register' },
 ];
 
 const editIsAdmin = computed(() => editForm.role === 'admin');

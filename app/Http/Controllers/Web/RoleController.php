@@ -18,7 +18,7 @@ class RoleController extends Controller
         'domains','bot_contacts','users','yeastar','yalep',
         'registry','risk','sbc','roles',
         'timetable','progress_reports','success_stories',
-        'my_work','audit_trail','it_asset_categories','transcription_test','counsellor_profiles','team_reports','programmes_dashboard',
+        'my_work','audit_trail','it_asset_categories','transcription_test','counsellor_profiles','team_reports','programmes_dashboard','lsjp',
     ];
 
     public function index(): Response

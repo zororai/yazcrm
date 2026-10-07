@@ -38,6 +38,7 @@ const PERM_LABELS = {
     targets:     'Call Targets',
     by_project:  'By Project (Stats)',
     programmes_dashboard: 'Programmes Dashboard',
+    lsjp: 'LSJP Register (Livelihood Skills & Job Preparation)',
     domains:     'Distress Domains',
     bot_contacts:'Bot Contacts',
     users:       'Users Management',

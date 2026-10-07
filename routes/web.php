@@ -228,6 +228,17 @@ Route::middleware('auth')->group(function () {
     Route::put('items/{item}', [Web\ItemController::class, 'update'])->name('items.update');
     Route::delete('items/{item}', [Web\ItemController::class, 'destroy'])->name('items.destroy');
 
+    // ─── LSJP Register (Livelihood Skills & Job Preparation) ──────────────────
+    Route::middleware('nav:lsjp')->prefix('lsjp')->name('lsjp.')->group(function () {
+        Route::get('/',                         [Web\LsjpController::class, 'index'])->name('index');
+        Route::post('/',                        [Web\LsjpController::class, 'store'])->name('store');
+        Route::get('{participant}',             [Web\LsjpController::class, 'show'])->name('show');
+        Route::put('{participant}',             [Web\LsjpController::class, 'update'])->name('update');
+        Route::delete('{participant}',          [Web\LsjpController::class, 'destroy'])->name('destroy');
+        Route::post('{participant}/checkups/{month}', [Web\LsjpController::class, 'saveCheckup'])->whereIn('month', ['1', '3', '6'])->name('checkups.save');
+        Route::delete('photos/{photo}',         [Web\LsjpController::class, 'destroyPhoto'])->name('photos.destroy');
+    });
+
     Route::get('programmes/dashboard',            [Web\ProgrammesDashboardController::class, 'index'])->name('programmes.dashboard');
     Route::get('programmes/dashboard/export/pdf', [Web\ProgrammesDashboardController::class, 'exportPdf'])->name('programmes.dashboard.export.pdf');
 
