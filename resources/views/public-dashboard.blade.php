@@ -35,8 +35,21 @@ $dashIcon = fn (string $name, string $color = '#3b82f6') =>
 <title>Helpline Analytics</title>
 <script src="{{ asset('vendor/chart.umd.min.js') }}"></script>
 <script src="{{ asset('vendor/lucide.min.js') }}"></script>
+{{-- Leaflet 1.9.4 (vendored) for the "Cases by Region" map; tiles from OpenStreetMap --}}
+<link rel="stylesheet" href="{{ asset('vendor/leaflet/leaflet.css') }}">
+<script src="{{ asset('vendor/leaflet/leaflet.js') }}"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
+/* Cases by Region map labels (Leaflet divIcon) */
+.zw-label{transform:translate(-50%,-50%);text-align:center;white-space:nowrap;pointer-events:none;
+  color:#1e293b;font-size:11px;line-height:1.15;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff}
+.zw-label span{display:block;font-weight:600}
+.zw-label b{display:block;font-size:17px;font-weight:800;margin-top:2px}
+.zw-label--compact{background:rgba(255,255,255,.9);border-radius:6px;padding:2px 6px;box-shadow:0 1px 3px rgba(0,0,0,.15);
+  display:flex;align-items:center;gap:5px;text-shadow:none}
+.zw-label--compact span{display:inline;font-size:10px}
+.zw-label--compact b{display:inline;font-size:13px;margin:0}
+.leaflet-container{font-family:inherit}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh;overflow-x:hidden}
 body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
   background:radial-gradient(ellipse 60% 50% at 10% 10%,rgba(219,234,254,.8) 0%,transparent 60%),
@@ -315,6 +328,9 @@ tr:hover td{background:#f8fafc}
   </button>
   <button class="sb-btn" onclick="showSection('geographic',this)" title="Geographic">
     <i data-lucide="map-pin"></i>
+  </button>
+  <button class="sb-btn" onclick="showSection('map',this)" title="Cases by Region (Map)">
+    <i data-lucide="map"></i>
   </button>
   <button class="sb-btn" onclick="showSection('demographics',this)" title="Demographics">
     <i data-lucide="users"></i>
@@ -705,6 +721,15 @@ tr:hover td{background:#f8fafc}
       @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('geographic','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
     </div>
   </div>
+  {{-- Cases by Region map (also has its own tab) --}}
+  <div class="s-card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="background:#f15a29;color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:10px">Cases by Region</span>
+      <span id="geo-map-unmapped-geographic" style="font-size:11px;color:#64748b"></span>
+    </div>
+    <div id="geoMapGeographic" style="height:560px;border-radius:12px;overflow:hidden;background:#e5eef5"></div>
+  </div>
+
   <div class="g2">
     <div class="s-card"><h3>Calls by Province</h3><div class="ch220"><canvas id="geoBarChart"></canvas></div></div>
     <div class="s-card"><h3>Province Share</h3><div class="ch220"><canvas id="geoPieChart"></canvas></div></div>
@@ -715,6 +740,37 @@ tr:hover td{background:#f8fafc}
       <thead><tr><th>#</th><th>Province</th><th>Interactions</th><th>% Share</th><th>Volume</th></tr></thead>
       <tbody id="geo-table"></tbody>
     </table></div>
+  </div>
+</div>
+
+{{-- ══════════════════════════════════ CASES BY REGION (MAP) ══════════════════════════════════ --}}
+<div id="sec-map" class="section" style="display:none">
+  <div class="sec-hdr">
+    <span class="sec-title">Cases by Region</span>
+    <div class="period-wrap">
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('map','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('map','week',this)">This Week</button>
+      <div class="period-select-wrap"><select id="month-select-map" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('map',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-map" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('map',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('map','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(240px,1fr);gap:14px">
+    {{-- Map (OpenStreetMap + Leaflet) --}}
+    <div class="s-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="background:#f15a29;color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:10px">Cases by Region</span>
+        <span id="geo-map-unmapped" style="font-size:11px;color:#64748b"></span>
+      </div>
+      <div id="geoMap" style="height:640px;border-radius:12px;overflow:hidden;background:#e5eef5"></div>
+    </div>
+    {{-- Ranked province list beside the map --}}
+    <div class="s-card">
+      <h3>Provinces</h3>
+      <div style="font-size:30px;font-weight:900;color:#0f172a;line-height:1" id="map-total">0</div>
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">cases placed on the map</div>
+      <div id="map-province-list"></div>
+    </div>
   </div>
 </div>
 
@@ -1733,10 +1789,164 @@ function updateOverview(p) {
   }
 }
 
+// ── CASES BY REGION MAP (OpenStreetMap + Leaflet) ────────────────────────────
+// Province shapes: /geo/zimbabwe-provinces.geojson (geoBoundaries, CC BY 3.0 IGO).
+// Ticket `province` is free text, so values are matched to the 10 provinces by
+// name, common abbreviations, or a district/town in that province. Anything
+// that can't be placed (blank, "N/A", "Matebeleland" without North/South) is
+// reported as "not on map" instead of being dropped silently.
+const ZW_PROVINCES = {
+  'Bulawayo':            { color: '#c9a0dc', label: [-20.15, 28.58], districts: ['Bulawayo'] },
+  'Harare':              { color: '#f6e58d', label: [-17.83, 31.05], districts: ['Harare Urban', 'Harare Rural', 'Chitungwiza', 'Epworth', 'Hopley', 'Hopely'] },
+  'Manicaland':          { color: '#b9b4e0', label: [-19.35, 32.35], districts: ['Buhera', 'Chimanimani', 'Chipinge', 'Makoni', 'Mutare', 'Mutasa', 'Nyanga', 'Rusape'] },
+  'Mashonaland Central': { color: '#f4806e', label: [-16.65, 31.25], districts: ['Bindura', 'Guruve', 'Mazowe', 'Mbire', 'Mount Darwin', 'Muzarabani', 'Rushinga', 'Shamva'] },
+  'Mashonaland East':    { color: '#7fb2dc', label: [-18.55, 32.05], districts: ['Chikomba', 'Goromonzi', 'Hwedza', 'Marondera', 'Mudzi', 'Murewa', 'Mutoko', 'Seke', 'Uzumba-Maramba-Pfungwe', 'Ruwa'] },
+  'Mashonaland West':    { color: '#a8d97c', label: [-17.35, 29.85], districts: ['Chegutu', 'Hurungwe', 'Kariba', 'Makonde', 'Mhondoro-Ngezi', 'Sanyati', 'Zvimba', 'Chinhoyi', 'Kadoma'] },
+  'Masvingo':            { color: '#f7c8e0', label: [-20.75, 31.10], districts: ['Bikita', 'Chiredzi', 'Chivi', 'Gutu', 'Masvingo', 'Mwenezi', 'Zaka'] },
+  'Matabeleland North':  { color: '#d6d6d6', label: [-18.60, 27.55], districts: ['Binga', 'Bubi', 'Hwange', 'Lupane', 'Nkayi', 'Tsholotsho', 'Umguza', 'Victoria Falls'] },
+  'Matabeleland South':  { color: '#b67fc4', label: [-21.05, 28.95], districts: ['Beitbridge', 'Bulilima', 'Gwanda', 'Insiza', 'Mangwe', 'Matobo', 'Umzingwane'] },
+  'Midlands':            { color: '#cfe9c9', label: [-19.35, 29.65], districts: ['Chirumanzu', 'Gokwe', 'Gokwe North', 'Gokwe South', 'Gweru', 'Kwekwe', 'Mberengwa', 'Shurugwi', 'Zvishavane'] },
+};
+const zwKey = s => String(s ?? '').toLowerCase().replace(/[^a-z]/g, '');
+const ZW_LOOKUP = (() => {
+  const m = {};
+  for (const [prov, cfg] of Object.entries(ZW_PROVINCES)) {
+    m[zwKey(prov)] = prov;
+    cfg.districts.forEach(d => { m[zwKey(d)] = prov; });
+  }
+  Object.assign(m, {
+    masheast: 'Mashonaland East', mashwest: 'Mashonaland West', mashcentral: 'Mashonaland Central',
+    matnorth: 'Matabeleland North', matsouth: 'Matabeleland South',
+    matebelelandnorth: 'Matabeleland North', matebelelandsouth: 'Matabeleland South',
+    manica: 'Manicaland', byo: 'Bulawayo', hre: 'Harare',
+  });
+  return m;
+})();
+
+let geoShapes = null;
+
+// Raw `by_province` rows ([value, count]) → counts per real province, plus
+// how many cases couldn't be placed.
+function zwCounts(rows) {
+  const counts = Object.fromEntries(Object.keys(ZW_PROVINCES).map(p => [p, 0]));
+  let unmapped = 0;
+  rows.forEach(([name, cnt]) => {
+    const prov = ZW_LOOKUP[zwKey(name)];
+    if (prov) counts[prov] += Number(cnt); else unmapped += Number(cnt);
+  });
+  return { counts, unmapped, mappedTotal: Object.values(counts).reduce((a, b) => a + b, 0) };
+}
+
+// ── CASES BY REGION tab ───────────────────────────────────────────────────────
+function updateMapSection(p) {
+  const rows = periodData[p]?.by_province ?? [];
+  const { counts, mappedTotal } = zwCounts(rows);
+
+  // Ranked list beside the map (always rendered, even while the tab is hidden).
+  const totalEl = document.getElementById('map-total');
+  if (totalEl) totalEl.textContent = fmt(mappedTotal);
+  const list = document.getElementById('map-province-list');
+  if (list) {
+    const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const maxV = Math.max(...ranked.map(r => r[1]), 1);
+    list.innerHTML = ranked.map(([prov, cnt], i) => {
+      const pct = mappedTotal ? ((cnt / mappedTotal) * 100).toFixed(1) : '0.0';
+      return `<div style="padding:7px 0;border-bottom:1px solid #f1f5f9">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px">
+          <span style="width:10px;height:10px;border-radius:3px;background:${ZW_PROVINCES[prov].color};flex-shrink:0"></span>
+          <span style="flex:1;color:#334155;font-weight:600">${i + 1}. ${prov}</span>
+          <span style="font-weight:800;color:#0f172a">${fmt(cnt)}</span>
+          <span style="color:#94a3b8;width:42px;text-align:right">${pct}%</span>
+        </div>
+        <div class="pb-track" style="margin-top:4px"><div class="pb-fill" style="width:${Math.round(cnt / maxV * 100)}%;background:#94a3b8"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  updateRegionMap(rows);
+}
+const geoMapReady = (async () => {
+  try {
+    const res = await fetch(@json(asset('geo/zimbabwe-provinces.geojson')));
+    geoShapes = await res.json();
+  } catch (e) { console.warn('Province map data failed to load', e); }
+})();
+
+// Draws/refreshes one map. The same map appears on the Geographic tab
+// (#geoMapGeographic) and the Cases by Region tab (#geoMap); each keeps its
+// own Leaflet instance in geoMaps, keyed by container id.
+const geoMaps = {};
+async function updateRegionMap(rows, mapId = 'geoMap', noteId = 'geo-map-unmapped') {
+  const el = document.getElementById(mapId);
+  if (!el || typeof L === 'undefined') return;
+  // Leaflet can't size itself inside a hidden section; showSection() redraws
+  // the section (and so this map) once its tab is visible.
+  if (el.offsetWidth === 0) return;
+  await geoMapReady;
+  if (!geoShapes) { el.innerHTML = '<p style="padding:20px;color:#94a3b8;font-size:12px">Map data unavailable.</p>'; return; }
+
+  const { counts, unmapped, mappedTotal } = zwCounts(rows);
+  const state = geoMaps[mapId] ??= { map: null, layer: null, labels: [] };
+
+  if (!state.map) {
+    state.map = L.map(el, { scrollWheelZoom: false, zoomSnap: 0.25, attributionControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 12, minZoom: 5,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors · Boundaries: geoBoundaries (CC BY 3.0 IGO)',
+    }).addTo(state.map);
+
+    // Fade everything outside Zimbabwe: a world-sized polygon with the
+    // provinces cut out as holes.
+    const holes = [];
+    geoShapes.features.forEach(f => {
+      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+      polys.forEach(poly => holes.push(poly[0].map(([lng, lat]) => [lat, lng])));
+    });
+    L.polygon([[[90, -360], [90, 360], [-90, 360], [-90, -360]], ...holes], {
+      stroke: false, fillColor: '#f8fafc', fillOpacity: 0.75, fillRule: 'evenodd', interactive: false,
+    }).addTo(state.map);
+  }
+
+  if (state.layer) state.layer.remove();
+  state.labels.forEach(m => m.remove());
+  state.labels = [];
+
+  state.layer = L.geoJSON(geoShapes, {
+    style: f => ({ color: '#ffffff', weight: 2, fillColor: ZW_PROVINCES[f.properties.name]?.color ?? '#e2e8f0', fillOpacity: 0.93 }),
+    onEachFeature: (f, layer) => {
+      const name = f.properties.name, cnt = counts[name] ?? 0;
+      const share = mappedTotal ? ((cnt / mappedTotal) * 100).toFixed(1) : '0.0';
+      layer.bindTooltip(`<strong>${name}</strong><br>${fmt(cnt)} cases · ${share}%`, { sticky: true });
+      layer.on({
+        mouseover: e => e.target.setStyle({ weight: 3, color: '#334155', fillOpacity: 0.95 }),
+        mouseout:  e => state.layer.resetStyle(e.target),
+      });
+    },
+  }).addTo(state.map);
+
+  // Name + count labels, like the printed map. Small city provinces get a compact label.
+  for (const [prov, cfg] of Object.entries(ZW_PROVINCES)) {
+    const compact = prov === 'Harare' || prov === 'Bulawayo';
+    const html = compact
+      ? `<div class="zw-label zw-label--compact"><span>${prov}</span><b>${fmt(counts[prov])}</b></div>`
+      : `<div class="zw-label"><span>${prov.replace(' ', '<br>')}</span><b>${fmt(counts[prov])}</b></div>`;
+    state.labels.push(L.marker(cfg.label, { icon: L.divIcon({ className: '', html, iconSize: null }), interactive: false }).addTo(state.map));
+  }
+
+  state.map.invalidateSize();
+  state.map.fitBounds(state.layer.getBounds(), { padding: [24, 24] });
+
+  const note = document.getElementById(noteId);
+  if (note) note.textContent = unmapped
+    ? `${fmt(unmapped)} case${unmapped === 1 ? '' : 's'} not on map (province unclear, e.g. "N/A" or "Matebeleland" without North/South)`
+    : '';
+}
+
 // ── GEOGRAPHIC ─────────────────────────────────────────────────────────────────
 function updateGeographic(p) {
   const rows  = periodData[p].by_province;
   const total = periodData[p].total || 1;
+  updateRegionMap(rows, 'geoMapGeographic', 'geo-map-unmapped-geographic');
   const labels = rows.map(r => r[0]);
   const data   = rows.map(r => r[1]);
   const maxV   = Math.max(...data, 1);
@@ -2342,7 +2552,7 @@ function setPeriod(section, period, btn) {
   document.querySelectorAll(`#sec-${section} .period-select`).forEach(s => s.classList.remove('active-period'));
   if (btn) btn.classList.add('active-period');
 
-  const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
+  const fn = { overview:updateOverview, geographic:updateGeographic, map:updateMapSection, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
   if (fn[section]) fn[section](period);
   if (section === 'targets') renderTargets();
 }
@@ -2419,7 +2629,7 @@ function buildYearOptions(selectEl, years, currentYear) {
 }
 
 function initPeriodSelects() {
-  const TICKET_SECTIONS = ['overview','geographic','demographics','services','trends','social'];
+  const TICKET_SECTIONS = ['overview','geographic','map','demographics','services','trends','social'];
   TICKET_SECTIONS.forEach(sec => {
     const ySel = document.getElementById(`year-select-${sec}`);
     const mSel = document.getElementById(`month-select-${sec}`);
@@ -2489,7 +2699,7 @@ function fetchWithPeriod(period, section) {
       callStats      = d.callStats;
       if (d.availableYears) availableYears = d.availableYears;
 
-      const fn = { overview:updateOverview, geographic:updateGeographic, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
+      const fn = { overview:updateOverview, geographic:updateGeographic, map:updateMapSection, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
       if (fn[section]) fn[section](period);
       labelPeriodBtns();
     })
@@ -2497,7 +2707,7 @@ function fetchWithPeriod(period, section) {
 }
 
 function labelPeriodBtns() {
-  ['overview','geographic','demographics','services','trends','social'].forEach(sec => {
+  ['overview','geographic','map','demographics','services','trends','social'].forEach(sec => {
     document.querySelectorAll(`#sec-${sec} .period-btn`).forEach(btn => {
       const m = btn.getAttribute('onclick').match(/'(day|week)'/);
       if (!m) return;
@@ -2831,6 +3041,7 @@ window.addEventListener('DOMContentLoaded', () => {
   labelPeriodBtns();
   updateOverview(TICKET_DEFAULT);
   updateGeographic(TICKET_DEFAULT);
+  updateMapSection(TICKET_DEFAULT);
   updateDemographics(TICKET_DEFAULT);
   updateServices(TICKET_DEFAULT);
   updateCalls(CALL_DEFAULT);
