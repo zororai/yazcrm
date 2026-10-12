@@ -65,6 +65,37 @@ class FixedAssetEditDeleteTest extends TestCase
         $this->assertSame($this->field->id, $printer->location_id);
     }
 
+    public function test_depreciation_is_entered_as_a_percentage_per_year(): void
+    {
+        $manager = $this->makeUser('stores');
+
+        // 15% a year = 6.666667-year life; depreciation follows the rate exactly.
+        $this->actingAs($manager)->from('/fixed-assets')->post('/fixed-assets', [
+            'asset_number' => 'VEH-1', 'name' => 'Vehicle', 'home_location_id' => $this->store->id,
+            'purchase_cost' => 20000, 'salvage_value' => 0, 'purchase_date' => '2025-01-10', 'depreciation_rate' => 15,
+        ])->assertSessionHasNoErrors();
+
+        $vehicle = FixedAsset::where('asset_number', 'VEH-1')->firstOrFail();
+        $this->assertEqualsWithDelta(6.666667, $vehicle->useful_life_years, 0.000001);
+        $this->assertEquals(15, $vehicle->depreciation_rate);
+        $this->assertEquals(3000, $vehicle->annual_depreciation); // 20,000 × 15%
+
+        // Out-of-range rates are refused.
+        $this->actingAs($manager)->from('/fixed-assets')
+            ->put("/fixed-assets/{$this->asset->id}", $this->payload(['depreciation_rate' => 0]))
+            ->assertSessionHasErrors(['depreciation_rate' => 'The depreciation rate must be more than 0%.']);
+        $this->actingAs($manager)->from('/fixed-assets')
+            ->put("/fixed-assets/{$this->asset->id}", $this->payload(['depreciation_rate' => 120]))
+            ->assertSessionHasErrors('depreciation_rate');
+
+        // Editing the rate is audited as a rate.
+        $this->actingAs($manager)->from('/fixed-assets')
+            ->put("/fixed-assets/{$this->asset->id}", $this->payload(['depreciation_rate' => 25]))
+            ->assertSessionHas('success', 'Asset updated.');
+        $this->assertEquals(4, $this->asset->fresh()->useful_life_years);
+        $this->assertStringContainsString('Depreciation rate: 20% / yr → 25% / yr', AuditLog::latest('id')->value('description'));
+    }
+
     public function test_editing_number_and_locations_is_audited_with_location_names(): void
     {
         $this->actingAs($this->makeUser('stores'))->from('/fixed-assets')

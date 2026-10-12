@@ -29,7 +29,7 @@ class FixedAssetImportTest extends TestCase
 
     private const HEADINGS = [
         'Asset Number *', 'Name *', 'Category', 'Description', 'Manufacturer', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Cost',
-        'Useful Life (years)', 'Salvage Value', 'Revaluation Cycle (years)', 'Supplier', 'Warranty Start',
+        'Depreciation Rate (% per year)', 'Salvage Value', 'Revaluation Cycle (years)', 'Supplier', 'Warranty Start',
         'Warranty Expiry', 'Condition', 'Department', 'Asset Location *', 'Issued Location',
     ];
 
@@ -71,7 +71,7 @@ class FixedAssetImportTest extends TestCase
             $this->row([
                 'Asset Number *' => 'YAZ/IT/0001', 'Name *' => 'Dell Laptop', 'Category' => 'laptops', 'Serial Number' => 'SN-1',
                 'Purchase Date' => ExcelDate::PHPToExcel(new \DateTime('2025-01-31')), // real Excel date cell
-                'Purchase Cost' => '1,250.00', 'Useful Life (years)' => 5, 'Salvage Value' => 100,
+                'Purchase Cost' => '1,250.00', 'Depreciation Rate (% per year)' => '20%', 'Salvage Value' => 100,
                 'Warranty Expiry' => '31/01/2028', 'Department' => 'Finance',
                 'Asset Location *' => 'HEAD OFFICE', 'Issued Location' => 'field office',
             ]),
@@ -92,6 +92,9 @@ class FixedAssetImportTest extends TestCase
         $this->assertSame($this->field->id, $laptop->location_id);
         $this->assertSame('2025-01-31', $laptop->purchase_date->toDateString());
         $this->assertSame('2028-01-31', $laptop->warranty_expiry->toDateString());
+        $this->assertEquals(20, $laptop->depreciation_rate);   // "20%" from the file
+        $this->assertEquals(5, $laptop->useful_life_years);    // stored as 100 ÷ 20
+        $this->assertEquals(230, $laptop->annual_depreciation); // (1,250 − 100) × 20%
         $this->assertEquals(1250, (float) $laptop->purchase_cost);
         $this->assertSame(3, $laptop->revaluation_cycle_years); // default
         $this->assertSame('good', $laptop->condition);           // default
@@ -117,7 +120,7 @@ class FixedAssetImportTest extends TestCase
             $this->row(['Category' => 'Vehicles', 'Purchase Cost' => 'ten']),
             $this->row(['Name *' => 'Dup A', 'Serial Number' => 'SN-9']),
             $this->row(['Name *' => 'Dup B', 'Serial Number' => 'sn-9']),
-            $this->row(['Name *' => 'Old serial', 'Serial Number' => 'SN-OLD', 'Useful Life (years)' => 2.5, 'Condition' => 'shiny']),
+            $this->row(['Name *' => 'Old serial', 'Serial Number' => 'SN-OLD', 'Depreciation Rate (% per year)' => '0%', 'Condition' => 'shiny']),
             $this->row(['Asset Number *' => '', 'Name *' => 'No number', 'Asset Location *' => '']),
             $this->row(['Asset Number *' => 'ast-000900', 'Name *' => 'Taken number', 'Asset Location *' => 'Moon Base']),
             $this->row(['Asset Number *' => 'DUP-1', 'Name *' => 'Dup number A']),
@@ -135,7 +138,7 @@ class FixedAssetImportTest extends TestCase
             && str_contains($e, 'Category "Vehicles" doesn\'t exist') && str_contains($e, 'Purchase Cost "ten" is not a number')));
         $this->assertTrue($errors->contains(fn ($e) => str_starts_with($e, 'Row 6:') && str_contains($e, 'repeated (also on row 5)')));
         $this->assertTrue($errors->contains(fn ($e) => str_starts_with($e, 'Row 7:') && str_contains($e, 'already in the register')
-            && str_contains($e, 'Useful Life must be a whole number') && str_contains($e, 'Condition must be one of')));
+            && str_contains($e, 'Depreciation Rate must be more than 0%') && str_contains($e, 'Condition must be one of')));
         $this->assertFalse($errors->contains(fn ($e) => str_starts_with($e, 'Row 2:')));
 
         $this->assertTrue($errors->contains(fn ($e) => str_starts_with($e, 'Row 8:') && str_contains($e, 'Asset Number is required') && str_contains($e, 'Asset Location is required')));
@@ -192,7 +195,8 @@ class FixedAssetImportTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $printer = FixedAsset::where('name', 'Printer')->firstOrFail();
-        $this->assertSame(4, $printer->useful_life_years);
+        $this->assertEquals(4, $printer->useful_life_years); // legacy "Useful Life" column still read
+        $this->assertEquals(25, $printer->depreciation_rate);
         $this->assertSame('PRN-1', $printer->asset_number);
         $this->assertSame($this->hq->id, $printer->home_location_id);
         $this->assertSame($this->laptops->id, $printer->asset_category_id);

@@ -81,7 +81,8 @@ class FixedAssetController extends Controller
             'serial_number'     => 'nullable|string|max:255|unique:fixed_assets,serial_number',
             'purchase_date'     => 'nullable|date',
             'purchase_cost'     => 'nullable|numeric|min:0',
-            'useful_life_years' => 'nullable|integer|min:1|max:100',
+            'depreciation_rate' => 'nullable|numeric|gt:0|max:100',   // % per year (straight line)
+            'useful_life_years' => 'nullable|numeric|min:1|max:100',  // legacy: years instead of a rate
             'salvage_value'     => 'nullable|numeric|min:0',
             'revaluation_cycle_years' => 'nullable|integer|min:1|max:50',
             'supplier_name'     => 'nullable|string|max:255',
@@ -91,9 +92,10 @@ class FixedAssetController extends Controller
         ], [
             'asset_number.unique'       => 'Another asset already has this asset number.',
             'home_location_id.required' => 'Choose the asset location (where it is normally kept).',
+            'depreciation_rate.gt'      => 'The depreciation rate must be more than 0%.',
         ]);
 
-        $asset = $this->service->registerAsset($request->user(), $data);
+        $asset = $this->service->registerAsset($request->user(), $this->rateToLife($data));
 
         return redirect()->route('fixed-assets.show', $asset)->with('success', 'Asset registered.');
     }
@@ -132,7 +134,8 @@ class FixedAssetController extends Controller
             'serial_number'     => 'nullable|string|max:255|unique:fixed_assets,serial_number,'.$fixedAsset->id,
             'purchase_date'     => 'nullable|date',
             'purchase_cost'     => 'nullable|numeric|min:0',
-            'useful_life_years' => 'nullable|integer|min:1|max:100',
+            'depreciation_rate' => 'nullable|numeric|gt:0|max:100',   // % per year (straight line)
+            'useful_life_years' => 'nullable|numeric|min:1|max:100',  // legacy: years instead of a rate
             'salvage_value'     => 'nullable|numeric|min:0',
             'revaluation_cycle_years' => 'nullable|integer|min:1|max:50',
             'supplier_name'     => 'nullable|string|max:255',
@@ -140,9 +143,10 @@ class FixedAssetController extends Controller
         ], [
             'asset_number.unique'       => 'Another asset already has this asset number.',
             'home_location_id.required' => 'Choose the asset location (where it is normally kept).',
+            'depreciation_rate.gt'      => 'The depreciation rate must be more than 0%.',
         ]);
 
-        $this->service->updateAsset($fixedAsset, $request->user(), $data);
+        $this->service->updateAsset($fixedAsset, $request->user(), $this->rateToLife($data));
 
         $changes = $this->describeChanges($fixedAsset);
         $request->attributes->set('audit_description', $changes
@@ -175,6 +179,19 @@ class FixedAssetController extends Controller
         return redirect()->route('fixed-assets.index')->with('success', "Asset {$fixedAsset->asset_number} deleted.");
     }
 
+    // Forms send the depreciation rate (% per year); it is stored as the
+    // equivalent useful life (100 ÷ rate). A rate, when present, wins over
+    // a years value; a blank rate clears it.
+    private function rateToLife(array $data): array
+    {
+        if (array_key_exists('depreciation_rate', $data)) {
+            $data['useful_life_years'] = FixedAsset::rateToLife($data['depreciation_rate']);
+            unset($data['depreciation_rate']);
+        }
+
+        return $data;
+    }
+
     private function assetLabel(FixedAsset $asset): string
     {
         return trim("{$asset->asset_number} ({$asset->name})");
@@ -188,7 +205,7 @@ class FixedAssetController extends Controller
             'asset_category_id' => 'Category', 'name' => 'Name', 'description' => 'Description',
             'manufacturer' => 'Manufacturer', 'model' => 'Model', 'serial_number' => 'Serial number',
             'purchase_date' => 'Purchase date', 'purchase_cost' => 'Purchase cost',
-            'useful_life_years' => 'Useful life (yrs)', 'salvage_value' => 'Salvage value',
+            'useful_life_years' => 'Depreciation rate', 'salvage_value' => 'Salvage value',
             'revaluation_cycle_years' => 'Revaluation cycle (yrs)', 'supplier_name' => 'Supplier',
             'warranty_expiry' => 'Warranty expiry',
         ];
@@ -206,6 +223,9 @@ class FixedAssetController extends Controller
             }
             if (in_array($field, ['purchase_cost', 'salvage_value'], true)) {
                 return number_format((float) $value, 2);
+            }
+            if ($field === 'useful_life_years') {
+                return rtrim(rtrim(number_format(FixedAsset::lifeToRate($value), 2), '0'), '.').'% / yr';
             }
 
             return "'".str($value)->replaceMatches('/ 00:00:00$/', '')->limit(80)."'";
@@ -304,7 +324,7 @@ class FixedAssetController extends Controller
 
         $headers = [
             'Asset #', 'Name', 'Category', 'Custodian', 'Department', 'Status',
-            'Purchase Date', 'Purchase Cost', 'Useful Life (yrs)', 'Salvage Value',
+            'Purchase Date', 'Purchase Cost', 'Depreciation Rate (% per year)', 'Salvage Value',
             'Annual Depreciation', 'Accumulated Depreciation', 'Book Value',
         ];
 
@@ -321,7 +341,7 @@ class FixedAssetController extends Controller
                 str_replace('_', ' ', $a->status),
                 $a->purchase_date?->format('Y-m-d') ?? '',
                 $a->purchase_cost ?? '',
-                $a->useful_life_years ?? '',
+                $a->depreciation_rate ?? '',
                 $a->salvage_value ?? '',
                 $a->annual_depreciation ?? '',
                 $a->accumulated_depreciation ?? '',
@@ -363,10 +383,19 @@ class FixedAssetController extends Controller
         $data = $request->validate([
             'revaluation_date'      => 'required|date',
             'revalued_amount'       => 'required|numeric|min:0',
-            'new_useful_life_years' => 'required|integer|min:1|max:100',
+            // New depreciation rate (% per year); stored as the equivalent life.
+            'new_depreciation_rate' => 'required_without:new_useful_life_years|nullable|numeric|gt:0|max:100',
+            'new_useful_life_years' => 'required_without:new_depreciation_rate|nullable|numeric|min:1|max:100',
             'new_salvage_value'     => 'nullable|numeric|min:0',
             'notes'                 => 'nullable|string|max:2000',
+        ], [
+            'new_depreciation_rate.required_without' => 'Enter the new depreciation rate (% per year).',
         ]);
+
+        if (isset($data['new_depreciation_rate'])) {
+            $data['new_useful_life_years'] = FixedAsset::rateToLife($data['new_depreciation_rate']);
+        }
+        unset($data['new_depreciation_rate']);
 
         $this->service->revalueAsset($fixedAsset, $request->user(), $data);
 

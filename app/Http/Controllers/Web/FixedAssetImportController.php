@@ -44,7 +44,7 @@ class FixedAssetImportController extends Controller
         'serial_number'           => ['Serial Number', false, 'Must be unique — not already in the register or repeated in the file.', 'SN-123456'],
         'purchase_date'           => ['Purchase Date', false, 'Date as YYYY-MM-DD (e.g. 2025-01-31) or DD/MM/YYYY.', '2025-01-31'],
         'purchase_cost'           => ['Purchase Cost', false, 'Number, no currency symbol (e.g. 1250.00).', 1250],
-        'useful_life_years'       => ['Useful Life (years)', false, 'Whole number of years, 1–100. Needed for depreciation.', 5],
+        'depreciation_rate'       => ['Depreciation Rate (% per year)', false, 'Straight-line rate, e.g. 20 for 20% a year (= written off over 5 years). More than 0, up to 100; a % sign is fine. Needed for depreciation.', 20],
         'salvage_value'           => ['Salvage Value', false, 'Number. Value expected at end of useful life.', 100],
         'revaluation_cycle_years' => ['Revaluation Cycle (years)', false, 'Whole number, 1–50. Defaults to 3 if blank.', 3],
         'supplier_name'           => ['Supplier', false, 'Free text.', 'Computer Centre'],
@@ -58,7 +58,11 @@ class FixedAssetImportController extends Controller
 
     private const DATE_COLUMNS = ['purchase_date', 'warranty_start', 'warranty_expiry'];
 
-    private const NUMBER_COLUMNS = ['purchase_cost', 'useful_life_years', 'salvage_value', 'revaluation_cycle_years'];
+    private const NUMBER_COLUMNS = ['purchase_cost', 'depreciation_rate', 'useful_life_years', 'salvage_value', 'revaluation_cycle_years'];
+
+    // Older files may still have a "Useful Life (years)" column instead of a
+    // rate; it is read (not shown in the template) and used if no rate is given.
+    private const LEGACY_COLUMNS = ['useful_life_years' => 'Useful Life (years)'];
 
     public function __construct(private readonly FixedAssetService $service)
     {
@@ -272,14 +276,14 @@ class FixedAssetImportController extends Controller
             $rowErrors = [];
             $attrs = [];
 
-            foreach (array_keys(self::COLUMNS) as $key) {
+            foreach ([...array_keys(self::COLUMNS), ...array_keys(self::LEGACY_COLUMNS)] as $key) {
                 $raw = $cell($key);
                 $value = is_string($raw) ? trim($raw) : $raw;
                 if ($value === '' || $value === null) {
                     continue;
                 }
 
-                $heading = self::COLUMNS[$key][0];
+                $heading = self::COLUMNS[$key][0] ?? self::LEGACY_COLUMNS[$key];
                 $lookups = [
                     'category'        => [$categories, 'asset_category_id'],
                     'department'      => [$departments, 'department_id'],
@@ -294,7 +298,7 @@ class FixedAssetImportController extends Controller
                         $rowErrors[] = "{$heading} \"{$value}\" is not a valid date (use YYYY-MM-DD)";
                     }
                 } elseif (in_array($key, self::NUMBER_COLUMNS, true)) {
-                    $number = is_numeric($value) ? $value : str_replace([',', ' ', '$'], '', (string) $value);
+                    $number = is_numeric($value) ? $value : str_replace([',', ' ', '$', '%'], '', (string) $value);
                     if (is_numeric($number)) {
                         $attrs[$key] = $number + 0;
                     } else {
@@ -322,7 +326,8 @@ class FixedAssetImportController extends Controller
                 'serial_number'           => 'nullable|string|max:255',
                 'supplier_name'           => 'nullable|string|max:255',
                 'purchase_cost'           => 'nullable|numeric|min:0',
-                'useful_life_years'       => 'nullable|integer|min:1|max:100',
+                'depreciation_rate'       => 'nullable|numeric|gt:0|max:100',
+                'useful_life_years'       => 'nullable|numeric|min:1|max:100',
                 'salvage_value'           => 'nullable|numeric|min:0',
                 'revaluation_cycle_years' => 'nullable|integer|min:1|max:50',
                 'condition'               => 'nullable|in:'.implode(',', AssetStatus::CONDITIONS),
@@ -331,8 +336,10 @@ class FixedAssetImportController extends Controller
                 'asset_number.required' => 'Asset Number is required',
                 'condition.in'    => 'Condition must be one of: '.implode(', ', AssetStatus::CONDITIONS),
                 'integer'         => ':attribute must be a whole number',
+                'depreciation_rate.gt'  => 'Depreciation Rate must be more than 0%',
+                'depreciation_rate.max' => 'Depreciation Rate can\'t be more than 100%',
             ], [
-                'useful_life_years' => 'Useful Life', 'revaluation_cycle_years' => 'Revaluation Cycle',
+                'useful_life_years' => 'Useful Life', 'depreciation_rate' => 'Depreciation Rate', 'revaluation_cycle_years' => 'Revaluation Cycle',
                 'purchase_cost' => 'Purchase Cost', 'salvage_value' => 'Salvage Value',
             ]);
             $rowErrors = array_merge($rowErrors, $validator->errors()->all());
@@ -370,6 +377,11 @@ class FixedAssetImportController extends Controller
                 $errors[] = "Row {$rowNumber}: ".implode('; ', array_unique($rowErrors)).'.';
             } else {
                 $attrs['revaluation_cycle_years'] ??= 3;
+                // Stored as the equivalent useful life (100 ÷ rate); a rate wins over a legacy years value.
+                if (isset($attrs['depreciation_rate'])) {
+                    $attrs['useful_life_years'] = FixedAsset::rateToLife($attrs['depreciation_rate']);
+                }
+                unset($attrs['depreciation_rate']);
                 $assets->push($attrs);
             }
         }
@@ -391,6 +403,9 @@ class FixedAssetImportController extends Controller
             $lookup[$normalise($key)] = $key;
         }
         $lookup['usefullife'] = 'useful_life_years';
+        $lookup['usefullifeyears'] = 'useful_life_years';
+        $lookup['depreciationrate'] = 'depreciation_rate';
+        $lookup['rate'] = 'depreciation_rate';
         $lookup['revaluationcycle'] = 'revaluation_cycle_years';
         $lookup['supplier'] = 'supplier_name';
         $lookup['location'] = 'asset_location';

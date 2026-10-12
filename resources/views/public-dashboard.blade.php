@@ -332,6 +332,9 @@ tr:hover td{background:#f8fafc}
   <button class="sb-btn" onclick="showSection('map',this)" title="Cases by Region (Map)">
     <i data-lucide="map"></i>
   </button>
+  <button class="sb-btn" onclick="showSection('completion',this)" title="Case Completion">
+    <i data-lucide="clipboard-check"></i>
+  </button>
   <button class="sb-btn" onclick="showSection('demographics',this)" title="Demographics">
     <i data-lucide="users"></i>
   </button>
@@ -770,6 +773,60 @@ tr:hover td{background:#f8fafc}
       <div style="font-size:30px;font-weight:900;color:#0f172a;line-height:1" id="map-total">0</div>
       <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">cases placed on the map</div>
       <div id="map-province-list"></div>
+    </div>
+  </div>
+</div>
+
+{{-- ══════════════════════════════════ CASE COMPLETION ══════════════════════════════════ --}}
+<div id="sec-completion" class="section" style="display:none">
+  <div class="sec-hdr">
+    <span class="sec-title">Case Completion</span>
+    <div class="period-wrap">
+      <button class="period-btn {{ $ticketDefaultPeriod==='day'?'active-period':'' }}" onclick="setPeriod('completion','day',this)">Today</button>
+      <button class="period-btn {{ $ticketDefaultPeriod==='week'?'active-period':'' }}" onclick="setPeriod('completion','week',this)">This Week</button>
+      <div class="period-select-wrap"><select id="month-select-completion" class="period-select {{ $ticketDefaultPeriod==='month'?'active-period':'' }}" onchange="onMonthSelect('completion',this)"></select></div>
+      <div class="period-select-wrap"><select id="year-select-completion" class="period-select {{ $ticketDefaultPeriod==='year'?'active-period':'' }}" onchange="onYearSelect('completion',this)"></select></div>
+      @if($dateFrom)<button class="period-btn active-period" onclick="setPeriod('completion','range',this)">{{ \Carbon\Carbon::parse($dateFrom.'-01')->format('M Y') }}{{ $dateTo && $dateTo!==$dateFrom ? ' – '.\Carbon\Carbon::parse($dateTo.'-01')->format('M Y') : '' }}</button>@endif
+    </div>
+  </div>
+
+  {{-- Headline figures --}}
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-val" id="cp-total">0</div><div class="kpi-lbl">Total cases</div></div>
+    <div class="kpi" style="border-top:3px solid #f59e0b">
+      <div class="kpi-val" id="cp-ongoing">0</div>
+      <div class="kpi-lbl">Ongoing <span id="cp-ongoing-pct"></span></div>
+    </div>
+    <div class="kpi" style="border-top:3px solid #16a34a">
+      <div class="kpi-val" id="cp-resolved">0</div>
+      <div class="kpi-lbl">Resolved / closed <span id="cp-resolved-pct"></span></div>
+    </div>
+    <div class="kpi" style="border-top:3px solid #3b82f6">
+      <div class="kpi-val" id="cp-referred">0</div>
+      <div class="kpi-lbl">Referred <span id="cp-referred-pct"></span></div>
+    </div>
+    <div class="kpi" style="border-top:3px solid #dc2626">
+      <div class="kpi-val" id="cp-imm">0</div>
+      <div class="kpi-lbl">Immediate action required <span id="cp-imm-pct"></span></div>
+    </div>
+  </div>
+
+  {{-- Completion split --}}
+  <div class="s-card" style="margin-bottom:14px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <h3 style="margin:0">Completion</h3>
+      <span style="font-size:12px;color:#64748b"><strong id="cp-rate" style="font-size:20px;color:#16a34a">0%</strong> of cases completed</span>
+    </div>
+    <div id="cp-split" style="display:flex;height:26px;border-radius:8px;overflow:hidden;background:#f1f5f9;gap:2px"></div>
+    <div id="cp-split-legend" style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:#334155"></div>
+  </div>
+
+  <div class="g3">
+    <div class="s-card"><h3>Cases by Status</h3><div class="ch220"><canvas id="cpStatusChart"></canvas></div></div>
+    <div class="s-card"><h3>Cases by Priority</h3><div class="ch220"><canvas id="cpPriorityChart"></canvas></div></div>
+    <div class="s-card">
+      <h3>Referrals &amp; Immediate Action</h3>
+      <div id="cp-referrals"></div>
     </div>
   </div>
 </div>
@@ -1942,6 +1999,75 @@ async function updateRegionMap(rows, mapId = 'geoMap', noteId = 'geo-map-unmappe
     : '';
 }
 
+// ── CASE COMPLETION ────────────────────────────────────────────────────────────
+// Ongoing = open + in progress + ongoing; completed = resolved + closed.
+const CP_STATUS = [
+  ['open',        'Open',        '#94a3b8'],
+  ['in_progress', 'In Progress', '#fbbf24'],
+  ['ongoing',     'Ongoing',     '#f59e0b'],
+  ['resolved',    'Resolved',    '#16a34a'],
+  ['closed',      'Closed',      '#15803d'],
+];
+const CP_PRIORITY = [
+  ['low',    'Low',    '#94a3b8'],
+  ['medium', 'Medium', '#3b82f6'],
+  ['high',   'High',   '#f97316'],
+  ['urgent', 'Urgent', '#dc2626'],
+];
+
+function updateCompletion(p) {
+  const d = periodData[p];
+  if (!d) return;
+  const total = d.total || 0;
+  const pct = n => (total ? ((n / total) * 100).toFixed(1) : '0.0') + '%';
+  const byStatus = Object.fromEntries((d.by_status ?? []).map(([k, v]) => [k, Number(v)]));
+  const byPriority = Object.fromEntries((d.by_priority ?? []).map(([k, v]) => [k ?? '', Number(v)]));
+
+  const openN     = byStatus.open ?? 0;
+  const ongoingN  = (byStatus.in_progress ?? 0) + (byStatus.ongoing ?? 0);
+  const doneN     = (byStatus.resolved ?? 0) + (byStatus.closed ?? 0);
+  const referred  = d.referral_count ?? 0;
+  const uptake    = d.referral_uptake ?? 0;
+  const imm       = d.imm_act ?? 0;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('cp-total', fmt(total));
+  set('cp-ongoing', fmt(openN + ongoingN));  set('cp-ongoing-pct', `· ${pct(openN + ongoingN)}`);
+  set('cp-resolved', fmt(doneN));            set('cp-resolved-pct', `· ${pct(doneN)}`);
+  set('cp-referred', fmt(referred));         set('cp-referred-pct', `· ${pct(referred)}`);
+  set('cp-imm', fmt(imm));                   set('cp-imm-pct', `· ${pct(imm)}`);
+  set('cp-rate', pct(doneN));
+
+  // Stacked completion bar: completed | ongoing | open.
+  const parts = [['Resolved / closed', doneN, '#16a34a'], ['Ongoing / in progress', ongoingN, '#f59e0b'], ['Open (not started)', openN, '#94a3b8']];
+  const split = document.getElementById('cp-split');
+  if (split) split.innerHTML = total
+    ? parts.filter(([, n]) => n > 0).map(([lbl, n, c]) => `<div title="${lbl}: ${fmt(n)} (${pct(n)})" style="width:${(n / total) * 100}%;min-width:3px;background:${c}"></div>`).join('')
+    : '';
+  const legend = document.getElementById('cp-split-legend');
+  if (legend) legend.innerHTML = parts.map(([lbl, n, c]) =>
+    `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:${c}"></span>${lbl} <strong>${fmt(n)}</strong> <span style="color:#94a3b8">(${pct(n)})</span></span>`).join('');
+
+  rc('cpStatusChart', 'bar', CP_STATUS.map(s => s[1]), CP_STATUS.map(s => byStatus[s[0]] ?? 0), { colors: CP_STATUS.map(s => s[2]), legend: false });
+  rc('cpPriorityChart', 'bar', CP_PRIORITY.map(s => s[1]), CP_PRIORITY.map(s => byPriority[s[0]] ?? 0), { colors: CP_PRIORITY.map(s => s[2]), legend: false });
+
+  // Referral follow-up and immediate action, as labelled bars.
+  const bar = (label, n, of, color, note) => {
+    const share = of ? ((n / of) * 100).toFixed(1) : '0.0';
+    return `<div class="pb">
+      <div class="pb-hdr"><span class="pb-lbl">${label}</span><span class="pb-val">${fmt(n)} (${share}%)</span></div>
+      <div class="pb-track"><div class="pb-fill" style="width:${of ? Math.min(100, (n / of) * 100) : 0}%;background:${color}"></div></div>
+      <div style="font-size:10px;color:#94a3b8;margin:-2px 0 8px">${note}</div>
+    </div>`;
+  };
+  const ref = document.getElementById('cp-referrals');
+  if (ref) ref.innerHTML =
+    bar('Referred', referred, total, '#3b82f6', 'of all cases') +
+    bar('Uptake confirmed', uptake, referred, '#16a34a', 'of referred cases') +
+    bar('Uptake not yet confirmed', Math.max(0, referred - uptake), referred, '#f59e0b', 'of referred cases') +
+    bar('Immediate action required', imm, total, '#dc2626', 'of all cases');
+}
+
 // ── GEOGRAPHIC ─────────────────────────────────────────────────────────────────
 function updateGeographic(p) {
   const rows  = periodData[p].by_province;
@@ -2552,7 +2678,7 @@ function setPeriod(section, period, btn) {
   document.querySelectorAll(`#sec-${section} .period-select`).forEach(s => s.classList.remove('active-period'));
   if (btn) btn.classList.add('active-period');
 
-  const fn = { overview:updateOverview, geographic:updateGeographic, map:updateMapSection, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
+  const fn = { overview:updateOverview, geographic:updateGeographic, map:updateMapSection, completion:updateCompletion, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
   if (fn[section]) fn[section](period);
   if (section === 'targets') renderTargets();
 }
@@ -2629,7 +2755,7 @@ function buildYearOptions(selectEl, years, currentYear) {
 }
 
 function initPeriodSelects() {
-  const TICKET_SECTIONS = ['overview','geographic','map','demographics','services','trends','social'];
+  const TICKET_SECTIONS = ['overview','geographic','map','completion','demographics','services','trends','social'];
   TICKET_SECTIONS.forEach(sec => {
     const ySel = document.getElementById(`year-select-${sec}`);
     const mSel = document.getElementById(`month-select-${sec}`);
@@ -2699,7 +2825,7 @@ function fetchWithPeriod(period, section) {
       callStats      = d.callStats;
       if (d.availableYears) availableYears = d.availableYears;
 
-      const fn = { overview:updateOverview, geographic:updateGeographic, map:updateMapSection, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
+      const fn = { overview:updateOverview, geographic:updateGeographic, map:updateMapSection, completion:updateCompletion, demographics:updateDemographics, services:updateServices, calls:updateCalls, trends:updateTrends, social:updateSocial };
       if (fn[section]) fn[section](period);
       labelPeriodBtns();
     })
@@ -2707,7 +2833,7 @@ function fetchWithPeriod(period, section) {
 }
 
 function labelPeriodBtns() {
-  ['overview','geographic','map','demographics','services','trends','social'].forEach(sec => {
+  ['overview','geographic','map','completion','demographics','services','trends','social'].forEach(sec => {
     document.querySelectorAll(`#sec-${sec} .period-btn`).forEach(btn => {
       const m = btn.getAttribute('onclick').match(/'(day|week)'/);
       if (!m) return;
@@ -3042,6 +3168,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateOverview(TICKET_DEFAULT);
   updateGeographic(TICKET_DEFAULT);
   updateMapSection(TICKET_DEFAULT);
+  updateCompletion(TICKET_DEFAULT);
   updateDemographics(TICKET_DEFAULT);
   updateServices(TICKET_DEFAULT);
   updateCalls(CALL_DEFAULT);

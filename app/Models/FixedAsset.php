@@ -26,7 +26,7 @@ class FixedAsset extends Model
         'warranty_expiry' => 'date',
         'purchase_cost'   => 'decimal:2',
         'salvage_value'   => 'decimal:2',
-        'useful_life_years' => 'integer',
+        'useful_life_years' => 'float', // may be fractional — see depreciation_rate
         'revaluation_cycle_years' => 'integer',
         'last_revalued_at' => 'date',
         'current_value'    => 'decimal:2',
@@ -35,8 +35,25 @@ class FixedAsset extends Model
 
     protected $appends = [
         'warranty_expiring', 'annual_depreciation', 'accumulated_depreciation', 'book_value',
-        'next_revaluation_due', 'revaluation_due',
+        'next_revaluation_due', 'revaluation_due', 'depreciation_rate',
     ];
+
+    // Depreciation is entered as a straight-line rate (% per year); the stored
+    // useful life is the same figure expressed in years: life = 100 ÷ rate.
+    public static function rateToLife(float|int|string|null $rate): ?float
+    {
+        return $rate !== null && $rate !== '' && (float) $rate > 0 ? round(100 / (float) $rate, 6) : null;
+    }
+
+    public static function lifeToRate(float|int|string|null $life): ?float
+    {
+        return $life !== null && $life !== '' && (float) $life > 0 ? round(100 / (float) $life, 2) : null;
+    }
+
+    public function getDepreciationRateAttribute(): ?float
+    {
+        return self::lifeToRate($this->useful_life_years);
+    }
 
     public function getWarrantyExpiringAttribute(): bool
     {

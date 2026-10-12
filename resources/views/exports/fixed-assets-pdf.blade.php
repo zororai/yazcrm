@@ -27,7 +27,7 @@
                 <th>Department</th>
                 <th>Status</th>
                 <th class="num">Purchase Cost</th>
-                <th class="num">Useful Life</th>
+                <th class="num">Dep. Rate</th>
                 <th class="num">Salvage Value</th>
                 <th class="num">Annual Dep.</th>
                 <th class="num">Accum. Dep.</th>
@@ -44,7 +44,7 @@
                     <td>{{ $a->department?->name ?? '—' }}</td>
                     <td>{{ str_replace('_', ' ', $a->status) }}</td>
                     <td class="num">{{ $a->purchase_cost !== null ? number_format($a->purchase_cost, 2) : '—' }}</td>
-                    <td class="num">{{ $a->useful_life_years ? $a->useful_life_years . ' yrs' : '—' }}</td>
+                    <td class="num">{{ $a->depreciation_rate !== null ? rtrim(rtrim(number_format($a->depreciation_rate, 2), '0'), '.') . '% / yr' : '—' }}</td>
                     <td class="num">{{ number_format($a->salvage_value ?? 0, 2) }}</td>
                     <td class="num">{{ $a->annual_depreciation !== null ? number_format($a->annual_depreciation, 2) : '—' }}</td>
                     <td class="num">{{ $a->accumulated_depreciation !== null ? number_format($a->accumulated_depreciation, 2) : '—' }}</td>

@@ -34,10 +34,20 @@ const showForm = ref(false);
 const form = useForm({
     asset_number: '', home_location_id: '', location_id: '',
     asset_category_id: '', name: '', manufacturer: '', model: '', serial_number: '',
-    purchase_date: '', purchase_cost: '', useful_life_years: '', salvage_value: '',
+    purchase_date: '', purchase_cost: '', depreciation_rate: '', salvage_value: '',
     revaluation_cycle_years: 3,
     supplier_name: '', warranty_expiry: '',
 });
+
+// Depreciation is entered as a straight-line rate (% per year);
+// the equivalent useful life is 100 ÷ rate.
+const pct = v => (v === null || v === undefined || v === '' ? '—' : `${Number(Number(v).toFixed(2))}%`);
+function lifeHint(rate) {
+    const r = Number(rate);
+    if (!r || r <= 0) return 'e.g. 20% = written off over 5 years';
+    const years = 100 / r;
+    return `= written off over ${Number(years.toFixed(2))} year${years === 1 ? '' : 's'}`;
+}
 
 function money(v) {
     if (v === null || v === undefined) return '—';
@@ -58,7 +68,7 @@ const editing = ref(null);
 const editForm = useForm({
     asset_number: '', home_location_id: '', location_id: '',
     asset_category_id: '', name: '', description: '', manufacturer: '', model: '', serial_number: '',
-    purchase_date: '', purchase_cost: '', useful_life_years: '', salvage_value: '',
+    purchase_date: '', purchase_cost: '', depreciation_rate: '', salvage_value: '',
     revaluation_cycle_years: '', supplier_name: '', warranty_expiry: '',
 });
 const day = v => (v ? String(v).slice(0, 10) : '');
@@ -77,7 +87,7 @@ function startEdit(asset) {
         serial_number: asset.serial_number ?? '',
         purchase_date: day(asset.purchase_date),
         purchase_cost: asset.purchase_cost ?? '',
-        useful_life_years: asset.useful_life_years ?? '',
+        depreciation_rate: asset.depreciation_rate ?? '',
         salvage_value: asset.salvage_value ?? '',
         revaluation_cycle_years: asset.revaluation_cycle_years ?? '',
         supplier_name: asset.supplier_name ?? '',
@@ -198,7 +208,7 @@ const statusColor = {
                         <th class="table-th">Custodian</th>
                         <th class="table-th">Department</th>
                         <th class="table-th">Location</th>
-                        <th class="table-th">Useful Life</th>
+                        <th class="table-th">Depreciation Rate</th>
                         <th class="table-th">Salvage Value</th>
                         <th class="table-th">Annual Depreciation</th>
                         <th class="table-th">Accumulated Depreciation</th>
@@ -222,7 +232,12 @@ const statusColor = {
                             <div>{{ a.home_location?.name ?? '—' }}</div>
                             <div v-if="a.location && a.location_id !== a.home_location_id" class="text-xs text-amber-700">Issued: {{ a.location.name }}</div>
                         </td>
-                        <td class="table-td">{{ a.useful_life_years ? `${a.useful_life_years} yrs` : '—' }}</td>
+                        <td class="table-td whitespace-nowrap">
+                            <template v-if="a.depreciation_rate !== null">
+                                {{ pct(a.depreciation_rate) }} <span class="text-xs text-gray-400">/ yr</span>
+                            </template>
+                            <template v-else>—</template>
+                        </td>
                         <td class="table-td">{{ money(a.salvage_value) }}</td>
                         <td class="table-td">{{ a.annual_depreciation !== null ? money(a.annual_depreciation) : '—' }}</td>
                         <td class="table-td">{{ a.accumulated_depreciation !== null ? money(a.accumulated_depreciation) : '—' }}</td>
@@ -317,9 +332,13 @@ const statusColor = {
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="label">Useful Life (years)</label>
-                            <input v-model.number="form.useful_life_years" type="number" min="1" step="1" class="input" placeholder="e.g. 5" />
-                            <p v-if="form.errors.useful_life_years" class="mt-1 text-xs text-red-600">{{ form.errors.useful_life_years }}</p>
+                            <label class="label">Depreciation Rate (% per year)</label>
+                            <div class="relative">
+                                <input v-model="form.depreciation_rate" type="number" min="0.01" max="100" step="0.01" class="input pr-8" placeholder="e.g. 20" />
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-400">{{ lifeHint(form.depreciation_rate) }}</p>
+                            <p v-if="form.errors.depreciation_rate" class="mt-1 text-xs text-red-600">{{ form.errors.depreciation_rate }}</p>
                         </div>
                         <div>
                             <label class="label">Salvage Value</label>
@@ -459,9 +478,13 @@ const statusColor = {
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="label">Useful Life (years)</label>
-                            <input v-model="editForm.useful_life_years" type="number" min="1" step="1" class="input" />
-                            <p v-if="editForm.errors.useful_life_years" class="mt-1 text-xs text-red-600">{{ editForm.errors.useful_life_years }}</p>
+                            <label class="label">Depreciation Rate (% per year)</label>
+                            <div class="relative">
+                                <input v-model="editForm.depreciation_rate" type="number" min="0.01" max="100" step="0.01" class="input pr-8" />
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">%</span>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-400">{{ lifeHint(editForm.depreciation_rate) }}</p>
+                            <p v-if="editForm.errors.depreciation_rate" class="mt-1 text-xs text-red-600">{{ editForm.errors.depreciation_rate }}</p>
                         </div>
                         <div>
                             <label class="label">Salvage Value</label>
@@ -480,7 +503,7 @@ const statusColor = {
                         <label class="label">Warranty Expiry</label>
                         <input v-model="editForm.warranty_expiry" type="date" class="input" />
                     </div>
-                    <p class="text-xs text-gray-400">Changing cost, useful life, salvage value or purchase date recalculates depreciation and book value.</p>
+                    <p class="text-xs text-gray-400">Changing cost, depreciation rate, salvage value or purchase date recalculates depreciation and book value.</p>
                 </form>
                 <div class="flex gap-2 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
                     <button type="button" @click="editing = null" class="btn-secondary">Cancel</button>

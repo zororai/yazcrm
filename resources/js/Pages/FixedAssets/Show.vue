@@ -17,10 +17,20 @@ const showRevalue = ref(false);
 const revalueForm = useForm({
     revaluation_date: new Date().toISOString().slice(0, 10),
     revalued_amount: props.asset.book_value ?? '',
-    new_useful_life_years: props.asset.useful_life_years ?? '',
+    new_depreciation_rate: props.asset.depreciation_rate ?? '',
     new_salvage_value: props.asset.salvage_value ?? '',
     notes: '',
 });
+// Depreciation rate (% per year) ⇄ useful life (years): life = 100 ÷ rate.
+const pct = v => `${Number(Number(v).toFixed(2))}%`;
+const rateFromLife = life => (life ? 100 / Number(life) : null);
+const yearsLabel = rate => {
+    const r = Number(rate);
+    if (!r || r <= 0) return '';
+    const y = Number((100 / r).toFixed(2));
+    return `${y} year${y === 1 ? '' : 's'}`;
+};
+
 function submitRevalue() {
     revalueForm.post(`/fixed-assets/${props.asset.id}/revalue`, {
         onSuccess: () => { showRevalue.value = false; revalueForm.reset(); },
@@ -146,13 +156,17 @@ const statusColor = {
         <div class="card mb-4">
             <h3 class="font-semibold text-gray-900 mb-2 text-sm">Depreciation (Straight-Line)</h3>
             <div v-if="asset.useful_life_years" class="grid grid-cols-5 gap-4 text-sm">
-                <div><p class="text-gray-400 text-xs">Useful Life</p><p class="font-medium">{{ asset.useful_life_years }} yrs</p></div>
+                <div>
+                    <p class="text-gray-400 text-xs">Depreciation Rate</p>
+                    <p class="font-medium">{{ pct(asset.depreciation_rate) }} / yr</p>
+                    <p class="text-xs text-gray-400">over {{ yearsLabel(asset.depreciation_rate) }}</p>
+                </div>
                 <div><p class="text-gray-400 text-xs">Salvage Value</p><p class="font-medium">{{ asset.salvage_value ?? '0.00' }}</p></div>
                 <div><p class="text-gray-400 text-xs">Annual Depreciation</p><p class="font-medium">{{ asset.annual_depreciation ?? '—' }}</p></div>
                 <div><p class="text-gray-400 text-xs">Accumulated Depreciation</p><p class="font-medium">{{ asset.accumulated_depreciation ?? '—' }}</p></div>
                 <div><p class="text-gray-400 text-xs">Book Value</p><p class="font-semibold text-gray-900">{{ asset.book_value ?? '—' }}</p></div>
             </div>
-            <p v-else class="text-sm text-gray-400 italic">Useful life not set for this asset — depreciation cannot be calculated. Book value defaults to purchase cost.</p>
+            <p v-else class="text-sm text-gray-400 italic">Depreciation rate not set for this asset — depreciation cannot be calculated. Book value defaults to purchase cost.</p>
         </div>
 
         <div class="card mb-4">
@@ -174,7 +188,7 @@ const statusColor = {
                             <span class="text-xs text-gray-400 ml-2">by {{ r.revalued_by?.name }} on {{ new Date(r.revaluation_date).toLocaleDateString() }}</span>
                             <p v-if="r.notes" class="text-xs text-gray-500">{{ r.notes }}</p>
                         </div>
-                        <span class="text-xs text-gray-400">Life reset to {{ r.new_useful_life_years }} yrs</span>
+                        <span v-if="r.new_useful_life_years" class="text-xs text-gray-400">Rate reset to {{ pct(rateFromLife(r.new_useful_life_years)) }} / yr</span>
                     </li>
                 </ul>
             </div>
@@ -445,8 +459,10 @@ const statusColor = {
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="label">New Useful Life (years)</label>
-                            <input v-model.number="revalueForm.new_useful_life_years" type="number" min="1" step="1" class="input" required />
+                            <label class="label">New Depreciation Rate (% / yr)</label>
+                            <input v-model="revalueForm.new_depreciation_rate" type="number" min="0.01" max="100" step="0.01" class="input" required />
+                            <p v-if="yearsLabel(revalueForm.new_depreciation_rate)" class="mt-1 text-xs text-gray-400">= over {{ yearsLabel(revalueForm.new_depreciation_rate) }}</p>
+                            <p v-if="revalueForm.errors.new_depreciation_rate" class="mt-1 text-xs text-red-600">{{ revalueForm.errors.new_depreciation_rate }}</p>
                         </div>
                         <div>
                             <label class="label">New Salvage Value</label>
