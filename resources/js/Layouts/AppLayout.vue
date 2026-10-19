@@ -11,13 +11,11 @@ import {
     ClipboardDocumentCheckIcon, ClipboardDocumentListIcon, DocumentTextIcon, TruckIcon,
     SunIcon, MoonIcon, CalendarDaysIcon, MagnifyingGlassIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon,
 } from '@heroicons/vue/24/outline';
-import CallTicketModal from '@/Components/CallTicketModal.vue';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
 import Dialer from '@/Components/Dialer.vue';
 import ChatAssistant from '@/Components/ChatAssistant.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
 import CompleteProfileModal from '@/Components/CompleteProfileModal.vue';
-import PendingTicketQueue from '@/Components/PendingTicketQueue.vue';
 
 const page  = usePage();
 const user  = computed(() => page.props.auth.user);
@@ -44,47 +42,9 @@ const isLight = computed(() => theme.value === 'light');
 
 const sidebarOpen     = ref(false);
 const dialerOpen      = ref(false);
-const pendingCall     = ref(null);
-const pendingTicketQueue = ref([]); // calls awaiting a ticket, shown as floating queue buttons
-const ticketPromptedKeys = ref(new Set()); // calls already queued for a ticket, so polling doesn't re-add them
-
-function openTicketFromQueue(call) {
-    pendingTicketQueue.value = pendingTicketQueue.value.filter(c => c.call_id !== call.call_id);
-    pendingCall.value = call;
-}
-
-// Closing the modal without submitting a ticket doesn't discard the call —
-// it goes back onto the floating queue so it can't be lost without a ticket.
-function minimizePendingCall() {
-    if (pendingCall.value && ! pendingTicketQueue.value.some(c => c.call_id === pendingCall.value.call_id)) {
-        pendingTicketQueue.value.push(pendingCall.value);
-    }
-    pendingCall.value = null;
-}
-
-// Load calls that ended >=15s ago and still have no ticket, from the server
-// — not just from live polling — so the "log a ticket" queue survives a
-// page refresh instead of being wiped along with in-memory state.
-async function loadNeedingTicket() {
-    try {
-        const { data } = await axios.get('/api/calls/needing-ticket');
-        for (const call of (data.calls ?? [])) {
-            ticketPromptedKeys.value.add(call.call_id);
-            if (! pendingTicketQueue.value.some(c => c.call_id === call.call_id)) {
-                pendingTicketQueue.value.push({
-                    call_id:   call.call_id, // Yeastar's call_id string — only used as a dedup/queue key
-                    db_call_id: call.id ?? null, // the real calls.id row — what actually links the ticket
-                    caller:    call.caller,
-                    callee:    call.callee,
-                    duration:  call.duration,
-                    direction: call.direction,
-                    client:    call.client ?? null,
-                    recording_id: call.recording_id ?? null,
-                });
-            }
-        }
-    } catch { /* ignore */ }
-}
+// The floating "calls needing a ticket" queue (and its auto ticket popup) was
+// removed at the user's request. Tickets are logged from Tickets, a call's
+// page, or "Log Ticket" on Recordings.
 const urgentCount     = ref(0);
 const urgentAlert     = ref(false); // banner shown when count increases
 const urgentToast     = ref(null);  // { subject, contact_number, id } for popup toast
@@ -96,7 +56,6 @@ let   toastTimer      = null;
 const activeCalls   = ref([]);
 const dismissedIds  = ref(new Set());
 let   pollTimer     = null;
-let   needingTicketTimer = null;
 
 // A stable per-call key. Falling back to just the caller's number (as this
 // used to) meant dismissing one call silently suppressed every future call
@@ -175,67 +134,15 @@ async function pollActiveCalls() {
             if (!currentKeys.has(k)) dismissedIds.value.delete(k);
         });
         activeCalls.value = incoming;
-
-        // Drive the 15s ticket-queue prompt off this same reliable polling
-        // data, not just the call-ended webhook (which isn't always firing —
-        // see handleCallEnd). Any call still tracked 15s after it started
-        // gets queued for a ticket, once — but /api/calls/active is shared,
-        // unscoped data (used for the incoming-call popup too), so only
-        // queue a prompt for the extension that actually answered it —
-        // logging a ticket is that agent's job, not every agent's.
-        const myExtension = user.value?.extension?.extension_number;
-        const now = Date.now();
-        for (const call of incoming) {
-            if (!myExtension) continue; // no extension of our own — nothing is "ours" to prompt for
-            const callExt = call.extension_number ?? call.extension ?? call.dst_ext ?? call.callee ?? call.dst;
-            if (String(callExt ?? '') !== String(myExtension)) continue;
-
-            const key = callKey(call);
-            if (ticketPromptedKeys.value.has(key)) continue;
-            const startedMs = call.started_at ? new Date(call.started_at).getTime() : null;
-            if (!startedMs || (now - startedMs) < 15000) continue;
-
-            ticketPromptedKeys.value.add(key);
-            if (! pendingTicketQueue.value.some(c => c.call_id === key)) {
-                pendingTicketQueue.value.push({
-                    call_id:   key,
-                    db_call_id: call.id ?? null, // only present on the DB-fallback path, not live Yeastar API items
-                    caller:    call.caller ?? call.src ?? 'Unknown',
-                    callee:    call.callee ?? call.dst ?? call.extension_number ?? '',
-                    duration:  Math.round((now - startedMs) / 1000),
-                    direction: call.direction ?? 'inbound',
-                    client:    call.client ?? null,
-                    recording_id: call.recording_id ?? null,
-                });
-            }
-        }
     } catch {
         // silently ignore network errors during polling
     }
 }
 
 onMounted(() => {
-    // Echo-based ticket modal (existing)
-    if (window.Echo && user.value) {
-        window.Echo.private(`agent.${user.value.id}`)
-            .listen('.call-ended', (data) => {
-                // CallEndedEvent's `call_id` is actually the real calls.id
-                // primary key (not the Yeastar string) — carry it through
-                // as db_call_id too, which is what the ticket link uses.
-                if (! pendingTicketQueue.value.some(c => c.call_id === data.call_id)) {
-                    pendingTicketQueue.value.push({ ...data, db_call_id: data.call_id });
-                }
-            });
-    }
-
-    // Poll for active inbound calls every 8 seconds
+    // Poll for active inbound calls every 8 seconds (incoming-call popup)
     pollActiveCalls();
     pollTimer = setInterval(pollActiveCalls, 8000);
-
-    // Re-seed the ticket queue from the server (survives refresh) and keep
-    // catching any call that ended without the client noticing.
-    loadNeedingTicket();
-    needingTicketTimer = setInterval(loadNeedingTicket, 30000);
 
     // Request browser notification permission
     requestNotifyPermission();
@@ -246,9 +153,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    if (user.value) window.Echo?.leave(`agent.${user.value.id}`);
     clearInterval(pollTimer);
-    clearInterval(needingTicketTimer);
 });
 
 const navigation = computed(() => [
@@ -700,22 +605,6 @@ function logout() {
             </div>
         </div>
     </Transition>
-
-    <!-- Ticket modal: opened by clicking a queued call below -->
-    <CallTicketModal
-        v-if="pendingCall"
-        :call="pendingCall"
-        @close="pendingCall = null"
-        @minimize="minimizePendingCall"
-    />
-
-    <!-- Floating queue: calls ≥ 15s awaiting a ticket, stacked on the right.
-         No dismiss — a ticket must be logged to clear an entry, and the
-         queue is re-seeded from the server on load so it survives a refresh. -->
-    <PendingTicketQueue
-        :calls="pendingTicketQueue"
-        @open="openTicketFromQueue"
-    />
 
     <!-- Incoming call popup (polled every 8 s) -->
     <IncomingCallPopup
