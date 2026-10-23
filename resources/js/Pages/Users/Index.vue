@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { PlusIcon, PencilIcon, TrashIcon, LockClosedIcon, ShieldCheckIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, LockClosedIcon, ShieldCheckIcon, ArrowRightOnRectangleIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ users: Array, roles: Array });
 
@@ -15,7 +15,7 @@ const resetUser = ref(null);
 const selectableRoles = computed(() => props.roles.filter(r => r.name !== 'supervisor'));
 
 const addForm  = useForm({ name: '', email: '', role: 'agent', supervisor_id: '', nav_permissions: [] });
-const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [] });
+const editForm = useForm({ name: '', email: '', role: '', supervisor_id: '', nav_permissions: [], password: '', password_confirmation: '' });
 const resetForm = useForm({ password: '', password_confirmation: '' });
 
 const NAV_ITEMS = [
@@ -71,7 +71,10 @@ const NAV_ITEMS = [
 const editIsAdmin = computed(() => editForm.role === 'admin');
 
 function openEdit(user) {
+    editForm.clearErrors();
     editUser.value           = user;
+    editForm.password        = '';
+    editForm.password_confirmation = '';
     editForm.name            = user.name;
     editForm.email           = user.email;
     editForm.role            = user.role;
@@ -121,6 +124,25 @@ function update() {
     editForm.put(`/users/${editUser.value.id}`, { onSuccess: () => { editUser.value = null; } });
 }
 
+// One click: back to a new-account state — default password (must change at
+// next login) and profile details cleared so they fill them in again.
+const DEFAULT_PASSWORD = '1234';
+function resetToDefault(user) {
+    if (!confirm(
+        `Reset ${user.name} to default, like a newly created account?\n\n` +
+        `• Password becomes ${DEFAULT_PASSWORD} — they must choose their own at next login\n` +
+        `• Profile details (photo, first name, surname, username, phone, bio) are cleared — they fill them in again after logging in\n\n` +
+        `Their name, email, role, permissions and work records are kept.`
+    )) return;
+    router.post(`/users/${user.id}/reset-default-password`, {}, { preserveScroll: true });
+}
+
+function openReset(user) {
+    resetForm.reset();
+    resetForm.clearErrors();
+    resetUser.value = user;
+}
+
 function doReset() {
     resetForm.post(`/users/${resetUser.value.id}/reset-password`, { onSuccess: () => { resetUser.value = null; resetForm.reset(); } });
 }
@@ -155,10 +177,13 @@ const roleColor = {
             </button>
         </template>
 
-        <div class="card p-0 overflow-hidden">
+        <!-- overflow-x-auto (not hidden): on narrower screens the last columns
+             used to be cut off, hiding the Edit / Reset password buttons. -->
+        <div class="card p-0 overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
+                        <th class="table-th w-56">Actions</th>
                         <th class="table-th">Name</th>
                         <th class="table-th">Email</th>
                         <th class="table-th">Role</th>
@@ -166,11 +191,26 @@ const roleColor = {
                         <th class="table-th">Last Login</th>
                         <th class="table-th">Status</th>
                         <th class="table-th">Account</th>
-                        <th class="table-th w-32" />
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-for="u in users" :key="u.id" class="hover:bg-gray-50">
+                        <td class="table-td whitespace-nowrap">
+                            <div class="flex gap-1">
+                                <button @click="openEdit(u)" class="btn-secondary btn-sm inline-flex items-center gap-1" title="Edit user (name, email, role, permissions, password)">
+                                    <PencilIcon class="h-3.5 w-3.5" /> Edit
+                                </button>
+                                <button @click="openReset(u)" class="btn-secondary btn-sm" title="Set a new password" :aria-label="`Set a new password for ${u.name}`">
+                                    <LockClosedIcon class="h-3.5 w-3.5" />
+                                </button>
+                                <button v-if="u.id !== $page.props.auth.user.id" @click="resetToDefault(u)" class="btn-secondary btn-sm inline-flex items-center gap-1" :title="`Reset to default like a new account: password ${DEFAULT_PASSWORD} + profile details to fill in again at next login`" :aria-label="`Reset ${u.name} to the default password`">
+                                    <ArrowPathIcon class="h-3.5 w-3.5" /> Default
+                                </button>
+                                <button @click="destroy(u)" class="btn-danger btn-sm" title="Delete user" :aria-label="`Delete ${u.name}`">
+                                    <TrashIcon class="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                        </td>
                         <td class="table-td font-medium">{{ u.name }}</td>
                         <td class="table-td text-xs">{{ u.email }}</td>
                         <td class="table-td">
@@ -197,19 +237,6 @@ const roleColor = {
                                 <ArrowRightOnRectangleIcon class="h-3.5 w-3.5" /> Login As
                             </button>
                             <span v-else class="text-xs text-gray-400">—</span>
-                        </td>
-                        <td class="table-td">
-                            <div class="flex gap-1">
-                                <button @click="openEdit(u)" class="btn-secondary btn-sm" title="Edit">
-                                    <PencilIcon class="h-3.5 w-3.5" />
-                                </button>
-                                <button @click="resetUser = u" class="btn-secondary btn-sm" title="Reset password">
-                                    <LockClosedIcon class="h-3.5 w-3.5" />
-                                </button>
-                                <button @click="destroy(u)" class="btn-danger btn-sm">
-                                    <TrashIcon class="h-3.5 w-3.5" />
-                                </button>
-                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -364,10 +391,28 @@ const roleColor = {
                             </div>
                         </template>
                     </div>
+
+                    <!-- Optional password change -->
+                    <div class="rounded-lg border border-gray-200 p-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <LockClosedIcon class="h-4 w-4 text-brand-600" />
+                            <span class="text-sm font-semibold text-gray-700">New Password</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-3">Leave blank to keep the current password. At least 8 characters — the user will be asked to choose their own at next login.</p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <input v-model="editForm.password" type="password" autocomplete="new-password" class="input" placeholder="New password" />
+                            </div>
+                            <div>
+                                <input v-model="editForm.password_confirmation" type="password" autocomplete="new-password" class="input" placeholder="Confirm password" />
+                            </div>
+                        </div>
+                        <p v-if="editForm.errors.password" class="mt-1 text-xs text-red-600">{{ editForm.errors.password }}</p>
+                    </div>
                 </form>
                 <div class="flex gap-2 justify-end px-6 py-4 border-t border-gray-100 flex-shrink-0">
                     <button type="button" @click="editUser = null" class="btn-secondary">Cancel</button>
-                    <button type="button" @click="update" class="btn-primary" :disabled="editForm.processing">Save</button>
+                    <button type="button" @click="update" class="btn-primary" :disabled="editForm.processing">{{ editForm.processing ? 'Saving…' : 'Save' }}</button>
                 </div>
             </div>
         </div>
@@ -377,17 +422,20 @@ const roleColor = {
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
                 <h3 class="font-semibold text-gray-900 mb-4">Reset Password — {{ resetUser.name }}</h3>
                 <form @submit.prevent="doReset" class="space-y-3">
+                    <p class="text-xs text-gray-500">At least 8 characters. {{ resetUser.name }} will be asked to choose their own password at next login.</p>
                     <div>
                         <label class="label">New Password</label>
-                        <input v-model="resetForm.password" type="password" class="input" required />
+                        <input v-model="resetForm.password" type="password" autocomplete="new-password" class="input" required minlength="8" />
+                        <p v-if="resetForm.errors.password" class="mt-1 text-xs text-red-600">{{ resetForm.errors.password }}</p>
                     </div>
                     <div>
                         <label class="label">Confirm Password</label>
-                        <input v-model="resetForm.password_confirmation" type="password" class="input" required />
+                        <input v-model="resetForm.password_confirmation" type="password" autocomplete="new-password" class="input" required />
+                        <p v-if="resetForm.password_confirmation && resetForm.password !== resetForm.password_confirmation" class="mt-1 text-xs text-amber-600">Passwords don't match yet.</p>
                     </div>
                     <div class="flex gap-2 justify-end pt-1">
                         <button type="button" @click="resetUser = null" class="btn-secondary">Cancel</button>
-                        <button type="submit" class="btn-primary" :disabled="resetForm.processing">Reset</button>
+                        <button type="submit" class="btn-primary" :disabled="resetForm.processing">{{ resetForm.processing ? 'Resetting…' : 'Reset' }}</button>
                     </div>
                 </form>
             </div>

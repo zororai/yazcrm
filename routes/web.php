@@ -460,6 +460,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('users/{user}', [Web\UserController::class, 'destroy'])->name('users.destroy');
         Route::post('users/{user}/toggle-active', [Web\UserController::class, 'toggleActive'])->name('users.toggle-active');
         Route::post('users/{user}/reset-password', [Web\UserController::class, 'resetPassword'])->name('users.reset-password');
+        Route::post('users/{user}/reset-default-password', [Web\UserController::class, 'resetToDefault'])->name('users.reset-default-password');
         Route::post('users/{user}/impersonate', [Web\UserController::class, 'impersonate'])->name('users.impersonate');
 
         Route::post('extensions/sync', [Web\ExtensionController::class, 'sync'])->name('extensions.sync');

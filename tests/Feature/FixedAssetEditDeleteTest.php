@@ -47,6 +47,26 @@ class FixedAssetEditDeleteTest extends TestCase
         ];
     }
 
+    public function test_exports_include_the_serial_number(): void
+    {
+        $this->asset->update(['serial_number' => '00012345678901', 'asset_number' => '0009']);
+        $manager = $this->makeUser('stores');
+
+        $csv = $this->actingAs($manager)->get('/fixed-assets/export/excel')->assertOk()->getContent();
+        $lines = array_map('str_getcsv', array_filter(explode("\n", trim($csv))));
+        $this->assertSame('Serial Number', $lines[0][2]);
+        // Kept as text in Excel: leading zeros and long digits survive.
+        $this->assertSame('="0009"', $lines[1][0]);
+        $this->assertSame('="00012345678901"', $lines[1][2]);
+
+        $pdf = $this->actingAs($manager)->get('/fixed-assets/export/pdf');
+        $pdf->assertOk();
+        $this->assertSame('application/pdf', $pdf->headers->get('Content-Type'));
+        $html = view('exports.fixed-assets-pdf', ['assets' => FixedAsset::all(), 'generatedAt' => now()])->render();
+        $this->assertStringContainsString('<th>Serial Number</th>', $html);
+        $this->assertStringContainsString('00012345678901', $html);
+    }
+
     public function test_adding_an_asset_requires_a_unique_asset_number_and_asset_location(): void
     {
         $manager = $this->makeUser('stores');

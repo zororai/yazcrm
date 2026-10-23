@@ -22,6 +22,7 @@
             <tr>
                 <th>Asset #</th>
                 <th>Name</th>
+                <th>Serial Number</th>
                 <th>Category</th>
                 <th>Custodian</th>
                 <th>Department</th>
@@ -39,6 +40,7 @@
                 <tr>
                     <td>{{ $a->asset_number }}</td>
                     <td>{{ $a->name }}</td>
+                    <td>{{ $a->serial_number ?: '—' }}</td>
                     <td>{{ $a->category?->name ?? '—' }}</td>
                     <td>{{ $a->custodian?->name ?? '—' }}</td>
                     <td>{{ $a->department?->name ?? '—' }}</td>

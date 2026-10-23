@@ -323,18 +323,23 @@ class FixedAssetController extends Controller
         $assets = $this->filteredAssetsQuery($request)->get();
 
         $headers = [
-            'Asset #', 'Name', 'Category', 'Custodian', 'Department', 'Status',
+            'Asset #', 'Name', 'Serial Number', 'Category', 'Custodian', 'Department', 'Status',
             'Purchase Date', 'Purchase Cost', 'Depreciation Rate (% per year)', 'Salvage Value',
             'Annual Depreciation', 'Accumulated Depreciation', 'Book Value',
         ];
+
+        // Excel turns number-like text into numbers: "0009" → 9, long serials
+        // → 1.23E+11. Wrapping as ="…" makes Excel keep it as text, exactly as stored.
+        $asText = fn (?string $v) => filled($v) ? '="'.str_replace('"', '""', $v).'"' : '';
 
         $handle = fopen('php://temp', 'r+');
         fputcsv($handle, $headers);
 
         foreach ($assets as $a) {
             fputcsv($handle, [
-                $a->asset_number,
+                $asText($a->asset_number),
                 $a->name,
+                $asText($a->serial_number),
                 $a->category?->name ?? '',
                 $a->custodian?->name ?? '',
                 $a->department?->name ?? '',

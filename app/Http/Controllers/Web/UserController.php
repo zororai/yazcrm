@@ -9,11 +9,16 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class UserController extends Controller
 {
+    // Temporary password for new accounts and "Reset to default". Always
+    // paired with must_change_password, so it only works for the next login.
+    public const DEFAULT_PASSWORD = '1234';
+
     private array $validPerms = [
         'dashboard','helpline_dashboard','dialer','calls','recordings','records_management','callbacks','tickets','ticket_management',
         'urgent','directory','appraisals','appraisal_reviews','appraisal_archive','activity_reports','work_management','stores','stock_transfers','stocktakes','item_categories','fixed_assets','procurement','data_collection',
@@ -55,7 +60,7 @@ class UserController extends Controller
         }
 
         // New accounts start with a default password and must set their own on first login.
-        User::create([...$data, 'password' => Hash::make('1234'), 'must_change_password' => true]);
+        User::create([...$data, 'password' => Hash::make(self::DEFAULT_PASSWORD), 'must_change_password' => true]);
 
         return back()->with('success', 'User created.');
     }
@@ -75,7 +80,21 @@ class UserController extends Controller
             'supervisor_id'     => "sometimes|nullable|exists:users,id|not_in:{$user->id}",
             'nav_permissions'   => 'sometimes|nullable|array',
             'nav_permissions.*' => 'string|in:' . implode(',', $this->validPerms),
+            // Optional: set a new password while editing (blank = keep current).
+            'password'          => 'nullable|string|min:8|confirmed',
+        ], [
+            'password.min'       => 'The new password must be at least 8 characters.',
+            'password.confirmed' => 'The two passwords don\'t match.',
+            'nav_permissions.*.in' => 'One of the selected permissions is not recognised — untick it and save again.',
         ]);
+
+        // A password set by an admin is temporary: the user picks their own at next login.
+        if (filled($data['password'] ?? null)) {
+            $data['password'] = Hash::make($data['password']);
+            $data['must_change_password'] = true;
+        } else {
+            unset($data['password']);
+        }
 
         // When role changes, auto-apply that role's default permissions
         if (isset($data['role']) && $data['role'] !== $user->role) {
@@ -90,7 +109,9 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return back()->with('success', 'User updated.');
+        return back()->with('success', isset($data['password'])
+            ? 'User updated and password changed — they will be asked to choose their own at next login.'
+            : 'User updated.');
     }
 
     public function destroy(User $user): RedirectResponse
@@ -109,11 +130,48 @@ class UserController extends Controller
 
     public function resetPassword(Request $request, User $user): RedirectResponse
     {
-        $request->validate(['password' => 'required|string|min:8|confirmed']);
+        $request->validate(['password' => 'required|string|min:8|confirmed'], [
+            'password.required'  => 'Enter a new password.',
+            'password.min'       => 'The new password must be at least 8 characters.',
+            'password.confirmed' => 'The two passwords don\'t match.',
+        ]);
 
         $user->update(['password' => Hash::make($request->password), 'must_change_password' => true]);
 
-        return back()->with('success', 'Password reset.');
+        return back()->with('success', "Password reset for {$user->name} — they will be asked to choose their own at next login.");
+    }
+
+    // One click: put the account back to how a newly created account starts
+    // (e.g. an agent who is away / has forgotten their login). The default
+    // password must be changed at next login, and the profile details are
+    // cleared so the "Complete Your Profile" step runs again like a new user.
+    // Name, email, role, permissions and all their work stay as they are.
+    public function resetToDefault(Request $request, User $user): RedirectResponse
+    {
+        if ($user->id === $request->user()->id) {
+            return back()->with('error', 'You can\'t reset your own account to default here — use Reset password instead.');
+        }
+
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        $user->update([
+            'password'                     => Hash::make(self::DEFAULT_PASSWORD),
+            'must_change_password'         => true,
+            'first_name'                   => null,
+            'surname'                      => null,
+            'username'                     => null,
+            'phone'                        => null,
+            'bio'                          => null,
+            'avatar'                       => null,
+            'profile_prompt_dismiss_count' => 0,
+        ]);
+
+        $request->attributes->set('audit_description',
+            "Reset {$user->name} to a new-account state: default password (must change at next login), profile details cleared");
+
+        return back()->with('success', "{$user->name} has been reset to default (password ".self::DEFAULT_PASSWORD."). At next login they'll set a new password and fill in their profile, like a new account.");
     }
 
     // Lets an admin log in as another user's account (mainly for helping
