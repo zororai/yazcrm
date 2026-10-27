@@ -74,6 +74,7 @@ class FixedAssetController extends Controller
             'home_location_id'  => 'required|exists:locations,id',   // Asset location
             'location_id'       => 'nullable|exists:locations,id',   // Issued location
             'asset_category_id' => 'nullable|exists:asset_categories,id',
+            'project'           => 'nullable|string|max:255',
             'name'              => 'required|string|max:255',
             'description'       => 'nullable|string',
             'manufacturer'      => 'nullable|string|max:255',
@@ -127,6 +128,7 @@ class FixedAssetController extends Controller
             'home_location_id'  => 'required|exists:locations,id',
             'location_id'       => 'nullable|exists:locations,id',
             'asset_category_id' => 'nullable|exists:asset_categories,id',
+            'project'           => 'nullable|string|max:255',
             'name'              => 'required|string|max:255',
             'description'       => 'nullable|string',
             'manufacturer'      => 'nullable|string|max:255',
@@ -201,7 +203,7 @@ class FixedAssetController extends Controller
     private function describeChanges(FixedAsset $asset): array
     {
         $labels = [
-            'asset_number' => 'Asset number', 'home_location_id' => 'Asset location', 'location_id' => 'Issued location',
+            'asset_number' => 'Asset number', 'home_location_id' => 'Asset location', 'location_id' => 'Issued location', 'project' => 'Project',
             'asset_category_id' => 'Category', 'name' => 'Name', 'description' => 'Description',
             'manufacturer' => 'Manufacturer', 'model' => 'Model', 'serial_number' => 'Serial number',
             'purchase_date' => 'Purchase date', 'purchase_cost' => 'Purchase cost',
@@ -323,7 +325,7 @@ class FixedAssetController extends Controller
         $assets = $this->filteredAssetsQuery($request)->get();
 
         $headers = [
-            'Asset #', 'Name', 'Serial Number', 'Category', 'Custodian', 'Department', 'Status',
+            'Asset #', 'Name', 'Serial Number', 'Category', 'Custodian', 'Department', 'Project',
             'Purchase Date', 'Purchase Cost', 'Depreciation Rate (% per year)', 'Salvage Value',
             'Annual Depreciation', 'Accumulated Depreciation', 'Book Value',
         ];
@@ -343,7 +345,7 @@ class FixedAssetController extends Controller
                 $a->category?->name ?? '',
                 $a->custodian?->name ?? '',
                 $a->department?->name ?? '',
-                str_replace('_', ' ', $a->status),
+                $a->project ?? '',
                 $a->purchase_date?->format('Y-m-d') ?? '',
                 $a->purchase_cost ?? '',
                 $a->depreciation_rate ?? '',

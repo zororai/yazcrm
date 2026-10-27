@@ -26,7 +26,7 @@
                 <th>Category</th>
                 <th>Custodian</th>
                 <th>Department</th>
-                <th>Status</th>
+                <th>Project</th>
                 <th class="num">Purchase Cost</th>
                 <th class="num">Dep. Rate</th>
                 <th class="num">Salvage Value</th>
@@ -44,7 +44,7 @@
                     <td>{{ $a->category?->name ?? '—' }}</td>
                     <td>{{ $a->custodian?->name ?? '—' }}</td>
                     <td>{{ $a->department?->name ?? '—' }}</td>
-                    <td>{{ str_replace('_', ' ', $a->status) }}</td>
+                    <td>{{ $a->project ?: '—' }}</td>
                     <td class="num">{{ $a->purchase_cost !== null ? number_format($a->purchase_cost, 2) : '—' }}</td>
                     <td class="num">{{ $a->depreciation_rate !== null ? rtrim(rtrim(number_format($a->depreciation_rate, 2), '0'), '.') . '% / yr' : '—' }}</td>
                     <td class="num">{{ number_format($a->salvage_value ?? 0, 2) }}</td>

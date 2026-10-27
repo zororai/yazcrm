@@ -133,6 +133,7 @@ Route::middleware('auth')->group(function () {
     Route::get('tickets/{ticket}', [Web\TicketController::class, 'show'])->name('tickets.show');
     Route::put('tickets/{ticket}', [Web\TicketController::class, 'update'])->name('tickets.update');
     Route::delete('tickets/{ticket}', [Web\TicketController::class, 'destroy'])->name('tickets.destroy');
+    Route::post('tickets/{ticket}/confirm-uptake', [Web\TicketController::class, 'confirmUptake'])->name('tickets.confirm-uptake');
     Route::post('tickets/{ticket}/notes', [Web\TicketController::class, 'storeNote'])->name('tickets.notes.store');
     Route::delete('tickets/{ticket}/notes/{note}', [Web\TicketController::class, 'destroyNote'])->name('tickets.notes.destroy');
 

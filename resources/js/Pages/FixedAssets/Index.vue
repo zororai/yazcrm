@@ -1,10 +1,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { router, useForm, Link } from '@inertiajs/vue3';
+import { router, useForm, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ClockIcon, ChartBarIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({ assets: Array, categories: Array, locations: Array, isManager: Boolean, canDelete: Boolean });
+// Project list (Distress Domains → Project), shared app-wide like on tickets.
+const projects = computed(() => usePage().props.projects ?? []);
 
 function exportUrl(type) {
     const params = new URLSearchParams({
@@ -32,7 +34,7 @@ watch(filters, () => {
 
 const showForm = ref(false);
 const form = useForm({
-    asset_number: '', home_location_id: '', location_id: '',
+    asset_number: '', home_location_id: '', location_id: '', project: '',
     asset_category_id: '', name: '', manufacturer: '', model: '', serial_number: '',
     purchase_date: '', purchase_cost: '', depreciation_rate: '', salvage_value: '',
     revaluation_cycle_years: 3,
@@ -66,7 +68,7 @@ function open(asset) {
 // Saved changes are written to the Audit Trail as field: old → new.
 const editing = ref(null);
 const editForm = useForm({
-    asset_number: '', home_location_id: '', location_id: '',
+    asset_number: '', home_location_id: '', location_id: '', project: '',
     asset_category_id: '', name: '', description: '', manufacturer: '', model: '', serial_number: '',
     purchase_date: '', purchase_cost: '', depreciation_rate: '', salvage_value: '',
     revaluation_cycle_years: '', supplier_name: '', warranty_expiry: '',
@@ -80,6 +82,7 @@ function startEdit(asset) {
         home_location_id: asset.home_location_id ?? '',
         location_id: asset.location_id ?? '',
         asset_category_id: asset.asset_category_id ?? '',
+        project: asset.project ?? '',
         name: asset.name ?? '',
         description: asset.description ?? '',
         manufacturer: asset.manufacturer ?? '',
@@ -305,6 +308,13 @@ const statusColor = {
                             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="label">Project</label>
+                        <select v-model="form.project" class="input">
+                            <option value="">None</option>
+                            <option v-for="p in projects" :key="p" :value="p">{{ p }}</option>
+                        </select>
+                    </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="label">Manufacturer</label>
@@ -444,6 +454,14 @@ const statusColor = {
                         <select v-model="editForm.asset_category_id" class="input">
                             <option value="">None</option>
                             <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label">Project</label>
+                        <select v-model="editForm.project" class="input">
+                            <option value="">None</option>
+                            <option v-for="p in projects" :key="p" :value="p">{{ p }}</option>
+                            <option v-if="editForm.project && !projects.includes(editForm.project)" :value="editForm.project">{{ editForm.project }}</option>
                         </select>
                     </div>
                     <div>

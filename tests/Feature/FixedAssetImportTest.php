@@ -30,7 +30,7 @@ class FixedAssetImportTest extends TestCase
     private const HEADINGS = [
         'Asset Number *', 'Name *', 'Category', 'Description', 'Manufacturer', 'Model', 'Serial Number', 'Purchase Date', 'Purchase Cost',
         'Depreciation Rate (% per year)', 'Salvage Value', 'Revaluation Cycle (years)', 'Supplier', 'Warranty Start',
-        'Warranty Expiry', 'Condition', 'Department', 'Asset Location *', 'Issued Location',
+        'Warranty Expiry', 'Condition', 'Department', 'Project', 'Asset Location *', 'Issued Location',
     ];
 
     protected function setUp(): void
@@ -41,6 +41,7 @@ class FixedAssetImportTest extends TestCase
         $this->finance = Department::forceCreate(['code' => 'FIN', 'name' => 'Finance']);
         $this->hq      = Location::forceCreate(['name' => 'Head Office']);
         $this->field   = Location::forceCreate(['name' => 'Field Office']);
+        \App\Models\LookupItem::forceCreate(['type' => 'project', 'name' => 'UNICEF', 'is_active' => true, 'sort_order' => 1]);
     }
 
     private function xlsx(array $rows, array $headings = self::HEADINGS): UploadedFile
@@ -72,7 +73,7 @@ class FixedAssetImportTest extends TestCase
                 'Asset Number *' => 'YAZ/IT/0001', 'Name *' => 'Dell Laptop', 'Category' => 'laptops', 'Serial Number' => 'SN-1',
                 'Purchase Date' => ExcelDate::PHPToExcel(new \DateTime('2025-01-31')), // real Excel date cell
                 'Purchase Cost' => '1,250.00', 'Depreciation Rate (% per year)' => '20%', 'Salvage Value' => 100,
-                'Warranty Expiry' => '31/01/2028', 'Department' => 'Finance',
+                'Warranty Expiry' => '31/01/2028', 'Department' => 'Finance', 'Project' => 'unicef',
                 'Asset Location *' => 'HEAD OFFICE', 'Issued Location' => 'field office',
             ]),
             $this->row(['Asset Number *' => 'YAZ/FUR/0002', 'Name *' => 'Office Chair', 'Condition' => 'Fair', 'Revaluation Cycle (years)' => 2]),
@@ -88,6 +89,7 @@ class FixedAssetImportTest extends TestCase
         $this->assertSame('YAZ/IT/0001', $laptop->asset_number); // the number from the file is kept
         $this->assertSame($this->laptops->id, $laptop->asset_category_id);
         $this->assertSame($this->finance->id, $laptop->department_id);
+        $this->assertSame('UNICEF', $laptop->project); // matched case-insensitively, stored as listed
         $this->assertSame($this->hq->id, $laptop->home_location_id);
         $this->assertSame($this->field->id, $laptop->location_id);
         $this->assertSame('2025-01-31', $laptop->purchase_date->toDateString());
@@ -122,7 +124,7 @@ class FixedAssetImportTest extends TestCase
             $this->row(['Name *' => 'Dup B', 'Serial Number' => 'sn-9']),
             $this->row(['Name *' => 'Old serial', 'Serial Number' => 'SN-OLD', 'Depreciation Rate (% per year)' => '0%', 'Condition' => 'shiny']),
             $this->row(['Asset Number *' => '', 'Name *' => 'No number', 'Asset Location *' => '']),
-            $this->row(['Asset Number *' => 'ast-000900', 'Name *' => 'Taken number', 'Asset Location *' => 'Moon Base']),
+            $this->row(['Asset Number *' => 'ast-000900', 'Name *' => 'Taken number', 'Asset Location *' => 'Moon Base', 'Project' => 'Mars Mission']),
             $this->row(['Asset Number *' => 'DUP-1', 'Name *' => 'Dup number A']),
             $this->row(['Asset Number *' => 'dup-1', 'Name *' => 'Dup number B']),
         ]);
@@ -143,7 +145,7 @@ class FixedAssetImportTest extends TestCase
 
         $this->assertTrue($errors->contains(fn ($e) => str_starts_with($e, 'Row 8:') && str_contains($e, 'Asset Number is required') && str_contains($e, 'Asset Location is required')));
         $this->assertTrue($errors->contains(fn ($e) => str_starts_with($e, 'Row 9:') && str_contains($e, 'Asset Number "ast-000900" is already in the register')
-            && str_contains($e, 'Asset Location "Moon Base" doesn\'t exist')));
+            && str_contains($e, 'Asset Location "Moon Base" doesn\'t exist') && str_contains($e, 'Project "Mars Mission" doesn\'t exist')));
         $this->assertTrue($errors->contains(fn ($e) => str_starts_with($e, 'Row 11:') && str_contains($e, 'Asset Number "dup-1" is repeated (also on row 10)')));
     }
 
@@ -160,12 +162,14 @@ class FixedAssetImportTest extends TestCase
         $this->assertSame(['Assets', 'Lists', 'Instructions'], $book->getSheetNames());
         $sheet = $book->getSheetByName('Assets');
         $this->assertSame('Asset Number *', $sheet->getCell('A1')->getValue());
-        $this->assertSame('Asset Location *', $sheet->getCell('R1')->getValue());
-        $this->assertSame('Issued Location', $sheet->getCell('S1')->getValue());
+        $this->assertSame('Project', $sheet->getCell('R1')->getValue());
+        $this->assertSame('Asset Location *', $sheet->getCell('S1')->getValue());
+        $this->assertSame('Issued Location', $sheet->getCell('T1')->getValue());
         $this->assertSame('Laptops', $book->getSheetByName('Lists')->getCell('A2')->getValue());
         $this->assertSame('list', $sheet->getCell('C5')->getDataValidation()->getType()); // category drop-down
-        $this->assertSame('list', $sheet->getCell('R5')->getDataValidation()->getType()); // asset location drop-down
-        $this->assertSame('list', $sheet->getCell('S5')->getDataValidation()->getType()); // issued location drop-down
+        $this->assertSame('list', $sheet->getCell('R5')->getDataValidation()->getType()); // project drop-down
+        $this->assertSame('list', $sheet->getCell('S5')->getDataValidation()->getType()); // asset location drop-down
+        $this->assertSame('list', $sheet->getCell('T5')->getDataValidation()->getType()); // issued location drop-down
 
         // Uploading it untouched is refused: the example row isn't a real asset.
         $this->actingAs($this->manager)->from('/fixed-assets')

@@ -27,6 +27,29 @@ class TicketController extends Controller
         return $user->role === 'admin' || in_array('ticket_management', $user->nav_permissions ?? [], true);
     }
 
+    // Follow-up views on the Tickets list:
+    //  awaiting_uptake — referred somewhere, uptake not confirmed yet
+    //  follow_up_due   — follow-up date is today or earlier, case not resolved/closed
+    //  uptake_overdue  — expected referral uptake date has passed, still unconfirmed
+    public const FOLLOW_UPS = ['awaiting_uptake', 'follow_up_due', 'uptake_overdue'];
+
+    private function applyFollowUp($query, string $view): void
+    {
+        $today = now()->toDateString();
+        $notConfirmed = fn ($q) => $q->where(fn ($q) => $q->where('uptake_confirmed', false)->orWhereNull('uptake_confirmed'));
+        // A real referral: something entered, and not a placeholder like "N/A".
+        $referred = fn ($q) => $q->whereNotNull('referred_to')->where('referred_to', '!=', '')
+            ->whereRaw("UPPER(TRIM(referred_to)) NOT IN ('N/A', 'NA', 'N.A', 'NONE', '-', 'NIL')");
+
+        match ($view) {
+            'awaiting_uptake' => $query->where($referred)->where($notConfirmed)->where('status', '!=', 'closed'),
+            'follow_up_due'   => $query->whereNotNull('follow_up_date')->whereDate('follow_up_date', '<=', $today)
+                                       ->whereNotIn('status', ['resolved', 'closed']),
+            'uptake_overdue'  => $query->whereNotNull('referral_uptake_date')->whereDate('referral_uptake_date', '<', $today)
+                                       ->where($notConfirmed)->where('status', '!=', 'closed'),
+        };
+    }
+
     public function index(Request $request): Response
     {
         $query = Ticket::with(['client', 'agent', 'call.recording:id,call_id', 'successStory:id,ticket_id,status'])->latest();
@@ -34,6 +57,23 @@ class TicketController extends Controller
         // Agents only see their own tickets
         if (! $this->canManageAllTickets($request->user())) {
             $query->where('agent_id', $request->user()->id);
+        }
+
+        // Badge counts for the follow-up views, over the tickets this user can
+        // see (before the other filters, so the numbers don't jump around).
+        $followUpCounts = collect(self::FOLLOW_UPS)->mapWithKeys(function ($view) use ($query) {
+            $q = (clone $query)->setEagerLoads([])->reorder();
+            $this->applyFollowUp($q, $view);
+
+            return [$view => $q->count()];
+        });
+
+        if (in_array($request->input('follow_up'), self::FOLLOW_UPS, true)) {
+            $this->applyFollowUp($query, $request->input('follow_up'));
+            // Most urgent first: earliest follow-up / expected uptake date.
+            if ($request->input('follow_up') !== 'awaiting_uptake') {
+                $query->reorder()->orderBy($request->input('follow_up') === 'follow_up_due' ? 'follow_up_date' : 'referral_uptake_date')->latest();
+            }
         }
 
         if ($request->filled('status'))         { $query->where('status',            $request->status); }
@@ -83,7 +123,9 @@ class TicketController extends Controller
             'tickets' => $tickets,
             'clients' => $clients,
             'agents'  => $agents,
+            'followUpCounts' => $followUpCounts,
             'filters' => $request->only([
+                'follow_up',
                 'status', 'priority', 'search',
                 'agent_id', 'gender', 'service', 'project',
                 'province', 'district', 'location', 'referred_to',
@@ -122,6 +164,7 @@ class TicketController extends Controller
         if ($request->filled('repeat_caller'))  { $query->where('is_repeat_caller',   $request->repeat_caller); }
         if ($request->filled('date_from'))      { $query->whereDate('created_at', '>=', $request->date_from); }
         if ($request->filled('date_to'))        { $query->whereDate('created_at', '<=', $request->date_to); }
+        if (in_array($request->input('follow_up'), self::FOLLOW_UPS, true)) { $this->applyFollowUp($query, $request->input('follow_up')); }
         if ($request->filled('age_group')) {
             match ($request->age_group) {
                 'under_18' => $query->whereBetween('caller_age', [1,  17]),
@@ -432,6 +475,33 @@ class TicketController extends Controller
         $ticket->delete();
 
         return redirect()->route('tickets.index')->with('success', 'Ticket deleted.');
+    }
+
+    // One click after the follow-up call: the client has used the service.
+    // Marks uptake confirmed and leaves a note on the ticket for the history.
+    public function confirmUptake(Request $request, Ticket $ticket): RedirectResponse
+    {
+        if (! $this->canManageAllTickets($request->user()) && $ticket->agent_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($ticket->uptake_confirmed) {
+            return back()->with('success', 'Uptake was already confirmed for this ticket.');
+        }
+
+        $data = $request->validate(['note' => 'nullable|string|max:2000']);
+
+        $ticket->update(['uptake_confirmed' => true]);
+        $ticket->notes()->create([
+            'user_id' => $request->user()->id,
+            'body'    => 'Service uptake confirmed'
+                .($ticket->referred_to ? " (referred to {$ticket->referred_to})" : '')
+                .(filled($data['note'] ?? null) ? ': '.$data['note'] : '.'),
+        ]);
+
+        $request->attributes->set('audit_description', "Confirmed service uptake on ticket #{$ticket->id} ({$ticket->subject})");
+
+        return back()->with('success', "Uptake confirmed for ticket #{$ticket->id}.");
     }
 
     public function storeNote(Request $request, Ticket $ticket): RedirectResponse

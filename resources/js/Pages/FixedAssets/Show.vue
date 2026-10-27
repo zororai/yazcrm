@@ -141,6 +141,7 @@ const statusColor = {
                 <p><span class="text-gray-400">Serial Number:</span> {{ asset.serial_number ?? '—' }}</p>
                 <p><span class="text-gray-400">Custodian:</span> {{ asset.custodian?.name ?? '—' }}</p>
                 <p><span class="text-gray-400">Department:</span> {{ asset.department?.name ?? '—' }}</p>
+                <p><span class="text-gray-400">Project:</span> {{ asset.project || '—' }}</p>
                 <p><span class="text-gray-400">Asset Location:</span> {{ asset.home_location?.name ?? '—' }}</p>
                 <p><span class="text-gray-400">Issued Location:</span> {{ asset.location?.name ?? 'Not issued' }}</p>
             </div>

@@ -17,7 +17,7 @@ class FixedAsset extends Model
         'revaluation_cycle_years', 'last_revalued_at', 'current_value', 'depreciation_base_date',
         'supplier_name', 'supplier_id',
         'warranty_start', 'warranty_expiry', 'condition', 'status',
-        'location_id', 'home_location_id', 'department_id', 'current_custodian_id', 'created_by',
+        'location_id', 'home_location_id', 'department_id', 'project', 'current_custodian_id', 'created_by',
     ];
 
     protected $casts = [

@@ -7,6 +7,7 @@ use App\Models\AssetCategory;
 use App\Models\Department;
 use App\Models\FixedAsset;
 use App\Models\Location;
+use App\Models\LookupItem;
 use App\Models\User;
 use App\Services\FixedAssetService;
 use App\Support\Assets\AssetStatus;
@@ -52,6 +53,7 @@ class FixedAssetImportController extends Controller
         'warranty_expiry'         => ['Warranty Expiry', false, 'Date, same formats as Purchase Date.', '2028-01-31'],
         'condition'               => ['Condition', false, 'One of: '.'%CONDITIONS%'.'. Defaults to good.', 'good'],
         'department'              => ['Department', false, 'Must match an existing department (pick from the list).', null],
+        'project'                 => ['Project', false, 'Must match an existing project (pick from the list).', null],
         'asset_location'          => ['Asset Location', true, 'Where the asset is normally kept. Must match an existing location (pick from the list).', null],
         'issued_location'         => ['Issued Location', false, 'Where it is issued and in use now. Must match an existing location; leave blank if not issued.', null],
     ];
@@ -82,6 +84,7 @@ class FixedAssetImportController extends Controller
             'Condition'  => AssetStatus::CONDITIONS,
             'Department' => Department::orderBy('name')->pluck('name')->all(),
             'Location'   => Location::orderBy('name')->pluck('name')->all(),
+            'Project'    => $this->projectNames()->values()->all(),
         ];
 
         $book = new Spreadsheet();
@@ -99,6 +102,8 @@ class FixedAssetImportController extends Controller
                     ?? $lists['Category'][0] ?? null;
             } elseif ($key === 'department') {
                 $example = $lists['Department'][0] ?? null;
+            } elseif ($key === 'project') {
+                $example = $lists['Project'][0] ?? null;
             } elseif ($key === 'asset_location') {
                 $example = $lists['Location'][0] ?? null;
             } elseif ($key === 'issued_location') {
@@ -137,7 +142,7 @@ class FixedAssetImportController extends Controller
         $listSheet->setSheetState(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::SHEETSTATE_HIDDEN);
 
         $dropdowns = [
-            'category' => 'Category', 'condition' => 'Condition', 'department' => 'Department',
+            'category' => 'Category', 'condition' => 'Condition', 'department' => 'Department', 'project' => 'Project',
             'asset_location' => 'Location', 'issued_location' => 'Location',
         ];
         foreach ($dropdowns as $key => $title) {
@@ -243,6 +248,8 @@ class FixedAssetImportController extends Controller
         $categories  = AssetCategory::pluck('id', 'name')->mapWithKeys(fn ($id, $n) => [mb_strtolower(trim($n)) => $id]);
         $departments = Department::pluck('id', 'name')->mapWithKeys(fn ($id, $n) => [mb_strtolower(trim($n)) => $id]);
         $locations   = Location::pluck('id', 'name')->mapWithKeys(fn ($id, $n) => [mb_strtolower(trim($n)) => $id]);
+        // Projects are stored by name, so the "id" here is the canonical name.
+        $projects    = $this->projectNames()->mapWithKeys(fn ($n) => [mb_strtolower(trim($n)) => $n]);
         $existingSerials = FixedAsset::withTrashed()->whereNotNull('serial_number')->pluck('serial_number')
             ->map(fn ($s) => mb_strtolower(trim($s)))->flip();
         $existingNumbers = FixedAsset::withTrashed()->whereNotNull('asset_number')->pluck('asset_number')
@@ -287,6 +294,7 @@ class FixedAssetImportController extends Controller
                 $lookups = [
                     'category'        => [$categories, 'asset_category_id'],
                     'department'      => [$departments, 'department_id'],
+                    'project'         => [$projects, 'project'],
                     'asset_location'  => [$locations, 'home_location_id'],
                     'issued_location' => [$locations, 'location_id'],
                 ];
@@ -443,6 +451,13 @@ class FixedAssetImportController extends Controller
         }
 
         return null;
+    }
+
+    // Active projects from the Project lookup list (as used on tickets).
+    private function projectNames()
+    {
+        return LookupItem::where('type', 'project')->where('is_active', true)
+            ->orderBy('sort_order')->orderBy('name')->pluck('name');
     }
 
     private function letter(int $index): string

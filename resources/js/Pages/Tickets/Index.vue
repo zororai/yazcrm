@@ -9,9 +9,30 @@ import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon, NoSymbolIcon
 import { debounce } from 'lodash-es';
 import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
 
-const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
+const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, followUpCounts: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
 const authUserId = computed(() => usePage().props.auth.user?.id);
+const canManageAll = computed(() => isAdmin.value || (usePage().props.auth.user?.nav_permissions ?? []).includes('ticket_management'));
+
+// ── Follow-up views ──────────────────────────────────────────────────────────
+const followUp = ref(props.filters.follow_up ?? '');
+const followUpTabs = [
+    { key: '',                label: 'All tickets',     hint: '' },
+    { key: 'awaiting_uptake', label: 'Awaiting uptake', hint: 'Referred, but uptake not confirmed yet' },
+    { key: 'follow_up_due',   label: 'Follow-up due',   hint: 'Follow-up date is today or earlier and the case is not resolved', urgent: true },
+    { key: 'uptake_overdue',  label: 'Uptake overdue',  hint: 'Expected referral uptake date has passed and uptake is still not confirmed', urgent: true },
+];
+const today = new Date().toISOString().slice(0, 10);
+const day = v => (v ? String(v).slice(0, 10) : '');
+const isRealReferral = t => !!t.referred_to && !['N/A', 'NA', 'N.A', 'NONE', '-', 'NIL'].includes(String(t.referred_to).trim().toUpperCase());
+const followUpDue = t => t.follow_up_date && day(t.follow_up_date) <= today && !['resolved', 'closed'].includes(t.status);
+const uptakeOverdue = t => t.referral_uptake_date && day(t.referral_uptake_date) < today && !t.uptake_confirmed;
+
+function confirmUptake(t) {
+    if (!confirm(`Confirm that the client has taken up the service${t.referred_to ? ` at ${t.referred_to}` : ''}?\n\nA note will be added to the ticket.`)) return;
+    router.post(`/tickets/${t.id}/confirm-uptake`, {}, { preserveScroll: true, preserveState: true });
+}
+
 const search         = ref(props.filters.search         ?? '');
 const status         = ref(props.filters.status         ?? '');
 const priority       = ref(props.filters.priority       ?? '');
@@ -33,6 +54,7 @@ const showAdd        = ref(false);
 
 const exportUrl = computed(() => {
     const params = new URLSearchParams();
+    if (followUp.value)     params.set('follow_up',     followUp.value);
     if (search.value)       params.set('search',        search.value);
     if (status.value)       params.set('status',        status.value);
     if (priority.value)     params.set('priority',      priority.value);
@@ -60,6 +82,7 @@ const activeFilterCount = computed(() =>
 
 function apply() {
     router.get('/tickets', {
+        follow_up:       followUp.value       || undefined,
         search:          search.value         || undefined,
         status:          status.value         || undefined,
         priority:        priority.value       || undefined,
@@ -89,7 +112,7 @@ function clearFilters() {
 
 const debouncedApply = debounce(apply, 350);
 watch(search, debouncedApply);
-watch([status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup, dateFrom, dateTo], apply);
+watch([followUp, status, priority, agentId, gender, service, project, province, referredTo, repeatCaller, callDirection, ageGroup, dateFrom, dateTo], apply);
 watch([location, district], debounce(apply, 350));
 
 // ── Blocked Numbers ──────────────────────────────────────────────────────────
@@ -768,7 +791,24 @@ const statusColor = {
             </div>
         </div>
 
-        <div class="card p-0 overflow-hidden">
+        <!-- Follow-up views -->
+        <div class="flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Follow-up views">
+            <button v-for="tab in followUpTabs" :key="tab.key" type="button" role="tab"
+                :aria-selected="followUp === tab.key" :title="tab.hint" @click="followUp = tab.key"
+                :class="['inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors',
+                    followUp === tab.key ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-brand-300']">
+                {{ tab.label }}
+                <span v-if="tab.key && followUpCounts?.[tab.key] !== undefined"
+                    :class="['rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                        followUp === tab.key ? 'bg-white/25 text-white'
+                        : tab.urgent && followUpCounts[tab.key] > 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600']">
+                    {{ followUpCounts[tab.key].toLocaleString() }}
+                </span>
+            </button>
+        </div>
+        <p v-if="followUp" class="text-xs text-gray-500 -mt-1 mb-3">{{ followUpTabs.find(t => t.key === followUp)?.hint }}. Other filters still apply.</p>
+
+        <div class="card p-0 overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
@@ -776,6 +816,7 @@ const statusColor = {
                         <th class="table-th">Purpose</th>
                         <th class="table-th">Priority</th>
                         <th class="table-th">Status</th>
+                        <th class="table-th">Follow-up</th>
                         <th class="table-th">Ref. Uptake Date</th>
                         <th class="table-th">Agent</th>
                         <th class="table-th">Created</th>
@@ -784,7 +825,7 @@ const statusColor = {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-if="!tickets.data.length">
-                        <td colspan="8" class="py-12 text-center text-sm text-gray-400">No tickets found.</td>
+                        <td colspan="9" class="py-12 text-center text-sm text-gray-400">{{ followUp ? 'Nothing to follow up here — all caught up.' : 'No tickets found.' }}</td>
                     </tr>
                     <tr v-for="t in tickets.data" :key="t.id" class="hover:bg-gray-50">
                         <td class="table-td font-medium max-w-xs truncate">
@@ -796,6 +837,23 @@ const statusColor = {
                         </td>
                         <td class="table-td">
                             <span :class="['badge', statusColor[t.status]]">{{ t.status.replace('_', ' ') }}</span>
+                        </td>
+                        <!-- Follow-up: referral, follow-up date, uptake -->
+                        <td class="table-td text-xs min-w-[11rem]">
+                            <div v-if="isRealReferral(t)" class="text-gray-700 truncate max-w-[14rem]" :title="t.referred_to">→ {{ t.referred_to }}</div>
+                            <div v-if="t.follow_up_date" :class="followUpDue(t) ? 'text-red-600 font-semibold' : 'text-gray-500'">
+                                Follow up {{ day(t.follow_up_date) }}<span v-if="followUpDue(t)"> · due</span>
+                            </div>
+                            <div v-if="uptakeOverdue(t)" class="text-red-600">Uptake expected {{ day(t.referral_uptake_date) }}</div>
+                            <div class="mt-1 flex items-center gap-1.5">
+                                <span v-if="t.uptake_confirmed" class="badge bg-green-100 text-green-800">✓ Uptake confirmed</span>
+                                <template v-else-if="isRealReferral(t)">
+                                    <span class="badge bg-amber-100 text-amber-800">Awaiting uptake</span>
+                                    <button v-if="canManageAll || t.agent_id === authUserId" type="button" @click="confirmUptake(t)"
+                                        class="text-[11px] font-semibold text-brand-600 hover:underline">Confirm</button>
+                                </template>
+                                <span v-else-if="!t.follow_up_date" class="text-gray-300">—</span>
+                            </div>
                         </td>
                         <td class="table-td">
                             <template v-if="t.immediate_action_required">
