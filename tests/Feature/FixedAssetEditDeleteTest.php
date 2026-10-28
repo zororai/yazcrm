@@ -47,6 +47,41 @@ class FixedAssetEditDeleteTest extends TestCase
         ];
     }
 
+    public function test_list_and_exports_filter_by_project_and_department(): void
+    {
+        $creator = $this->makeUser('admin');
+        $finance = \App\Models\Department::forceCreate(['code' => 'FIN', 'name' => 'Finance']);
+        $programs = \App\Models\Department::forceCreate(['code' => 'PRG', 'name' => 'Programs']);
+        $make = fn ($no, $project, $dept) => FixedAsset::forceCreate([
+            'asset_number' => $no, 'name' => "Asset {$no}", 'status' => 'available', 'created_by' => $creator->id,
+            'project' => $project, 'department_id' => $dept?->id,
+        ]);
+        $make('P1', 'UNICEF', $finance);
+        $make('P2', 'UNICEF', $programs);
+        $make('P3', 'OAK', $finance);
+        $this->asset->update(['project' => null]); // FA-0001: no project, no department
+
+        $manager = $this->makeUser('stores');
+        $numbers = fn (string $q) => collect($this->withoutVite()->actingAs($manager)->get("/fixed-assets{$q}")
+            ->assertOk()->viewData('page')['props']['assets'])->pluck('asset_number')->sort()->values()->all();
+
+        $this->assertSame(['P1', 'P2'], $numbers('?project=UNICEF'));
+        $this->assertSame(['P1', 'P3'], $numbers("?department_id={$finance->id}"));
+        $this->assertSame(['P1'], $numbers("?project=UNICEF&department_id={$finance->id}"));
+        $this->assertSame(['FA-0001'], $numbers('?project=none'));
+
+        // The page remembers the filters it was opened with.
+        $this->withoutVite()->actingAs($manager)->get("/fixed-assets?project=OAK&department_id={$finance->id}")
+            ->assertInertia(fn ($page) => $page->where('filters.project', 'OAK')->where('filters.department_id', (string) $finance->id)
+                ->where('departments', fn ($d) => collect($d)->pluck('name')->all() === ['Finance', 'Programs']));
+
+        // Exports use the same filters.
+        $csv = $this->actingAs($manager)->get("/fixed-assets/export/excel?project=UNICEF&department_id={$programs->id}")->getContent();
+        $rows = array_values(array_filter(explode("\n", trim($csv))));
+        $this->assertCount(2, $rows); // header + P2
+        $this->assertSame('="P2"', str_getcsv($rows[1])[0]);
+    }
+
     public function test_exports_include_the_serial_number(): void
     {
         $this->asset->update(['serial_number' => '00012345678901', 'asset_number' => '0009', 'project' => 'UNICEF', 'status' => 'available']);

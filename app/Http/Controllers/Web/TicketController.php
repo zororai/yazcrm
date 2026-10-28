@@ -360,11 +360,15 @@ class TicketController extends Controller
             'description'    => 'nullable|string',
             'client_id'      => 'nullable|exists:clients,id',
             'call_id'        => 'nullable|exists:calls,id',
-            'priority'       => 'in:low,medium,high,urgent',
+            // New tickets: Low / High / Urgent ("Medium" was retired for new
+            // tickets; existing Medium tickets can still be edited — see update()).
+            'priority'       => 'in:low,high,urgent',
             'status'         => 'nullable|in:open,in_progress,closed,resolved,ongoing',
             'classification' => 'nullable|array',
             ...$this->crmRules,
             'contact_number' => 'required|string|max:50',
+        ], [
+            'priority.in' => 'Choose a priority: Low, High or Urgent.',
         ]);
 
         // Coerce boolean fields so null from an unselected dropdown becomes false
@@ -375,7 +379,7 @@ class TicketController extends Controller
         $ticket = Ticket::create([
             ...$data,
             'agent_id' => $request->user()->id,
-            'priority' => $data['priority'] ?? 'medium',
+            'priority' => $data['priority'] ?? 'low',
             'status'   => $data['status'] ?? 'open',
         ]);
 

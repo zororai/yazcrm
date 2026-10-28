@@ -4,31 +4,43 @@ import { router, useForm, Link, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { PlusIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, ClockIcon, ChartBarIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
-const props = defineProps({ assets: Array, categories: Array, locations: Array, isManager: Boolean, canDelete: Boolean });
+const props = defineProps({ assets: Array, categories: Array, locations: Array, departments: Array, filters: Object, isManager: Boolean, canDelete: Boolean });
 // Project list (Distress Domains → Project), shared app-wide like on tickets.
 const projects = computed(() => usePage().props.projects ?? []);
 
+// Filters start from the URL, so they survive a reload / coming back to the page.
+const filters = ref({
+    search: props.filters?.search ?? '',
+    status: props.filters?.status ?? '',
+    project: props.filters?.project ?? '',
+    department_id: props.filters?.department_id ? String(props.filters.department_id) : '',
+    warranty_expiring: !!props.filters?.warranty_expiring,
+    revaluation_due: !!props.filters?.revaluation_due,
+});
+const filterQuery = () => ({
+    search: filters.value.search || undefined,
+    status: filters.value.status || undefined,
+    project: filters.value.project || undefined,
+    department_id: filters.value.department_id || undefined,
+    warranty_expiring: filters.value.warranty_expiring ? 1 : undefined,
+    revaluation_due: filters.value.revaluation_due ? 1 : undefined,
+});
+const activeFilterCount = computed(() => Object.values(filterQuery()).filter(v => v !== undefined).length);
+function clearFilters() {
+    Object.assign(filters.value, { search: '', status: '', project: '', department_id: '', warranty_expiring: false, revaluation_due: false });
+}
+
+// Exports follow exactly the same filters as the list.
 function exportUrl(type) {
-    const params = new URLSearchParams({
-        search: filters.value.search || '',
-        status: filters.value.status || '',
-        warranty_expiring: filters.value.warranty_expiring ? '1' : '',
-        revaluation_due: filters.value.revaluation_due ? '1' : '',
-    });
+    const params = new URLSearchParams(Object.entries(filterQuery()).filter(([, v]) => v !== undefined));
     return `/fixed-assets/export/${type}?${params.toString()}`;
 }
 
-const filters = ref({ search: '', status: '', warranty_expiring: false, revaluation_due: false });
 let debounce;
 watch(filters, () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
-        router.get('/fixed-assets', {
-            search: filters.value.search || undefined,
-            status: filters.value.status || undefined,
-            warranty_expiring: filters.value.warranty_expiring || undefined,
-            revaluation_due: filters.value.revaluation_due || undefined,
-        }, { preserveState: true, replace: true });
+        router.get('/fixed-assets', filterQuery(), { preserveState: true, replace: true });
     }, 300);
 }, { deep: true });
 
@@ -193,12 +205,31 @@ const statusColor = {
                     <option value="disposed">Disposed</option>
                 </select>
             </div>
+            <div>
+                <label class="label">Project</label>
+                <select v-model="filters.project" class="input">
+                    <option value="">All projects</option>
+                    <option v-for="p in projects" :key="p" :value="p">{{ p }}</option>
+                    <option value="none">No project set</option>
+                </select>
+            </div>
+            <div>
+                <label class="label">Department</label>
+                <select v-model="filters.department_id" class="input">
+                    <option value="">All departments</option>
+                    <option v-for="d in departments" :key="d.id" :value="String(d.id)">{{ d.name }}</option>
+                </select>
+            </div>
             <label class="flex items-center gap-2 text-sm text-gray-600 pb-2">
                 <input type="checkbox" v-model="filters.warranty_expiring" /> Warranty expiring soon
             </label>
             <label class="flex items-center gap-2 text-sm text-gray-600 pb-2">
                 <input type="checkbox" v-model="filters.revaluation_due" /> Revaluation due
             </label>
+            <div class="flex items-center gap-3 pb-2 text-xs text-gray-500">
+                <span>{{ assets.length }} asset{{ assets.length === 1 ? '' : 's' }}</span>
+                <button v-if="activeFilterCount" type="button" @click="clearFilters" class="text-brand-600 hover:underline">Clear filters</button>
+            </div>
         </div>
 
         <div class="card p-0 overflow-x-auto">
@@ -210,6 +241,7 @@ const statusColor = {
                         <th class="table-th">Category</th>
                         <th class="table-th">Custodian</th>
                         <th class="table-th">Department</th>
+                        <th class="table-th">Project</th>
                         <th class="table-th">Location</th>
                         <th class="table-th">Depreciation Rate</th>
                         <th class="table-th">Salvage Value</th>
@@ -231,6 +263,10 @@ const statusColor = {
                         <td class="table-td">{{ a.category?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.custodian?.name ?? '—' }}</td>
                         <td class="table-td">{{ a.department?.name ?? '—' }}</td>
+                        <td class="table-td">
+                            <span v-if="a.project" class="badge bg-blue-50 text-blue-700">{{ a.project }}</span>
+                            <span v-else class="text-gray-300">—</span>
+                        </td>
                         <td class="table-td">
                             <div>{{ a.home_location?.name ?? '—' }}</div>
                             <div v-if="a.location && a.location_id !== a.home_location_id" class="text-xs text-amber-700">Issued: {{ a.location.name }}</div>
@@ -260,7 +296,7 @@ const statusColor = {
                         </td>
                     </tr>
                     <tr v-if="!assets.length">
-                        <td :colspan="isManager || canDelete ? 14 : 13" class="table-td text-center text-gray-400 py-8">No assets match.</td>
+                        <td :colspan="isManager || canDelete ? 15 : 14" class="table-td text-center text-gray-400 py-8">No assets match.</td>
                     </tr>
                 </tbody>
             </table>

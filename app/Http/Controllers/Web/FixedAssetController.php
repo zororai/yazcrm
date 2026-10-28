@@ -32,6 +32,8 @@ class FixedAssetController extends Controller
     {
         $search = $request->string('search')->toString() ?: null;
         $status = $request->string('status')->toString() ?: null;
+        $project = $request->string('project')->toString() ?: null;
+        $departmentId = $request->integer('department_id') ?: null;
         $warrantyExpiring = $request->boolean('warranty_expiring');
 
         return FixedAsset::with(['category:id,name', 'custodian:id,name', 'department:id,name', 'location:id,name', 'homeLocation:id,name'])
@@ -41,6 +43,8 @@ class FixedAssetController extends Controller
                     ->orWhere('serial_number', 'like', "%{$search}%");
             }))
             ->when($status, fn ($q) => $q->where('status', $status))
+            ->when($project, fn ($q) => $project === 'none' ? $q->where(fn ($q) => $q->whereNull('project')->orWhere('project', '')) : $q->where('project', $project))
+            ->when($departmentId, fn ($q) => $q->where('department_id', $departmentId))
             ->when($warrantyExpiring, fn ($q) => $q->whereNotNull('warranty_expiry')
                 ->whereBetween('warranty_expiry', [now(), now()->addDays(90)]))
             ->orderByDesc('created_at');
@@ -58,6 +62,8 @@ class FixedAssetController extends Controller
             'assets'     => $assets,
             'categories' => AssetCategory::orderBy('name')->get(['id', 'name']),
             'locations'  => Location::orderBy('name')->get(['id', 'name']),
+            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'filters'    => $request->only(['search', 'status', 'project', 'department_id', 'warranty_expiring', 'revaluation_due']),
             'isManager'  => $this->isManager($request->user()),
             'canDelete'  => in_array($request->user()->role, ['admin', 'director'], true),
         ]);

@@ -441,7 +441,7 @@ function openAdd() {
 }
 
 const addForm = useForm({
-    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'medium', status: 'ongoing', follow_up_date: '',
+    subject: '', contact_number: '', sisters_number: '', description: '', priority: 'low', status: 'ongoing', follow_up_date: '',
     call_id: '', // links the ticket to the underlying Call row when a recording was matched
     // CRM fields
     mode_of_communication:    'phone',
@@ -991,7 +991,6 @@ const statusColor = {
                                     <label class="label">Priority</label>
                                     <select v-model="addForm.priority" class="input">
                                         <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
                                         <option value="high">High</option>
                                         <option value="urgent">Urgent</option>
                                     </select>

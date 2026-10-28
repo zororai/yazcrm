@@ -112,6 +112,25 @@ class TicketFollowUpTest extends TestCase
         $this->assertSame('Service uptake confirmed (referred to Clinic): Client attended on Monday', $ticket->notes->first()->body);
     }
 
+    public function test_new_tickets_have_no_medium_priority(): void
+    {
+        $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
+            ->post('/tickets', $data + ['subject' => 'New case', 'contact_number' => '0771000000']);
+
+        $post(['priority' => 'medium'])->assertSessionHasErrors(['priority' => 'Choose a priority: Low, High or Urgent.']);
+
+        $post([])->assertSessionHasNoErrors();
+        $this->assertSame('low', Ticket::where('subject', 'New case')->latest('id')->value('priority')); // default is now Low
+
+        $post(['priority' => 'urgent'])->assertSessionHasNoErrors();
+        $this->assertSame('urgent', Ticket::where('subject', 'New case')->latest('id')->value('priority'));
+
+        // Existing Medium tickets can still be edited.
+        $this->actingAs($this->agentA)->from("/tickets/{$this->t['due']}")
+            ->put("/tickets/{$this->t['due']}", ['priority' => 'medium', 'subject' => 'Case'])
+            ->assertSessionHasNoErrors();
+    }
+
     public function test_export_follows_the_selected_view(): void
     {
         $res = $this->actingAs($this->agentA)->get('/tickets/export?follow_up=follow_up_due')->assertOk();

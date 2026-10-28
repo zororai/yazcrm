@@ -23,7 +23,7 @@ const emit = defineEmits(['close', 'minimize']);
 
 const form = useForm({
     subject: '', contact_number: props.call.caller ?? '', sisters_number: '', description: '',
-    priority: 'medium', status: 'ongoing', follow_up_date: '',
+    priority: 'low', status: 'ongoing', follow_up_date: '',
     // The real calls.id row this ticket links to — NOT the Yeastar call_id
     // string, which the backend's `exists:calls,id` rule would reject.
     call_id: props.call.db_call_id ?? '',
@@ -311,7 +311,6 @@ const provinces = PROVINCES;
                                 <label class="label">Priority</label>
                                 <select v-model="form.priority" class="input">
                                     <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
                                     <option value="high">High</option>
                                     <option value="urgent">Urgent</option>
                                 </select>
