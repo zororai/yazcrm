@@ -103,6 +103,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('beneficiary-attendances/search', [BeneficiaryAttendanceController::class, 'search']);
     Route::post('beneficiary-attendances/sync',  [BeneficiaryAttendanceController::class, 'sync']);
 
+    // Beneficiary profiling tool (same offline app)
+    Route::get('beneficiary-profiles',         [BeneficiaryProfileController::class, 'index']);
+    Route::get('beneficiary-profiles/search',  [BeneficiaryProfileController::class, 'search']);
+    Route::post('beneficiary-profiles/sync',   [BeneficiaryProfileController::class, 'sync']);
+
     // Analytics
     Route::get('analytics/overview',          [AnalyticsController::class, 'overview']);
     Route::get('analytics/agent-performance', [AnalyticsController::class, 'agentPerformance']);
