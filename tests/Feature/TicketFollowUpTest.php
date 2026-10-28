@@ -131,6 +131,26 @@ class TicketFollowUpTest extends TestCase
             ->assertSessionHasNoErrors();
     }
 
+    public function test_other_service_needs_a_specified_detail(): void
+    {
+        $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
+            ->post('/tickets', $data + ['subject' => 'Other case', 'contact_number' => '0771000000']);
+
+        $post(['services_requested' => 'Other (Specify):'])
+            ->assertSessionHasErrors(['services_requested_other' => 'Please specify the other service.']);
+
+        $post([
+            'services_requested_before' => 'Other (Specify):', 'services_requested_before_other' => ' Legal aid ',
+            'services_requested'        => 'PSS',              'services_requested_other'        => 'stale text',
+        ])->assertSessionHasNoErrors();
+
+        $ticket = Ticket::where('subject', 'Other case')->firstOrFail();
+        $this->assertSame('Legal aid', $ticket->services_requested_before_other);
+        $this->assertNull($ticket->services_requested_other); // not "Other", so the detail is dropped
+        $this->assertSame('Other (Specify): Legal aid', $ticket->serviceWithDetail('services_requested_before'));
+        $this->assertSame('PSS', $ticket->serviceWithDetail('services_requested'));
+    }
+
     public function test_export_follows_the_selected_view(): void
     {
         $res = $this->actingAs($this->agentA)->get('/tickets/export?follow_up=follow_up_due')->assertOk();

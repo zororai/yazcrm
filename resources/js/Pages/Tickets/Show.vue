@@ -66,6 +66,9 @@ const editForm = useForm({
     services_requested_before: props.ticket.services_requested_before ?? '',
     services_requested:        props.ticket.services_requested ?? '',
     second_service_requested:  props.ticket.second_service_requested ?? '',
+    services_requested_before_other: props.ticket.services_requested_before_other ?? '',
+    services_requested_other:        props.ticket.services_requested_other ?? '',
+    second_service_requested_other:  props.ticket.second_service_requested_other ?? '',
     number_of_services:        props.ticket.number_of_services ?? '',
     referred_to:               props.ticket.referred_to ?? '',
     uptake_confirmed:          props.ticket.uptake_confirmed ? true : false,
@@ -73,6 +76,15 @@ const editForm = useForm({
     classification:            props.ticket.classification ?? {},
     psychosocial_type:         props.ticket.psychosocial_type ?? '',
 });
+
+// "Other (Specify):" in a service dropdown opens a text box for the detail.
+const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
+
+// e.g. "Other (Specify): Legal aid" when a detail was given.
+function serviceWithDetail(field) {
+    const value = props.ticket[field], detail = props.ticket[`${field}_other`];
+    return isOtherService(value) && detail ? `${value.replace(/[:\s]+$/, '')}: ${detail}` : value;
+}
 
 function save() {
     editForm.put(`/tickets/${props.ticket.id}`, {
@@ -228,9 +240,9 @@ function label(val) {
                     <div class="card">
                         <h3 class="font-semibold text-gray-800 mb-3 text-sm">Services</h3>
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                            <div class="col-span-2"><dt class="text-gray-400 text-xs">Services Requested Before</dt><dd class="font-medium">{{ label(ticket.services_requested_before) }}</dd></div>
-                            <div><dt class="text-gray-400 text-xs">Services Requested</dt><dd class="font-medium">{{ label(ticket.services_requested) }}</dd></div>
-                            <div><dt class="text-gray-400 text-xs">Second Service</dt><dd class="font-medium">{{ label(ticket.second_service_requested) }}</dd></div>
+                            <div class="col-span-2"><dt class="text-gray-400 text-xs">Services Requested Before</dt><dd class="font-medium">{{ label(serviceWithDetail('services_requested_before')) }}</dd></div>
+                            <div><dt class="text-gray-400 text-xs">Services Requested</dt><dd class="font-medium">{{ label(serviceWithDetail('services_requested')) }}</dd></div>
+                            <div><dt class="text-gray-400 text-xs">Second Service</dt><dd class="font-medium">{{ label(serviceWithDetail('second_service_requested')) }}</dd></div>
                             <div><dt class="text-gray-400 text-xs">No. of Services</dt><dd class="font-medium">{{ label(ticket.number_of_services) }}</dd></div>
                             <div><dt class="text-gray-400 text-xs">Referred To</dt><dd class="font-medium">{{ label(ticket.referred_to) }}</dd></div>
                             <div><dt class="text-gray-400 text-xs">Referral Uptake Date</dt><dd class="font-medium">{{ label(ticket.referral_uptake_date) }}</dd></div>
@@ -449,7 +461,13 @@ function label(val) {
                     <div class="grid grid-cols-2 gap-4">
                         <div class="col-span-2">
                             <label class="label">Services Requested Before</label>
-                            <input v-model="editForm.services_requested_before" class="input" />
+                            <select v-model="editForm.services_requested_before" class="input">
+                                <option value="">— select —</option>
+                                <option v-if="ticket.services_requested_before && !servicesRequested.includes(ticket.services_requested_before)" :value="ticket.services_requested_before">{{ ticket.services_requested_before }}</option>
+                                <option v-for="s in servicesRequested" :key="s" :value="s">{{ s }}</option>
+                            </select>
+                            <input v-if="isOtherService(editForm.services_requested_before)" v-model="editForm.services_requested_before_other" class="input mt-2" placeholder="Specify the other service…" />
+                            <p v-if="editForm.errors.services_requested_before_other" class="mt-1 text-xs text-red-600">{{ editForm.errors.services_requested_before_other }}</p>
                         </div>
                         <div>
                             <label class="label">Services Requested</label>
@@ -457,6 +475,8 @@ function label(val) {
                                 <option value="">— select —</option>
                                 <option v-for="s in servicesRequested" :key="s" :value="s">{{ s }}</option>
                             </select>
+                            <input v-if="isOtherService(editForm.services_requested)" v-model="editForm.services_requested_other" class="input mt-2" placeholder="Specify the other service…" />
+                            <p v-if="editForm.errors.services_requested_other" class="mt-1 text-xs text-red-600">{{ editForm.errors.services_requested_other }}</p>
                         </div>
                         <div>
                             <label class="label">Second Service Requested</label>
@@ -464,6 +484,8 @@ function label(val) {
                                 <option value="">— select —</option>
                                 <option v-for="s in secondServicesRequested" :key="s" :value="s">{{ s }}</option>
                             </select>
+                            <input v-if="isOtherService(editForm.second_service_requested)" v-model="editForm.second_service_requested_other" class="input mt-2" placeholder="Specify the other service…" />
+                            <p v-if="editForm.errors.second_service_requested_other" class="mt-1 text-xs text-red-600">{{ editForm.errors.second_service_requested_other }}</p>
                         </div>
                         <div>
                             <label class="label">No. of Services</label>

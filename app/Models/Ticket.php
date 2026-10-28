@@ -17,7 +17,26 @@ class Ticket extends Model
         'location', 'is_repeat_caller', 'project', 'services_requested_before', 'services_requested',
         'second_service_requested', 'number_of_services', 'referred_to',
         'uptake_confirmed', 'referral_uptake_date', 'classification', 'psychosocial_type',
+        'services_requested_before_other', 'services_requested_other', 'second_service_requested_other',
     ];
+
+    // Service dropdowns whose "Other (Specify):" choice comes with a typed detail
+    // stored in "<field>_other".
+    public const SPECIFY_FIELDS = ['services_requested_before', 'services_requested', 'second_service_requested'];
+
+    public static function isOtherService(?string $value): bool
+    {
+        return $value !== null && str_starts_with(strtolower(trim($value)), 'other');
+    }
+
+    // The service as it should read in exports, e.g. "Other (Specify): Legal aid".
+    public function serviceWithDetail(string $field): string
+    {
+        $value  = (string) ($this->{$field} ?? '');
+        $detail = $this->{"{$field}_other"} ?? null;
+
+        return self::isOtherService($value) && $detail ? rtrim($value, ': ') . ': ' . $detail : $value;
+    }
 
     protected $casts = [
         'classification'            => 'array',

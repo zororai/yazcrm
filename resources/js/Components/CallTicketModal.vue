@@ -46,12 +46,18 @@ const form = useForm({
     services_requested_before: '',
     services_requested:       '',
     second_service_requested: '',
+    services_requested_before_other: '',
+    services_requested_other:        '',
+    second_service_requested_other:  '',
     number_of_services:       '',
     referred_to:              '',
     uptake_confirmed:         false,
     classification:           {},
     psychosocial_type:        '',
 });
+
+// "Other (Specify):" in a service dropdown opens a text box for the detail.
+const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
 
 form.subject = props.call.client
     ? `Call with ${props.call.client.name} — follow-up required`
@@ -471,7 +477,12 @@ const provinces = PROVINCES;
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="label">Services Requested Before</label>
-                                <input v-model="form.services_requested_before" class="input" placeholder="Describe previous services…" />
+                                <select v-model="form.services_requested_before" class="input">
+                                    <option value="">— select —</option>
+                                    <option v-for="s in servicesRequestedList" :key="s" :value="s">{{ s }}</option>
+                                </select>
+                                <input v-if="isOtherService(form.services_requested_before)" v-model="form.services_requested_before_other" class="input mt-2" placeholder="Specify the other service…" />
+                                <p v-if="form.errors.services_requested_before_other" class="mt-1 text-xs text-red-600">{{ form.errors.services_requested_before_other }}</p>
                             </div>
                             <div>
                                 <label class="label">Services Requested</label>
@@ -479,6 +490,8 @@ const provinces = PROVINCES;
                                     <option value="">— select —</option>
                                     <option v-for="s in servicesRequestedList" :key="s" :value="s">{{ s }}</option>
                                 </select>
+                                <input v-if="isOtherService(form.services_requested)" v-model="form.services_requested_other" class="input mt-2" placeholder="Specify the other service…" />
+                                <p v-if="form.errors.services_requested_other" class="mt-1 text-xs text-red-600">{{ form.errors.services_requested_other }}</p>
                             </div>
                             <div>
                                 <label class="label">Second Service Requested</label>
@@ -486,6 +499,8 @@ const provinces = PROVINCES;
                                     <option value="">— select —</option>
                                     <option v-for="s in secondServicesRequested" :key="s" :value="s">{{ s }}</option>
                                 </select>
+                                <input v-if="isOtherService(form.second_service_requested)" v-model="form.second_service_requested_other" class="input mt-2" placeholder="Specify the other service…" />
+                                <p v-if="form.errors.second_service_requested_other" class="mt-1 text-xs text-red-600">{{ form.errors.second_service_requested_other }}</p>
                             </div>
                             <div>
                                 <label class="label">No. of Services</label>

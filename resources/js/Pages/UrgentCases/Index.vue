@@ -68,11 +68,17 @@ const editForm = useForm({
     services_requested_before: '',
     services_requested:        '',
     second_service_requested:  '',
+    services_requested_before_other: '',
+    services_requested_other:        '',
+    second_service_requested_other:  '',
     number_of_services:        '',
     referred_to:               '',
     uptake_confirmed:          false,
     referral_uptake_date:      '',
 });
+
+// "Other (Specify):" in a service dropdown opens a text box for the detail.
+const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
 
 function openEdit(uc) {
     const t = uc.source_ticket ?? uc.created_ticket;
@@ -104,6 +110,9 @@ function openEdit(uc) {
     editForm.services_requested_before = t.services_requested_before ?? '';
     editForm.services_requested        = t.services_requested        ?? '';
     editForm.second_service_requested  = t.second_service_requested  ?? '';
+    editForm.services_requested_before_other = t.services_requested_before_other ?? '';
+    editForm.services_requested_other        = t.services_requested_other        ?? '';
+    editForm.second_service_requested_other  = t.second_service_requested_other  ?? '';
     editForm.number_of_services        = t.number_of_services        ?? '';
     editForm.referred_to               = t.referred_to               ?? '';
     editForm.uptake_confirmed          = !!t.uptake_confirmed;
@@ -495,7 +504,13 @@ function fmt(d) {
                         <div class="grid grid-cols-2 gap-3">
                             <div>
                                 <label class="label">Services Requested Before</label>
-                                <input v-model="editForm.services_requested_before" class="input" placeholder="Describe previous services…" />
+                                <select v-model="editForm.services_requested_before" class="input">
+                                    <option value="">— select —</option>
+                                    <option v-if="editForm.services_requested_before && !(props.servicesRequested ?? []).includes(editForm.services_requested_before)" :value="editForm.services_requested_before">{{ editForm.services_requested_before }}</option>
+                                    <option v-for="s in props.servicesRequested" :key="s" :value="s">{{ s }}</option>
+                                </select>
+                                <input v-if="isOtherService(editForm.services_requested_before)" v-model="editForm.services_requested_before_other" class="input mt-2" placeholder="Specify the other service…" />
+                                <p v-if="editForm.errors.services_requested_before_other" class="mt-1 text-xs text-red-600">{{ editForm.errors.services_requested_before_other }}</p>
                             </div>
                             <div>
                                 <label class="label">Services Requested</label>
@@ -503,6 +518,8 @@ function fmt(d) {
                                     <option value="">— select —</option>
                                     <option v-for="s in props.servicesRequested" :key="s" :value="s">{{ s }}</option>
                                 </select>
+                                <input v-if="isOtherService(editForm.services_requested)" v-model="editForm.services_requested_other" class="input mt-2" placeholder="Specify the other service…" />
+                                <p v-if="editForm.errors.services_requested_other" class="mt-1 text-xs text-red-600">{{ editForm.errors.services_requested_other }}</p>
                             </div>
                             <div>
                                 <label class="label">Second Service Requested</label>
@@ -510,6 +527,8 @@ function fmt(d) {
                                     <option value="">— select —</option>
                                     <option v-for="s in props.secondServicesRequested" :key="s" :value="s">{{ s }}</option>
                                 </select>
+                                <input v-if="isOtherService(editForm.second_service_requested)" v-model="editForm.second_service_requested_other" class="input mt-2" placeholder="Specify the other service…" />
+                                <p v-if="editForm.errors.second_service_requested_other" class="mt-1 text-xs text-red-600">{{ editForm.errors.second_service_requested_other }}</p>
                             </div>
                             <div>
                                 <label class="label">No. of Services</label>

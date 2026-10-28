@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -218,9 +219,9 @@ class TicketController extends Controller
                     $t->province ?? '',
                     $t->district ?? '',
                     $t->location ?? '',
-                    $t->services_requested ?? '',
-                    $t->second_service_requested ?? '',
-                    $t->services_requested_before ?? '',
+                    $t->serviceWithDetail('services_requested'),
+                    $t->serviceWithDetail('second_service_requested'),
+                    $t->serviceWithDetail('services_requested_before'),
                     $t->number_of_services ?? '',
                     $t->referred_to ?? '',
                     $t->uptake_confirmed ? 'Yes' : 'No',
@@ -347,11 +348,33 @@ class TicketController extends Controller
         'services_requested_before' => 'nullable|string',
         'services_requested'        => 'nullable|string',
         'second_service_requested'  => 'nullable|string|max:255',
+        'services_requested_before_other' => 'nullable|string|max:255',
+        'services_requested_other'        => 'nullable|string|max:255',
+        'second_service_requested_other'  => 'nullable|string|max:255',
         'number_of_services'       => 'nullable|integer|min:0|max:255',
         'referred_to'              => 'nullable|string|max:255',
         'uptake_confirmed'         => 'nullable|boolean',
         'referral_uptake_date'    => 'nullable|date',
     ];
+
+    // "Other (Specify):" needs the typed detail; any other choice clears it.
+    private function applyOtherSpecify(array $data): array
+    {
+        $errors = [];
+        foreach (Ticket::SPECIFY_FIELDS as $field) {
+            if (! array_key_exists($field, $data)) continue;
+            $detail = trim((string) ($data["{$field}_other"] ?? ''));
+            if (Ticket::isOtherService($data[$field])) {
+                if ($detail === '') $errors["{$field}_other"] = 'Please specify the other service.';
+                $data["{$field}_other"] = $detail;
+            } else {
+                $data["{$field}_other"] = null;
+            }
+        }
+        if ($errors) throw ValidationException::withMessages($errors);
+
+        return $data;
+    }
 
     public function store(Request $request): RedirectResponse
     {
@@ -370,6 +393,7 @@ class TicketController extends Controller
         ], [
             'priority.in' => 'Choose a priority: Low, High or Urgent.',
         ]);
+        $data = $this->applyOtherSpecify($data);
 
         // Coerce boolean fields so null from an unselected dropdown becomes false
         $data['immediate_action_required'] = !empty($data['immediate_action_required']);
@@ -409,6 +433,7 @@ class TicketController extends Controller
             'classification' => 'nullable|array',
             ...$this->crmRules,
         ]);
+        $data = $this->applyOtherSpecify($data);
 
         if (isset($data['status']) && $data['status'] === 'resolved' && !$ticket->resolved_at) {
             $data['resolved_at'] = now();
