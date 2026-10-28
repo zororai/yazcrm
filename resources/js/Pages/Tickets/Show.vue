@@ -8,6 +8,7 @@ import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
 
 const props = defineProps({
     ticket:                Object,
+    staff:                 Array,
     keyPops:               Array,
     modesOfCommunication:  Array,
     projects:              Array,
@@ -19,12 +20,28 @@ const props = defineProps({
 
 const editing = ref(false);
 
-const noteForm = useForm({ body: '' });
+const noteForm = useForm({ body: '', email_user_ids: [], email_to: '' });
+
+// Optionally email the note: pick staff and/or type other addresses.
+const emailNote   = ref(false);
+const staffSearch = ref('');
+const staffMatches = computed(() => {
+    const q = staffSearch.value.trim().toLowerCase();
+    if (!q) return [];
+    return (props.staff ?? [])
+        .filter(u => !noteForm.email_user_ids.includes(u.id))
+        .filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+        .slice(0, 8);
+});
+const pickedStaff = computed(() => (props.staff ?? []).filter(u => noteForm.email_user_ids.includes(u.id)));
+function pickStaff(u)   { noteForm.email_user_ids.push(u.id); staffSearch.value = ''; }
+function unpickStaff(u) { noteForm.email_user_ids = noteForm.email_user_ids.filter(id => id !== u.id); }
 
 function addNote() {
+    if (!emailNote.value) { noteForm.email_user_ids = []; noteForm.email_to = ''; }
     noteForm.post(`/tickets/${props.ticket.id}/notes`, {
         preserveScroll: true,
-        onSuccess: () => { noteForm.reset('body'); },
+        onSuccess: () => { noteForm.reset(); emailNote.value = false; },
     });
 }
 
@@ -178,9 +195,41 @@ function label(val) {
                             <textarea v-model="noteForm.body" rows="2" class="input"
                                 placeholder="Add an update for this case (visible to whoever picks it up next)..."></textarea>
                             <p v-if="noteForm.errors.body" class="text-xs text-red-500">{{ noteForm.errors.body }}</p>
-                            <div class="flex justify-end">
-                                <button type="submit" class="btn-primary btn-sm" :disabled="noteForm.processing || !noteForm.body.trim()">
-                                    Add Note
+
+                            <div v-if="emailNote" class="rounded-lg border border-gray-200 p-3 space-y-2">
+                                <div>
+                                    <label class="label">Email to staff</label>
+                                    <div v-if="pickedStaff.length" class="flex flex-wrap gap-1.5 mb-1.5">
+                                        <span v-for="u in pickedStaff" :key="u.id" class="inline-flex items-center gap-1 rounded-full bg-brand-50 text-brand-700 text-xs px-2 py-0.5">
+                                            {{ u.name }}
+                                            <button type="button" @click="unpickStaff(u)" class="hover:text-red-500" :aria-label="`Remove ${u.name}`">✕</button>
+                                        </span>
+                                    </div>
+                                    <div class="relative">
+                                        <input v-model="staffSearch" class="input" placeholder="Type a name or email…" autocomplete="off" />
+                                        <div v-if="staffMatches.length" class="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-56 overflow-y-auto">
+                                            <button v-for="u in staffMatches" :key="u.id" type="button" @click="pickStaff(u)"
+                                                class="block w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50">
+                                                {{ u.name }} <span class="text-xs text-gray-400">{{ u.email }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="label">Other email addresses <span class="text-gray-400 font-normal">— separate with commas</span></label>
+                                    <input v-model="noteForm.email_to" class="input" placeholder="e.g. partner@clinic.org, supervisor@example.org" />
+                                    <p v-if="noteForm.errors.email_to" class="mt-1 text-xs text-red-500">{{ noteForm.errors.email_to }}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between gap-2">
+                                <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                    <input type="checkbox" v-model="emailNote" class="rounded border-gray-300" />
+                                    Email this note
+                                </label>
+                                <button type="submit" class="btn-primary btn-sm"
+                                    :disabled="noteForm.processing || !noteForm.body.trim() || (emailNote && !noteForm.email_user_ids.length && !noteForm.email_to.trim())">
+                                    {{ emailNote ? 'Add & Email Note' : 'Add Note' }}
                                 </button>
                             </div>
                         </form>

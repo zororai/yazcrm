@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use OpenAI\Laravel\Facades\OpenAI;
 use App\Http\Controllers\Controller;
+use App\Mail\TicketLogNoteMail;
 use App\Models\Call;
 use App\Models\Client;
 use App\Models\LookupItem;
@@ -15,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -267,6 +269,8 @@ class TicketController extends Controller
             'secondServicesRequested' => LookupItem::where('type', 'service_requested')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'referredTo'              => LookupItem::where('type', 'referred_to')->where('is_active', true)->orderBy('sort_order')->orderBy('name')->pluck('name'),
             'serviceCategories'       => LookupItem::where('type', 'service_requested')->where('is_active', true)->get(['name', 'classification_categories'])->mapWithKeys(fn ($i) => [$i->name => $i->classification_categories ?? []]),
+            // Who a log note can be emailed to.
+            'staff'                   => User::whereNotNull('email')->where('email', '!=', '')->orderBy('name')->get(['id', 'name', 'email']),
         ]);
     }
 
@@ -572,15 +576,43 @@ class TicketController extends Controller
         }
 
         $data = $request->validate([
-            'body' => 'required|string|max:5000',
+            'body'             => 'required|string|max:5000',
+            'email_user_ids'   => 'nullable|array',
+            'email_user_ids.*' => 'integer|exists:users,id',
+            'email_to'         => 'nullable|string|max:1000',
         ]);
 
-        $ticket->notes()->create([
+        // Optional: email the note to chosen staff and/or typed addresses.
+        $extra = collect(preg_split('/[\s,;]+/', (string) ($data['email_to'] ?? ''), -1, PREG_SPLIT_NO_EMPTY));
+        $bad   = $extra->reject(fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+        if ($bad->isNotEmpty()) {
+            throw ValidationException::withMessages(['email_to' => 'Not a valid email address: '.$bad->implode(', ')]);
+        }
+        $recipients = User::whereIn('id', $data['email_user_ids'] ?? [])->whereNotNull('email')->pluck('email')
+            ->merge($extra)->map(fn ($e) => strtolower($e))->unique()->values();
+
+        $note = $ticket->notes()->create([
             'user_id' => $request->user()->id,
             'body'    => $data['body'],
         ]);
 
-        return back()->with('success', 'Note added.');
+        if ($recipients->isEmpty()) {
+            return back()->with('success', 'Note added.');
+        }
+
+        try {
+            Mail::to($recipients->all())->send(new TicketLogNoteMail($ticket, $note->load('user')));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Note saved, but the email could not be sent: '.$e->getMessage());
+        }
+
+        // Keep a record of who it went to, visible in the log itself.
+        $note->update(['body' => $note->body."\n\nEmailed to: ".$recipients->implode(', ')]);
+        $request->attributes->set('audit_description', "Emailed a log note on ticket #{$ticket->id} to ".$recipients->implode(', '));
+
+        return back()->with('success', 'Note added and emailed to '.$recipients->count().' recipient(s).');
     }
 
     public function destroyNote(Request $request, Ticket $ticket, TicketNote $note): RedirectResponse

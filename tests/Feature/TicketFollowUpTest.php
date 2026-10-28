@@ -193,6 +193,52 @@ class TicketFollowUpTest extends TestCase
             ->assertInertia(fn ($page) => $page->has('cases.data', 4));
     }
 
+    public function test_a_log_note_can_be_emailed(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        $id   = $this->t['due'];
+        $note = fn (array $data) => $this->actingAs($this->agentA)->from("/tickets/{$id}")->post("/tickets/{$id}/notes", $data);
+
+        // Plain note: nothing sent.
+        $note(['body' => 'Just a note'])->assertSessionHas('success', 'Note added.');
+        \Illuminate\Support\Facades\Mail::assertNothingSent();
+
+        // A bad address is rejected before anything is saved.
+        $note(['body' => 'Emailed', 'email_to' => 'not-an-email'])->assertSessionHasErrors(['email_to' => 'Not a valid email address: not-an-email']);
+        $this->assertFalse(\App\Models\TicketNote::where('body', 'like', 'Emailed%')->exists());
+
+        $note(['body' => 'Emailed', 'email_user_ids' => [$this->manager->id], 'email_to' => 'partner@clinic.org, MANAGER@example.test'])
+            ->assertSessionHas('success', 'Note added and emailed to 2 recipient(s).');
+
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\TicketLogNoteMail::class, fn ($m) => $m->hasTo('manager@example.test') && $m->hasTo('partner@clinic.org')
+            && str_starts_with($m->note->body, 'Emailed') && str_contains($m->render(), 'Open the ticket'));
+        $this->assertSame("Emailed\n\nEmailed to: manager@example.test, partner@clinic.org",
+            \App\Models\TicketNote::where('body', 'like', 'Emailed%')->value('body'));
+    }
+
+    public function test_agents_get_one_reminder_on_the_follow_up_date(): void
+    {
+        // setUp's clock is 2026-10-23: only open tickets due that day count.
+        $today    = $this->ticket($this->agentA->id, ['subject' => 'Call back', 'follow_up_date' => '2026-10-23', 'priority' => 'high']);
+        $this->ticket($this->agentA->id, ['follow_up_date' => '2026-10-23', 'status' => 'resolved']);
+        $this->ticket($this->agentB->id, ['follow_up_date' => '2026-10-23']);
+
+        $this->artisan('tickets:follow-up-reminders')->expectsOutput('Sent 2 follow-up reminder(s).')->assertSuccessful();
+        $this->artisan('tickets:follow-up-reminders')->expectsOutput('Sent 0 follow-up reminder(s).'); // no repeats
+
+        $n = $this->agentA->notifications()->first();
+        $this->assertSame(1, $this->agentA->notifications()->count());
+        $this->assertSame("/tickets/{$today}", $n->data['url']);
+        $this->assertSame("Follow-up due today: ticket #{$today} \"Call back\" (High).", $n->data['message']);
+
+        // Moving the follow-up to a new date earns a new reminder on that day.
+        Ticket::whereKey($today)->update(['follow_up_date' => '2026-10-24']);
+        $this->travelTo(CarbonImmutable::create(2026, 10, 24, 8));
+        $this->artisan('tickets:follow-up-reminders')->expectsOutput('Sent 2 follow-up reminder(s).'); // + setUp's due_tomorrow
+        $this->assertSame(3, $this->agentA->notifications()->count());
+        $this->assertSame(1, $this->agentA->notifications()->where('data', 'like', "%\"ticket_id\":{$today},\"follow_up_date\":\"2026-10-24\"%")->count());
+    }
+
     public function test_other_service_needs_a_specified_detail(): void
     {
         $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
