@@ -67,6 +67,68 @@
                 ]
             }
         },
+        "/api/beneficiary-profiles/search": {
+            "get": {
+                "summary": "Search beneficiary profiles by phone number",
+                "operationId": "e7c8c7adbd9f96db3ae6adb0c63ecdca",
+                "parameters": [
+                    {
+                        "name": "phone",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching profiles, most recent first"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/beneficiary-profiles/sync": {
+            "post": {
+                "summary": "Bulk-upload offline-captured beneficiary profiles",
+                "description": "Idempotent via client_uuid — safe to retry the same batch.",
+                "operationId": "38e3c154e102392541547ce0a2471824",
+                "responses": {
+                    "200": {
+                        "description": "Sync complete, with created/skipped counts"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/beneficiary-profiles": {
+            "get": {
+                "summary": "List beneficiary profiles (paginated)",
+                "operationId": "6118a91886427f351d216069851cb0b8",
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of profiles"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/auth/login": {
             "post": {
                 "summary": "Log in and receive a Sanctum API token",

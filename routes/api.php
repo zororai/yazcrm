@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\BeneficiaryAttendanceController;
+use App\Http\Controllers\Api\BeneficiaryProfileController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CallbackQueueController;
 use App\Http\Controllers\CallController;
