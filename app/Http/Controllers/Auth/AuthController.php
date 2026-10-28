@@ -16,6 +16,7 @@ class AuthController extends Controller
 {
     #[OA\Post(
         path: '/api/auth/login',
+        tags: ['Auth'],
         summary: 'Log in and receive a Sanctum API token',
         requestBody: new OA\RequestBody(
             required: true,

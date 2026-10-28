@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 // School module (Rose Primary): classes, subjects and who teaches what,
@@ -12,6 +13,17 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // MySQL can't roll back DDL, so an earlier failed run may have left some
+        // of these tables behind. Clear them out — only if they are still empty.
+        foreach (['school_teaching_assignments', 'school_subjects', 'school_classes'] as $leftover) {
+            if (Schema::hasTable($leftover)) {
+                if (DB::table($leftover)->exists()) {
+                    throw new RuntimeException("Table {$leftover} already exists and has data; not recreating it.");
+                }
+                Schema::drop($leftover);
+            }
+        }
+
         Schema::create('school_classes', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // e.g. "Grade 3 Blue"
@@ -37,7 +49,8 @@ return new class extends Migration
             $table->foreignId('teacher_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['school_class_id', 'school_subject_id']); // one teacher per subject per class
+            // one teacher per subject per class (explicit name: the default is over MySQL's 64-char limit)
+            $table->unique(['school_class_id', 'school_subject_id'], 'school_assignments_class_subject_unique');
         });
 
         Schema::create('school_students', function (Blueprint $table) {

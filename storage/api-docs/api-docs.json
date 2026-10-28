@@ -7,6 +7,9 @@
     "paths": {
         "/api/beneficiary-attendances/search": {
             "get": {
+                "tags": [
+                    "Beneficiary Attendance"
+                ],
                 "summary": "Search past attendance records by phone number",
                 "operationId": "035d47419dd38b24ab8cfbe77935c399",
                 "parameters": [
@@ -33,6 +36,9 @@
         },
         "/api/beneficiary-attendances/sync": {
             "post": {
+                "tags": [
+                    "Beneficiary Attendance"
+                ],
                 "summary": "Bulk-upload offline-captured attendance registers",
                 "description": "Idempotent via client_uuid on both activities and attendances — safe to retry the same batch.",
                 "operationId": "ca6894162032a6b8ff57ad8287677a08",
@@ -53,6 +59,9 @@
         },
         "/api/beneficiary-attendances": {
             "get": {
+                "tags": [
+                    "Beneficiary Attendance"
+                ],
                 "summary": "List attendance registers (paginated)",
                 "operationId": "e59348c89af15e7b0db6300262e2e7e2",
                 "responses": {
@@ -69,6 +78,9 @@
         },
         "/api/beneficiary-profiles/search": {
             "get": {
+                "tags": [
+                    "Beneficiary Profiles"
+                ],
                 "summary": "Search beneficiary profiles by phone number",
                 "operationId": "e7c8c7adbd9f96db3ae6adb0c63ecdca",
                 "parameters": [
@@ -95,6 +107,9 @@
         },
         "/api/beneficiary-profiles/sync": {
             "post": {
+                "tags": [
+                    "Beneficiary Profiles"
+                ],
                 "summary": "Bulk-upload offline-captured beneficiary profiles",
                 "description": "Idempotent via client_uuid — safe to retry the same batch.",
                 "operationId": "38e3c154e102392541547ce0a2471824",
@@ -115,6 +130,9 @@
         },
         "/api/beneficiary-profiles": {
             "get": {
+                "tags": [
+                    "Beneficiary Profiles"
+                ],
                 "summary": "List beneficiary profiles (paginated)",
                 "operationId": "6118a91886427f351d216069851cb0b8",
                 "responses": {
@@ -129,8 +147,253 @@
                 ]
             }
         },
+        "/api/data/forms": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "List data collection forms with links to their data",
+                "operationId": "6294400a8e73033d0df671065c9ad80f",
+                "responses": {
+                    "200": {
+                        "description": "Forms with project, status, submission count and data URLs"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/data/projects": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "List data collection projects and their forms",
+                "operationId": "49d10f4eafaa4c045e3af2c5450de521",
+                "responses": {
+                    "200": {
+                        "description": "Projects with forms"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/data/forms/{form}": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "Form definition: every question (across all versions) with its column name, type and options",
+                "operationId": "c08f0c9de2212d49fbec9e668e4d4ec0",
+                "parameters": [
+                    {
+                        "name": "form",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Questions / data dictionary"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/data/forms/{form}/submissions": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "Submissions as flat JSON rows (paged)",
+                "operationId": "ecef197325eb030de12bda0d1568a089",
+                "parameters": [
+                    {
+                        "name": "form",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Comma list. Default: everything except draft and cancelled",
+                        "schema": {
+                            "type": "string",
+                            "example": "approved"
+                        }
+                    },
+                    {
+                        "name": "submitted_after",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "submitted_before",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "headers",
+                        "in": "query",
+                        "description": "Column names: \"label\" (default) or \"id\"",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "label",
+                                "id"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "values",
+                        "in": "query",
+                        "description": "Choice answers as \"label\" (default) or raw \"value\"",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "label",
+                                "value"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 500,
+                            "maximum": 5000
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paged rows: { count, next, previous, results: [...] }"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/data/forms/{form}/submissions.csv": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "All submissions as one CSV (same filters as the JSON endpoint)",
+                "operationId": "4d66cdd1af28aa82e3b8119dd21d6975",
+                "parameters": [
+                    {
+                        "name": "form",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "text/csv"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/data/beneficiary-profiles.csv": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "Beneficiary profiling tool dataset (CSV)",
+                "operationId": "037a41562ede4d42bf4beac05632e61d",
+                "responses": {
+                    "200": {
+                        "description": "text/csv"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/data/beneficiary-attendances.csv": {
+            "get": {
+                "tags": [
+                    "Data API"
+                ],
+                "summary": "Beneficiary attendance dataset, one row per attendee with the activity (CSV)",
+                "operationId": "7f1753ba48cde5feb95f0b7e1d408334",
+                "responses": {
+                    "200": {
+                        "description": "text/csv"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    },
+                    {
+                        "basic": []
+                    }
+                ]
+            }
+        },
         "/api/auth/login": {
             "post": {
+                "tags": [
+                    "Auth"
+                ],
                 "summary": "Log in and receive a Sanctum API token",
                 "operationId": "535ffeda4b78916efd658b2844ea897a",
                 "requestBody": {
@@ -173,7 +436,29 @@
                 "type": "http",
                 "bearerFormat": "Sanctum token from POST /api/auth/login",
                 "scheme": "bearer"
+            },
+            "basic": {
+                "type": "http",
+                "description": "CRM email + password (Data API only)",
+                "scheme": "basic"
             }
         }
-    }
+    },
+    "tags": [
+        {
+            "name": "Beneficiary Attendance",
+            "description": "Offline-capture Android app data"
+        },
+        {
+            "name": "Beneficiary Profiles",
+            "description": "Offline-capture beneficiary profiling forms"
+        },
+        {
+            "name": "Data API",
+            "description": "Read-only analyst access (Power BI, Excel, R). Basic auth with CRM email/password, or Bearer token."
+        },
+        {
+            "name": "Auth"
+        }
+    ]
 }

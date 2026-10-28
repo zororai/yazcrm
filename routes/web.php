@@ -511,4 +511,41 @@ Route::middleware('auth')->group(function () {
     Route::delete('success-stories/{successStory}', [Web\SuccessStoryController::class, 'destroy'])->name('success-stories.destroy');
     Route::post('success-stories/{successStory}/status', [Web\SuccessStoryController::class, 'updateStatus'])->name('success-stories.status');
     Route::get('tickets/{ticket}/recording', [Web\SuccessStoryController::class, 'ticketRecording'])->name('tickets.recording');
+
+    // School (Rose Primary) — teachers have 'school', the head/office
+    // 'school_admin'. Finer per-class/subject checks live in SchoolAccess.
+    Route::middleware('nav:school,school_admin')->prefix('school')->name('school.')->group(function () {
+        Route::get('/', [Web\SchoolDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('register',  [Web\SchoolAttendanceController::class, 'register'])->name('register');
+        Route::post('register', [Web\SchoolAttendanceController::class, 'saveRegister'])->name('register.save');
+        Route::get('teacher-attendance',  [Web\SchoolAttendanceController::class, 'teachers'])->name('teacher-attendance');
+        Route::post('teacher-attendance', [Web\SchoolAttendanceController::class, 'saveTeachers'])->name('teacher-attendance.save');
+        Route::post('sign-in',  [Web\SchoolAttendanceController::class, 'signIn'])->name('sign-in');
+        Route::post('sign-out', [Web\SchoolAttendanceController::class, 'signOut'])->name('sign-out');
+
+        Route::get('results',  [Web\SchoolResultController::class, 'index'])->name('results');
+        Route::post('results', [Web\SchoolResultController::class, 'save'])->name('results.save');
+
+        Route::get('topics',            [Web\SchoolTopicController::class, 'index'])->name('topics');
+        Route::post('topics',           [Web\SchoolTopicController::class, 'store'])->name('topics.store');
+        Route::put('topics/{topic}',    [Web\SchoolTopicController::class, 'update'])->name('topics.update');
+        Route::delete('topics/{topic}', [Web\SchoolTopicController::class, 'destroy'])->name('topics.destroy');
+
+        Route::get('students',              [Web\SchoolStudentController::class, 'index'])->name('students');
+        Route::post('students',             [Web\SchoolStudentController::class, 'store'])->name('students.store');
+        Route::get('students/{student}',    [Web\SchoolStudentController::class, 'show'])->name('students.show');
+        Route::put('students/{student}',    [Web\SchoolStudentController::class, 'update'])->name('students.update');
+        Route::delete('students/{student}', [Web\SchoolStudentController::class, 'destroy'])->name('students.destroy');
+
+        Route::get('setup',                              [Web\SchoolSetupController::class, 'index'])->name('setup');
+        Route::post('setup/classes',                     [Web\SchoolSetupController::class, 'storeClass'])->name('classes.store');
+        Route::put('setup/classes/{schoolClass}',        [Web\SchoolSetupController::class, 'updateClass'])->name('classes.update');
+        Route::delete('setup/classes/{schoolClass}',     [Web\SchoolSetupController::class, 'destroyClass'])->name('classes.destroy');
+        Route::post('setup/subjects',                    [Web\SchoolSetupController::class, 'storeSubject'])->name('subjects.store');
+        Route::put('setup/subjects/{subject}',           [Web\SchoolSetupController::class, 'updateSubject'])->name('subjects.update');
+        Route::delete('setup/subjects/{subject}',        [Web\SchoolSetupController::class, 'destroySubject'])->name('subjects.destroy');
+        Route::post('setup/assignments',                 [Web\SchoolSetupController::class, 'storeAssignment'])->name('assignments.store');
+        Route::delete('setup/assignments/{assignment}',  [Web\SchoolSetupController::class, 'destroyAssignment'])->name('assignments.destroy');
+    });
 });

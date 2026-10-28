@@ -12,6 +12,12 @@ use OpenApi\Attributes as OA;
     scheme: 'bearer',
     bearerFormat: 'Sanctum token from POST /api/auth/login',
 )]
+#[OA\SecurityScheme(
+    securityScheme: 'basic',
+    type: 'http',
+    scheme: 'basic',
+    description: 'CRM email + password (Data API only)',
+)]
 abstract class Controller
 {
     use AuthorizesRequests;

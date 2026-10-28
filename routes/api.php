@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\BeneficiaryAttendanceController;
 use App\Http\Controllers\Api\BeneficiaryProfileController;
+use App\Http\Controllers\Api\DataApiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CallbackQueueController;
 use App\Http\Controllers\CallController;
@@ -21,6 +22,18 @@ Route::post('webhooks/whatsapp', [WebhookController::class, 'whatsapp']);
 
 // Auth (public)
 Route::post('auth/login', [AuthController::class, 'login']);
+
+// Analyst Data API (Kobo-style, read-only). Own auth: Bearer token or
+// Basic (CRM email + password) so Power BI / Excel can connect directly.
+Route::middleware('data.api')->prefix('data')->group(function () {
+    Route::get('projects',                       [DataApiController::class, 'projects']);
+    Route::get('forms',                          [DataApiController::class, 'forms']);
+    Route::get('forms/{form}',                   [DataApiController::class, 'form']);
+    Route::get('forms/{form}/submissions',       [DataApiController::class, 'submissions']);
+    Route::get('forms/{form}/submissions.csv',   [DataApiController::class, 'submissionsCsv']);
+    Route::get('beneficiary-profiles.csv',       [DataApiController::class, 'beneficiaryProfilesCsv']);
+    Route::get('beneficiary-attendances.csv',    [DataApiController::class, 'beneficiaryAttendancesCsv']);
+});
 
 // ─── Protected (all authenticated users) ────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {

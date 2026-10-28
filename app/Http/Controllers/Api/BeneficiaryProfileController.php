@@ -29,6 +29,7 @@ class BeneficiaryProfileController extends Controller
 
     #[OA\Get(
         path: '/api/beneficiary-profiles/search',
+        tags: ['Beneficiary Profiles'],
         summary: 'Search beneficiary profiles by phone number',
         security: [['sanctum' => []]],
         parameters: [
@@ -57,6 +58,7 @@ class BeneficiaryProfileController extends Controller
     // that already made it through.
     #[OA\Post(
         path: '/api/beneficiary-profiles/sync',
+        tags: ['Beneficiary Profiles'],
         summary: 'Bulk-upload offline-captured beneficiary profiles',
         description: 'Idempotent via client_uuid — safe to retry the same batch.',
         security: [['sanctum' => []]],
@@ -157,6 +159,7 @@ class BeneficiaryProfileController extends Controller
 
     #[OA\Get(
         path: '/api/beneficiary-profiles',
+        tags: ['Beneficiary Profiles'],
         summary: 'List beneficiary profiles (paginated)',
         security: [['sanctum' => []]],
         responses: [

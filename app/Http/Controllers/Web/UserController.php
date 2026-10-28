@@ -27,6 +27,7 @@ class UserController extends Controller
         'registry','risk','sbc','roles',
         'timetable','progress_reports','success_stories',
         'my_work','audit_trail','it_asset_categories','transcription_test','counsellor_profiles','team_reports','programmes_dashboard','lsjp',
+        'school','school_admin','data_api',
     ];
 
     public function index(): Response

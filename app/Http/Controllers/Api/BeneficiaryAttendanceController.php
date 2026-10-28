@@ -20,6 +20,7 @@ class BeneficiaryAttendanceController extends Controller
     // for that beneficiary instead of capturing a duplicate blind.
     #[OA\Get(
         path: '/api/beneficiary-attendances/search',
+        tags: ['Beneficiary Attendance'],
         summary: 'Search past attendance records by phone number',
         security: [['sanctum' => []]],
         parameters: [
@@ -62,6 +63,7 @@ class BeneficiaryAttendanceController extends Controller
     // no-op rather than creating duplicates.
     #[OA\Post(
         path: '/api/beneficiary-attendances/sync',
+        tags: ['Beneficiary Attendance'],
         summary: 'Bulk-upload offline-captured attendance registers',
         description: 'Idempotent via client_uuid on both activities and attendances — safe to retry the same batch.',
         security: [['sanctum' => []]],
@@ -167,6 +169,7 @@ class BeneficiaryAttendanceController extends Controller
 
     #[OA\Get(
         path: '/api/beneficiary-attendances',
+        tags: ['Beneficiary Attendance'],
         summary: 'List attendance registers (paginated)',
         security: [['sanctum' => []]],
         responses: [
