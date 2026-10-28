@@ -226,14 +226,14 @@ const navigation = computed(() => [
     ...(isAdmin.value || ['director', 'helpline_manager'].includes(user.value?.role) || can('team_reports')
         ? [{ name: 'View All Team Reports', href: '/progress-reports/team', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('school') || can('school_admin') ? [
-        { name: 'School Dashboard',   href: '/school',                    icon: AcademicCapIcon },
-        { name: 'Class Register',     href: '/school/register',           icon: ClipboardDocumentCheckIcon },
-        { name: 'Teacher Attendance', href: '/school/teacher-attendance', icon: UserGroupIcon },
-        { name: 'Scheme of Work',     href: '/school/topics',             icon: BookOpenIcon },
-        { name: 'Marks & Results',    href: '/school/results',            icon: ChartBarIcon },
-        { name: 'Students',           href: '/school/students',           icon: UserGroupIcon },
+        { name: 'Courses Dashboard',      href: '/courses',                        icon: AcademicCapIcon },
+        { name: 'Attendance Register',    href: '/courses/register',               icon: ClipboardDocumentCheckIcon },
+        { name: 'Facilitator Attendance', href: '/courses/facilitator-attendance', icon: UserGroupIcon },
+        { name: 'Course Plan',            href: '/courses/topics',                 icon: BookOpenIcon },
+        { name: 'Marks & Results',        href: '/courses/results',                icon: ChartBarIcon },
+        { name: 'Participants',           href: '/courses/participants',           icon: UserGroupIcon },
     ] : []),
-    ...(can('school_admin') ? [{ name: 'School Setup', href: '/school/setup', icon: Cog6ToothIcon }] : []),
+    ...(can('school_admin') ? [{ name: 'Course Setup', href: '/courses/setup', icon: Cog6ToothIcon }] : []),
     ...(can('yeastar')      ? [{ name: 'Yeastar',     href: '/yeastar-settings',                 icon: Cog6ToothIcon }] : []),
 ]);
 
@@ -260,7 +260,7 @@ const navSections = [
     { name: 'Procurement',         items: ['Requisitions', 'Payment Requisitions', 'Purchase Orders', 'Suppliers'] },
     { name: 'Assets',              items: ['Asset Dashboard', 'Asset Register', 'Fixed Assets', 'Asset Revaluations', 'Depreciation Report', 'Asset Categories', 'IT Asset Categories'] },
     { name: 'Inventory',           items: ['Inventory Dashboard', 'Stores', 'Items', 'Stock Transfers', 'Stocktakes', 'Item Categories', 'Departments', 'Locations'] },
-    { name: 'School',              items: ['School Dashboard', 'Class Register', 'Teacher Attendance', 'Scheme of Work', 'Marks & Results', 'Students', 'School Setup'] },
+    { name: 'Courses',             items: ['Courses Dashboard', 'Attendance Register', 'Facilitator Attendance', 'Course Plan', 'Marks & Results', 'Participants', 'Course Setup'] },
     { name: 'Administration',      items: ['Users', 'Roles', 'Audit Trail', 'Risk Register', 'Yeastar', 'Transcription Test Tool'] },
 ];
 

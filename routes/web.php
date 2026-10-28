@@ -512,15 +512,18 @@ Route::middleware('auth')->group(function () {
     Route::post('success-stories/{successStory}/status', [Web\SuccessStoryController::class, 'updateStatus'])->name('success-stories.status');
     Route::get('tickets/{ticket}/recording', [Web\SuccessStoryController::class, 'ticketRecording'])->name('tickets.recording');
 
-    // School (Rose Primary) — teachers have 'school', the head/office
-    // 'school_admin'. Finer per-class/subject checks live in SchoolAccess.
-    Route::middleware('nav:school,school_admin')->prefix('school')->name('school.')->group(function () {
+    // Courses (built as the "School" module; the code, tables and permission
+    // keys keep the school_ names). Facilitators have 'school', course
+    // admins 'school_admin'. Finer per-course/module checks live in SchoolAccess.
+    Route::middleware('nav:school,school_admin')->get('school/{path?}', fn (?string $path = null) => redirect('/courses'.($path ? '/'.strtr($path, ['teacher-attendance' => 'facilitator-attendance', 'students' => 'participants']) : '')))
+        ->where('path', '.*');
+    Route::middleware('nav:school,school_admin')->prefix('courses')->name('school.')->group(function () {
         Route::get('/', [Web\SchoolDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('register',  [Web\SchoolAttendanceController::class, 'register'])->name('register');
         Route::post('register', [Web\SchoolAttendanceController::class, 'saveRegister'])->name('register.save');
-        Route::get('teacher-attendance',  [Web\SchoolAttendanceController::class, 'teachers'])->name('teacher-attendance');
-        Route::post('teacher-attendance', [Web\SchoolAttendanceController::class, 'saveTeachers'])->name('teacher-attendance.save');
+        Route::get('facilitator-attendance',  [Web\SchoolAttendanceController::class, 'teachers'])->name('teacher-attendance');
+        Route::post('facilitator-attendance', [Web\SchoolAttendanceController::class, 'saveTeachers'])->name('teacher-attendance.save');
         Route::post('sign-in',  [Web\SchoolAttendanceController::class, 'signIn'])->name('sign-in');
         Route::post('sign-out', [Web\SchoolAttendanceController::class, 'signOut'])->name('sign-out');
 
@@ -532,11 +535,11 @@ Route::middleware('auth')->group(function () {
         Route::put('topics/{topic}',    [Web\SchoolTopicController::class, 'update'])->name('topics.update');
         Route::delete('topics/{topic}', [Web\SchoolTopicController::class, 'destroy'])->name('topics.destroy');
 
-        Route::get('students',              [Web\SchoolStudentController::class, 'index'])->name('students');
-        Route::post('students',             [Web\SchoolStudentController::class, 'store'])->name('students.store');
-        Route::get('students/{student}',    [Web\SchoolStudentController::class, 'show'])->name('students.show');
-        Route::put('students/{student}',    [Web\SchoolStudentController::class, 'update'])->name('students.update');
-        Route::delete('students/{student}', [Web\SchoolStudentController::class, 'destroy'])->name('students.destroy');
+        Route::get('participants',              [Web\SchoolStudentController::class, 'index'])->name('students');
+        Route::post('participants',             [Web\SchoolStudentController::class, 'store'])->name('students.store');
+        Route::get('participants/{student}',    [Web\SchoolStudentController::class, 'show'])->name('students.show');
+        Route::put('participants/{student}',    [Web\SchoolStudentController::class, 'update'])->name('students.update');
+        Route::delete('participants/{student}', [Web\SchoolStudentController::class, 'destroy'])->name('students.destroy');
 
         Route::get('setup',                              [Web\SchoolSetupController::class, 'index'])->name('setup');
         Route::post('setup/classes',                     [Web\SchoolSetupController::class, 'storeClass'])->name('classes.store');

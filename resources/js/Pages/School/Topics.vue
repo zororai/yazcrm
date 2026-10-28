@@ -20,7 +20,7 @@ const picker = ref({
     term: props.filters.term,
 });
 const subjectsForClass = computed(() => props.options.find(c => c.id === picker.value.class_id)?.subjects ?? []);
-const reload = () => router.get('/school/topics', picker.value, { preserveScroll: true, replace: true });
+const reload = () => router.get('/courses/topics', picker.value, { preserveScroll: true, replace: true });
 function changeClass() {
     picker.value.subject_id = subjectsForClass.value[0]?.id ?? '';
     reload();
@@ -58,7 +58,7 @@ function submit() {
     const opts = { preserveScroll: true, onSuccess: () => { showForm.value = false; } };
     const clean = d => ({ ...d, week: d.week || null, planned_date: d.planned_date || null });
     if (editing.value) {
-        form.transform(clean).put(`/school/topics/${editing.value.id}`, opts);
+        form.transform(clean).put(`/courses/topics/${editing.value.id}`, opts);
     } else {
         form.transform(d => ({
             ...clean(d),
@@ -66,41 +66,41 @@ function submit() {
             school_subject_id: props.filters.subjectId,
             academic_year: props.filters.year,
             term: props.filters.term,
-        })).post('/school/topics', opts);
+        })).post('/courses/topics', opts);
     }
 }
 
 function setStatus(t, status) {
-    router.put(`/school/topics/${t.id}`, { status }, { preserveScroll: true });
+    router.put(`/courses/topics/${t.id}`, { status }, { preserveScroll: true });
 }
 
 function remove(t) {
     if (!confirm(`Remove topic "${t.topic}"?`)) return;
-    router.delete(`/school/topics/${t.id}`, { preserveScroll: true });
+    router.delete(`/courses/topics/${t.id}`, { preserveScroll: true });
 }
 </script>
 
 <template>
     <AppLayout>
-        <template #title>Scheme of Work</template>
+        <template #title>Course Plan</template>
         <template #header-actions>
             <button v-if="filters.subjectId" @click="openNew" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> Add Topic</button>
         </template>
 
         <p v-if="!options.length" class="card text-gray-500">
-            You have no classes yet. Ask the school admin to set you as a class or subject teacher in School Setup.
+            You have no courses yet. Ask the course admin to set you as a lead or module facilitator in Course Setup.
         </p>
 
         <template v-else>
             <div class="flex flex-wrap gap-2 mb-4 items-end">
                 <div>
-                    <label class="label">Class</label>
+                    <label class="label">Course</label>
                     <select v-model="picker.class_id" @change="changeClass" class="input w-auto">
                         <option v-for="c in options" :key="c.id" :value="c.id">{{ c.name }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="label">Subject</label>
+                    <label class="label">Module</label>
                     <select v-model="picker.subject_id" @change="reload" class="input w-auto">
                         <option v-for="s in subjectsForClass" :key="s.id" :value="s.id">{{ s.name }}</option>
                     </select>
@@ -120,9 +120,9 @@ function remove(t) {
             <!-- Coverage -->
             <div class="card mb-4">
                 <div class="flex justify-between text-sm mb-2">
-                    <span class="font-semibold text-gray-900">Syllabus coverage</span>
+                    <span class="font-semibold text-gray-900">Course plan coverage</span>
                     <span class="text-gray-500">
-                        {{ completed }} of {{ planned }} topics taught
+                        {{ completed }} of {{ planned }} topics covered
                         <span v-if="overdue" class="text-red-600 font-medium">· {{ overdue }} behind schedule</span>
                     </span>
                 </div>
@@ -142,7 +142,7 @@ function remove(t) {
                             <th class="table-th">Topic</th>
                             <th class="table-th">Planned</th>
                             <th class="table-th">Status</th>
-                            <th class="table-th">Teacher</th>
+                            <th class="table-th">Facilitator</th>
                             <th class="table-th w-20" />
                         </tr>
                     </thead>
@@ -173,7 +173,7 @@ function remove(t) {
                         </tr>
                         <tr v-if="!topics.length">
                             <td colspan="6" class="table-td text-center text-gray-400 py-8">
-                                No topics planned for this term yet — add the topics you are going to teach.
+                                No topics planned for this term yet — add the topics you are going to cover.
                             </td>
                         </tr>
                     </tbody>
@@ -199,7 +199,7 @@ function remove(t) {
                     </div>
                     <div class="col-span-2">
                         <label class="label">Objectives</label>
-                        <textarea v-model="form.objectives" class="input" rows="3" placeholder="By the end of the lesson pupils should be able to…" />
+                        <textarea v-model="form.objectives" class="input" rows="3" placeholder="By the end of the session participants should be able to…" />
                     </div>
                     <template v-if="editing">
                         <div class="col-span-2">

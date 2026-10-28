@@ -43,7 +43,7 @@ function grade(mark) {
 const markClass = mark => mark === null ? 'text-gray-300' : mark < 50 ? 'text-red-600 font-semibold' : 'text-gray-900';
 
 function changeYear(e) {
-    router.get(`/school/students/${props.student.id}`, { year: e.target.value }, { preserveScroll: true });
+    router.get(`/courses/participants/${props.student.id}`, { year: e.target.value }, { preserveScroll: true });
 }
 </script>
 
@@ -54,15 +54,15 @@ function changeYear(e) {
             <button onclick="window.print()" class="btn-secondary btn-sm"><PrinterIcon class="h-4 w-4" /> Print</button>
         </template>
 
-        <Link href="/school/students" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 print:hidden">
-            <ArrowLeftIcon class="h-4 w-4" /> Students
+        <Link href="/courses/participants" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 print:hidden">
+            <ArrowLeftIcon class="h-4 w-4" /> Participants
         </Link>
 
         <div class="card mb-6 flex flex-wrap gap-x-8 gap-y-2 items-center text-sm">
-            <div><span class="text-gray-400">Adm. No.</span> <span class="font-medium">{{ student.admission_number }}</span></div>
-            <div><span class="text-gray-400">Class</span> <span class="font-medium">{{ student.school_class?.name ?? '—' }}</span></div>
+            <div><span class="text-gray-400">Participant No.</span> <span class="font-medium">{{ student.admission_number }}</span></div>
+            <div><span class="text-gray-400">Course</span> <span class="font-medium">{{ student.school_class?.name ?? '—' }}</span></div>
             <div><span class="text-gray-400">Sex</span> <span class="font-medium">{{ student.gender ?? '—' }}</span></div>
-            <div v-if="student.guardian_name"><span class="text-gray-400">Guardian</span> <span class="font-medium">{{ student.guardian_name }} {{ student.guardian_phone }}</span></div>
+            <div v-if="student.guardian_name"><span class="text-gray-400">Next of kin</span> <span class="font-medium">{{ student.guardian_name }} {{ student.guardian_phone }}</span></div>
             <div class="ml-auto">
                 <select :value="year" @change="changeYear" class="input w-auto print:hidden">
                     <option v-for="y in [year + 1, year, year - 1, year - 2]" :key="y" :value="y">{{ y }}</option>
@@ -91,7 +91,7 @@ function changeYear(e) {
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Subject</th>
+                        <th class="table-th">Module</th>
                         <th v-for="t in [1, 2, 3]" :key="t" class="table-th text-center">Term {{ t }}</th>
                     </tr>
                 </thead>

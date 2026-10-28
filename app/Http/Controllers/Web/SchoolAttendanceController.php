@@ -166,7 +166,7 @@ class SchoolAttendanceController extends Controller
             }
         });
 
-        return back()->with('success', 'Teacher attendance saved.');
+        return back()->with('success', 'Facilitator attendance saved.');
     }
 
     // A teacher's own sign-in/sign-out for today. Signing in after the

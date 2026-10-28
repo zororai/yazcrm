@@ -66,8 +66,8 @@ const NAV_ITEMS = [
     { key: 'team_reports',        label: 'Team Reports' },
     { key: 'programmes_dashboard', label: 'Programmes Dashboard' },
     { key: 'lsjp', label: 'LSJP Register' },
-    { key: 'school',       label: 'School (Teacher)' },
-    { key: 'school_admin', label: 'School Admin' },
+    { key: 'school',       label: 'Courses (Facilitator)' },
+    { key: 'school_admin', label: 'Courses Admin' },
     { key: 'data_api',     label: 'Data API (analysts)' },
 ];
 

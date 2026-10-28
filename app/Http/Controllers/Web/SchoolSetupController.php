@@ -39,7 +39,7 @@ class SchoolSetupController extends Controller
         $this->authorizeAdmin($request);
         SchoolClass::create($this->validateClass($request));
 
-        return back()->with('success', 'Class created.');
+        return back()->with('success', 'Course created.');
     }
 
     public function updateClass(Request $request, SchoolClass $schoolClass): RedirectResponse
@@ -47,7 +47,7 @@ class SchoolSetupController extends Controller
         $this->authorizeAdmin($request);
         $schoolClass->update($this->validateClass($request));
 
-        return back()->with('success', 'Class saved.');
+        return back()->with('success', 'Course saved.');
     }
 
     public function destroyClass(Request $request, SchoolClass $schoolClass): RedirectResponse
@@ -55,7 +55,7 @@ class SchoolSetupController extends Controller
         $this->authorizeAdmin($request);
         $schoolClass->delete();
 
-        return back()->with('success', 'Class deleted.');
+        return back()->with('success', 'Course deleted.');
     }
 
     private function validateClass(Request $request): array
@@ -74,7 +74,7 @@ class SchoolSetupController extends Controller
         $this->authorizeAdmin($request);
         SchoolSubject::create($this->validateSubject($request));
 
-        return back()->with('success', 'Subject created.');
+        return back()->with('success', 'Module created.');
     }
 
     public function updateSubject(Request $request, SchoolSubject $subject): RedirectResponse
@@ -82,7 +82,7 @@ class SchoolSetupController extends Controller
         $this->authorizeAdmin($request);
         $subject->update($this->validateSubject($request));
 
-        return back()->with('success', 'Subject saved.');
+        return back()->with('success', 'Module saved.');
     }
 
     public function destroySubject(Request $request, SchoolSubject $subject): RedirectResponse
@@ -90,7 +90,7 @@ class SchoolSetupController extends Controller
         $this->authorizeAdmin($request);
         $subject->delete();
 
-        return back()->with('success', 'Subject deleted.');
+        return back()->with('success', 'Module deleted.');
     }
 
     private function validateSubject(Request $request): array
@@ -118,7 +118,7 @@ class SchoolSetupController extends Controller
             ['teacher_id' => $data['teacher_id']],
         );
 
-        return back()->with('success', 'Teacher assigned.');
+        return back()->with('success', 'Facilitator assigned.');
     }
 
     public function destroyAssignment(Request $request, SchoolTeachingAssignment $assignment): RedirectResponse

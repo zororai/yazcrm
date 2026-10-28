@@ -15,7 +15,7 @@ const picker = ref({
 const subjectsForClass = computed(() => props.options.find(c => c.id === picker.value.class_id)?.subjects ?? []);
 
 function reload() {
-    router.get('/school/results', picker.value, { preserveScroll: true, replace: true });
+    router.get('/courses/results', picker.value, { preserveScroll: true, replace: true });
 }
 function changeClass() {
     picker.value.subject_id = subjectsForClass.value[0]?.id ?? '';
@@ -40,7 +40,7 @@ function save() {
         term: props.filters.term,
         assessment: props.filters.assessment,
         entries: rows.value.map(r => ({ id: r.id, mark: r.mark === '' ? null : r.mark, comment: r.comment })),
-    })).post('/school/results', { preserveScroll: true });
+    })).post('/courses/results', { preserveScroll: true });
 }
 
 const newAssessment = ref('');
@@ -57,19 +57,19 @@ function addAssessment() {
         <template #title>Marks &amp; Results</template>
 
         <p v-if="!options.length" class="card text-gray-500">
-            You have no classes yet. Ask the school admin to set you as a class or subject teacher in School Setup.
+            You have no courses yet. Ask the course admin to set you as a lead or module facilitator in Course Setup.
         </p>
 
         <template v-else>
             <div class="flex flex-wrap gap-2 mb-4 items-end">
                 <div>
-                    <label class="label">Class</label>
+                    <label class="label">Course</label>
                     <select v-model="picker.class_id" @change="changeClass" class="input w-auto">
                         <option v-for="c in options" :key="c.id" :value="c.id">{{ c.name }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="label">Subject</label>
+                    <label class="label">Module</label>
                     <select v-model="picker.subject_id" @change="reload" class="input w-auto">
                         <option v-for="s in subjectsForClass" :key="s.id" :value="s.id">{{ s.name }}</option>
                     </select>
@@ -97,12 +97,12 @@ function addAssessment() {
                 </form>
             </div>
 
-            <p v-if="!subjectsForClass.length" class="card text-gray-500">No subjects set up for this class yet.</p>
+            <p v-if="!subjectsForClass.length" class="card text-gray-500">No modules set up for this course yet.</p>
 
             <template v-else>
                 <div class="flex flex-wrap gap-2 mb-3 text-sm">
                     <span class="badge bg-gray-100 text-gray-700">Entered: {{ entered.length }} / {{ rows.length }}</span>
-                    <span v-if="average !== null" class="badge bg-blue-100 text-blue-700">Class average: {{ average }}%</span>
+                    <span v-if="average !== null" class="badge bg-blue-100 text-blue-700">Course average: {{ average }}%</span>
                     <span v-if="passRate !== null" class="badge bg-green-100 text-green-700">Pass rate (≥50%): {{ passRate }}%</span>
                 </div>
 
@@ -111,7 +111,7 @@ function addAssessment() {
                         <thead class="bg-gray-50 border-b border-gray-100">
                             <tr>
                                 <th class="table-th w-10">#</th>
-                                <th class="table-th">Student</th>
+                                <th class="table-th">Participant</th>
                                 <th class="table-th w-32">Mark (%)</th>
                                 <th class="table-th">Comment</th>
                             </tr>
@@ -120,7 +120,7 @@ function addAssessment() {
                             <tr v-for="(r, i) in rows" :key="r.id">
                                 <td class="table-td text-gray-400">{{ i + 1 }}</td>
                                 <td class="table-td">
-                                    <Link :href="`/school/students/${r.id}`" class="font-medium hover:underline">{{ r.full_name }}</Link>
+                                    <Link :href="`/courses/participants/${r.id}`" class="font-medium hover:underline">{{ r.full_name }}</Link>
                                     <div class="text-xs text-gray-400">{{ r.admission_number }}</div>
                                 </td>
                                 <td class="table-td">
@@ -131,7 +131,7 @@ function addAssessment() {
                                 <td class="table-td"><input v-model="r.comment" class="input py-1 text-sm" /></td>
                             </tr>
                             <tr v-if="!rows.length">
-                                <td colspan="4" class="table-td text-center text-gray-400 py-8">No students in this class yet.</td>
+                                <td colspan="4" class="table-td text-center text-gray-400 py-8">No participants in this course yet.</td>
                             </tr>
                         </tbody>
                     </table>

@@ -17,7 +17,7 @@ const badge = {
 };
 
 const date = ref(props.date);
-watch(date, d => router.get('/school/teacher-attendance', { date: d }, { preserveScroll: true, replace: true }));
+watch(date, d => router.get('/courses/facilitator-attendance', { date: d }, { preserveScroll: true, replace: true }));
 
 const rows = ref([]);
 watch(() => props.teachers, t => { rows.value = t.map(r => ({ ...r })); }, { immediate: true });
@@ -26,17 +26,17 @@ const form = useForm({ date: props.date, entries: [] });
 function save() {
     form.date = props.date;
     form.entries = rows.value.map(r => ({ id: r.id, status: r.status || null, time_in: r.time_in || null, time_out: r.time_out || null, note: r.note }));
-    form.post('/school/teacher-attendance', { preserveScroll: true });
+    form.post('/courses/facilitator-attendance', { preserveScroll: true });
 }
 
 const signForm = useForm({});
-const signIn = () => signForm.post('/school/sign-in', { preserveScroll: true });
-const signOut = () => signForm.post('/school/sign-out', { preserveScroll: true });
+const signIn = () => signForm.post('/courses/sign-in', { preserveScroll: true });
+const signOut = () => signForm.post('/courses/sign-out', { preserveScroll: true });
 </script>
 
 <template>
     <AppLayout>
-        <template #title>Teacher Attendance</template>
+        <template #title>Facilitator Attendance</template>
 
         <!-- Own sign-in for today -->
         <div class="card mb-6 flex flex-wrap items-center gap-4">
@@ -65,7 +65,7 @@ const signOut = () => signForm.post('/school/sign-out', { preserveScroll: true }
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Teacher</th>
+                        <th class="table-th">Facilitator</th>
                         <th class="table-th">Status</th>
                         <th class="table-th">Time in</th>
                         <th class="table-th">Time out</th>
@@ -98,7 +98,7 @@ const signOut = () => signForm.post('/school/sign-out', { preserveScroll: true }
                     </tr>
                     <tr v-if="!rows.length">
                         <td colspan="5" class="table-td text-center text-gray-400 py-8">
-                            No teachers yet — give staff the "School (Teacher)" permission under Users.
+                            No facilitators yet — give staff the "Courses (Facilitator)" permission under Users.
                         </td>
                     </tr>
                 </tbody>

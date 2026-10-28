@@ -13,7 +13,7 @@ const STATUSES = [
 ];
 
 const picker = ref({ class_id: props.classId ?? '', date: props.date });
-watch(picker, q => router.get('/school/register', q, { preserveScroll: true, replace: true }), { deep: true });
+watch(picker, q => router.get('/courses/register', q, { preserveScroll: true, replace: true }), { deep: true });
 
 const form = useForm({ class_id: props.classId, date: props.date, entries: [] });
 const rows = ref([]);
@@ -35,17 +35,17 @@ function save() {
     form.class_id = props.classId;
     form.date = props.date;
     form.entries = rows.value.map(r => ({ id: r.id, status: r.status, note: r.note }));
-    form.post('/school/register', { preserveScroll: true });
+    form.post('/courses/register', { preserveScroll: true });
 }
 </script>
 
 <template>
     <AppLayout>
-        <template #title>Class Register</template>
+        <template #title>Attendance Register</template>
 
         <div class="flex flex-wrap gap-2 mb-4 items-end">
             <div>
-                <label class="label">Class</label>
+                <label class="label">Course</label>
                 <select v-model="picker.class_id" class="input w-auto">
                     <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
                 </select>
@@ -58,7 +58,7 @@ function save() {
         </div>
 
         <p v-if="!classes.length" class="card text-gray-500">
-            You have no classes yet. Ask the school admin to set you as a class or subject teacher in School Setup.
+            You have no courses yet. Ask the course admin to set you as a lead or module facilitator in Course Setup.
         </p>
 
         <template v-else>
@@ -73,7 +73,7 @@ function save() {
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
                             <th class="table-th w-10">#</th>
-                            <th class="table-th">Student</th>
+                            <th class="table-th">Participant</th>
                             <th class="table-th">Status</th>
                             <th class="table-th">Note</th>
                         </tr>
@@ -98,7 +98,7 @@ function save() {
                             </td>
                         </tr>
                         <tr v-if="!rows.length">
-                            <td colspan="4" class="table-td text-center text-gray-400 py-8">No students in this class yet.</td>
+                            <td colspan="4" class="table-td text-center text-gray-400 py-8">No participants in this course yet.</td>
                         </tr>
                     </tbody>
                 </table>

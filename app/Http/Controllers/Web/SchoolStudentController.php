@@ -48,7 +48,7 @@ class SchoolStudentController extends Controller
     {
         SchoolStudent::create($this->validated($request));
 
-        return back()->with('success', 'Student added.');
+        return back()->with('success', 'Participant added.');
     }
 
     public function update(Request $request, SchoolStudent $student): RedirectResponse
@@ -56,7 +56,7 @@ class SchoolStudentController extends Controller
         $this->authorizeStudent($request, $student);
         $student->update($this->validated($request, $student));
 
-        return back()->with('success', 'Student saved.');
+        return back()->with('success', 'Participant saved.');
     }
 
     public function destroy(Request $request, SchoolStudent $student): RedirectResponse
@@ -64,7 +64,7 @@ class SchoolStudentController extends Controller
         abort_unless(SchoolAccess::isAdmin($request->user()), 403);
         $student->delete();
 
-        return back()->with('success', 'Student deleted.');
+        return back()->with('success', 'Participant deleted.');
     }
 
     // Per-student report: attendance summary for the year and marks per
@@ -124,6 +124,12 @@ class SchoolStudentController extends Controller
             'guardian_name'    => 'nullable|string|max:255',
             'guardian_phone'   => 'nullable|string|max:50',
             'is_active'        => 'sometimes|boolean',
+        ], [], [
+            // Shown in validation messages (the module is presented as Courses).
+            'admission_number' => 'participant number',
+            'school_class_id'  => 'course',
+            'guardian_name'    => 'next of kin name',
+            'guardian_phone'   => 'next of kin phone',
         ]);
 
         // Teachers may only place students in classes they have access to.

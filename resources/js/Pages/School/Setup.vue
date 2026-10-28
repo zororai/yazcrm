@@ -26,13 +26,13 @@ function submitClass() {
     const opts = { preserveScroll: true, onSuccess: () => { showClass.value = false; } };
     classForm.transform(d => ({ ...d, class_teacher_id: d.class_teacher_id || null }));
     editingClass.value
-        ? classForm.put(`/school/setup/classes/${editingClass.value.id}`, opts)
-        : classForm.post('/school/setup/classes', opts);
+        ? classForm.put(`/courses/setup/classes/${editingClass.value.id}`, opts)
+        : classForm.post('/courses/setup/classes', opts);
 }
 
 function removeClass(c) {
-    if (!confirm(`Delete class "${c.name}"? Its registers, marks and scheme of work will be deleted too.`)) return;
-    classForm.delete(`/school/setup/classes/${c.id}`, { preserveScroll: true });
+    if (!confirm(`Delete course "${c.name}"? Its registers, marks and course plan will be deleted too.`)) return;
+    classForm.delete(`/courses/setup/classes/${c.id}`, { preserveScroll: true });
 }
 
 // ── Subjects ─────────────────────────────────────────────────────────────────
@@ -50,51 +50,51 @@ function openSubject(s = null) {
 function submitSubject() {
     const opts = { preserveScroll: true, onSuccess: () => { showSubject.value = false; } };
     editingSubject.value
-        ? subjectForm.put(`/school/setup/subjects/${editingSubject.value.id}`, opts)
-        : subjectForm.post('/school/setup/subjects', opts);
+        ? subjectForm.put(`/courses/setup/subjects/${editingSubject.value.id}`, opts)
+        : subjectForm.post('/courses/setup/subjects', opts);
 }
 
 function removeSubject(s) {
-    if (!confirm(`Delete subject "${s.name}"? Marks and topics recorded for it will be deleted too.`)) return;
-    subjectForm.delete(`/school/setup/subjects/${s.id}`, { preserveScroll: true });
+    if (!confirm(`Delete module "${s.name}"? Marks and topics recorded for it will be deleted too.`)) return;
+    subjectForm.delete(`/courses/setup/subjects/${s.id}`, { preserveScroll: true });
 }
 
 // ── Teaching assignments ─────────────────────────────────────────────────────
 const assignForm = useForm({ school_class_id: '', school_subject_id: '', teacher_id: '' });
 
 function submitAssignment() {
-    assignForm.post('/school/setup/assignments', { preserveScroll: true, onSuccess: () => assignForm.reset('school_subject_id') });
+    assignForm.post('/courses/setup/assignments', { preserveScroll: true, onSuccess: () => assignForm.reset('school_subject_id') });
 }
 
 function removeAssignment(a) {
     if (!confirm(`Remove ${a.teacher?.name} from ${a.subject?.name} in ${a.school_class?.name}?`)) return;
-    assignForm.delete(`/school/setup/assignments/${a.id}`, { preserveScroll: true });
+    assignForm.delete(`/courses/setup/assignments/${a.id}`, { preserveScroll: true });
 }
 </script>
 
 <template>
     <AppLayout>
-        <template #title>School Setup</template>
+        <template #title>Course Setup</template>
 
         <p v-if="!teachers.length" class="mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-            No teachers yet. Give staff the <strong>School (Teacher)</strong> permission under Users, then they can be
-            set as class or subject teachers here.
+            No facilitators yet. Give staff the <strong>Courses (Facilitator)</strong> permission under Users, then they can be
+            set as lead or module facilitators here.
         </p>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <!-- Classes -->
+            <!-- Courses -->
             <div class="card p-0 overflow-hidden">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">Classes</h3>
-                    <button @click="openClass()" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> Class</button>
+                    <h3 class="font-semibold text-gray-900">Courses</h3>
+                    <button @click="openClass()" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> Course</button>
                 </div>
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th class="table-th">Class</th>
+                            <th class="table-th">Course</th>
                             <th class="table-th">Year</th>
-                            <th class="table-th">Class teacher</th>
-                            <th class="table-th">Pupils</th>
+                            <th class="table-th">Lead facilitator</th>
+                            <th class="table-th">Participants</th>
                             <th class="table-th w-20" />
                         </tr>
                     </thead>
@@ -110,22 +110,22 @@ function removeAssignment(a) {
                             </td>
                         </tr>
                         <tr v-if="!classes.length">
-                            <td colspan="5" class="table-td text-center text-gray-400 py-8">No classes yet.</td>
+                            <td colspan="5" class="table-td text-center text-gray-400 py-8">No courses yet.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Subjects -->
+            <!-- Modules -->
             <div class="card p-0 overflow-hidden">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">Subjects</h3>
-                    <button @click="openSubject()" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> Subject</button>
+                    <h3 class="font-semibold text-gray-900">Modules</h3>
+                    <button @click="openSubject()" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> Module</button>
                 </div>
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th class="table-th">Subject</th>
+                            <th class="table-th">Module</th>
                             <th class="table-th">Code</th>
                             <th class="table-th w-20" />
                         </tr>
@@ -140,38 +140,38 @@ function removeAssignment(a) {
                             </td>
                         </tr>
                         <tr v-if="!subjects.length">
-                            <td colspan="3" class="table-td text-center text-gray-400 py-8">No subjects yet.</td>
+                            <td colspan="3" class="table-td text-center text-gray-400 py-8">No modules yet.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Teaching assignments -->
+        <!-- Facilitator assignments -->
         <div class="card p-0 overflow-hidden mt-6">
             <div class="px-4 py-3 border-b border-gray-100">
-                <h3 class="font-semibold text-gray-900">Who teaches what</h3>
+                <h3 class="font-semibold text-gray-900">Who facilitates what</h3>
                 <p class="text-xs text-gray-500 mt-1">
-                    Class teachers can already handle every subject in their class. Add subject teachers here.
+                    Lead facilitators can already handle every module in their course. Add module facilitators here.
                 </p>
             </div>
             <form @submit.prevent="submitAssignment" class="flex flex-wrap gap-2 items-end px-4 py-3 border-b border-gray-100">
                 <div>
-                    <label class="label">Class</label>
+                    <label class="label">Course</label>
                     <select v-model="assignForm.school_class_id" class="input" required>
                         <option value="" disabled>Select…</option>
                         <option v-for="c in classes.filter(c => c.is_active)" :key="c.id" :value="c.id">{{ c.name }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="label">Subject</label>
+                    <label class="label">Module</label>
                     <select v-model="assignForm.school_subject_id" class="input" required>
                         <option value="" disabled>Select…</option>
                         <option v-for="s in subjects.filter(s => s.is_active)" :key="s.id" :value="s.id">{{ s.name }}</option>
                     </select>
                 </div>
                 <div>
-                    <label class="label">Teacher</label>
+                    <label class="label">Facilitator</label>
                     <select v-model="assignForm.teacher_id" class="input" required>
                         <option value="" disabled>Select…</option>
                         <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -182,9 +182,9 @@ function removeAssignment(a) {
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Class</th>
-                        <th class="table-th">Subject</th>
-                        <th class="table-th">Teacher</th>
+                        <th class="table-th">Course</th>
+                        <th class="table-th">Module</th>
+                        <th class="table-th">Facilitator</th>
                         <th class="table-th w-12" />
                     </tr>
                 </thead>
@@ -198,26 +198,26 @@ function removeAssignment(a) {
                         </td>
                     </tr>
                     <tr v-if="!assignments.length">
-                        <td colspan="4" class="table-td text-center text-gray-400 py-8">No subject teachers assigned yet.</td>
+                        <td colspan="4" class="table-td text-center text-gray-400 py-8">No module facilitators assigned yet.</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- Class modal -->
+        <!-- Course modal -->
         <div v-if="showClass" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-                <h3 class="font-semibold text-gray-900 mb-4">{{ editingClass ? 'Edit' : 'New' }} Class</h3>
+                <h3 class="font-semibold text-gray-900 mb-4">{{ editingClass ? 'Edit' : 'New' }} Course</h3>
                 <form @submit.prevent="submitClass" class="space-y-3">
                     <div>
                         <label class="label">Name</label>
-                        <input v-model="classForm.name" class="input" placeholder="e.g. Grade 3 Blue" required />
+                        <input v-model="classForm.name" class="input" placeholder="e.g. Business Skills – Intake 1" required />
                         <p v-if="classForm.errors.name" class="text-xs text-red-600 mt-1">{{ classForm.errors.name }}</p>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="label">Grade</label>
-                            <input v-model="classForm.grade_level" class="input" placeholder="Grade 3" />
+                            <label class="label">Level</label>
+                            <input v-model="classForm.grade_level" class="input" placeholder="e.g. Beginner" />
                         </div>
                         <div>
                             <label class="label">Year</label>
@@ -225,7 +225,7 @@ function removeAssignment(a) {
                         </div>
                     </div>
                     <div>
-                        <label class="label">Class teacher</label>
+                        <label class="label">Lead facilitator</label>
                         <select v-model="classForm.class_teacher_id" class="input">
                             <option value="">— None —</option>
                             <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -242,18 +242,18 @@ function removeAssignment(a) {
             </div>
         </div>
 
-        <!-- Subject modal -->
+        <!-- Module modal -->
         <div v-if="showSubject" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-                <h3 class="font-semibold text-gray-900 mb-4">{{ editingSubject ? 'Edit' : 'New' }} Subject</h3>
+                <h3 class="font-semibold text-gray-900 mb-4">{{ editingSubject ? 'Edit' : 'New' }} Module</h3>
                 <form @submit.prevent="submitSubject" class="space-y-3">
                     <div>
                         <label class="label">Name</label>
-                        <input v-model="subjectForm.name" class="input" placeholder="e.g. Mathematics" required />
+                        <input v-model="subjectForm.name" class="input" placeholder="e.g. Budgeting" required />
                     </div>
                     <div>
                         <label class="label">Code</label>
-                        <input v-model="subjectForm.code" class="input" placeholder="MATH" />
+                        <input v-model="subjectForm.code" class="input" placeholder="BUD" />
                     </div>
                     <label class="flex items-center gap-2 text-sm text-gray-700">
                         <input type="checkbox" v-model="subjectForm.is_active" class="rounded border-gray-300" /> Active

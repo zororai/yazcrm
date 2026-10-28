@@ -9,7 +9,7 @@ const props = defineProps({
     teacherAttendance: Array, teachersToday: Object, teacherCount: Number, averages: Array,
 });
 
-const change = (key, value) => router.get('/school', { year: props.year, term: props.term, [key]: value }, { preserveScroll: true });
+const change = (key, value) => router.get('/courses', { year: props.year, term: props.term, [key]: value }, { preserveScroll: true });
 
 const registersTaken = computed(() => props.registers.filter(r => r.marked > 0).length);
 const pupilsPresent = computed(() => props.registers.reduce((s, r) => s + r.present, 0));
@@ -26,7 +26,7 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
 
 <template>
     <AppLayout>
-        <template #title>School Dashboard</template>
+        <template #title>Courses Dashboard</template>
         <template #header-actions>
             <select :value="term" @change="change('term', $event.target.value)" class="input w-auto py-1 text-sm">
                 <option v-for="t in [1, 2, 3]" :key="t" :value="t">Term {{ t }}</option>
@@ -43,18 +43,18 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
                 <div class="text-2xl font-bold text-gray-900">{{ registersTaken }} / {{ registers.length }}</div>
             </div>
             <div class="card">
-                <div class="text-xs text-gray-500">Pupils present today</div>
+                <div class="text-xs text-gray-500">Participants present today</div>
                 <div class="text-2xl font-bold text-gray-900">
                     {{ pupilsPresent }}<span class="text-sm text-gray-400 font-normal"> / {{ pupilsMarked }} marked</span>
                 </div>
             </div>
             <div class="card" v-if="isAdmin">
-                <div class="text-xs text-gray-500">Teachers in today</div>
+                <div class="text-xs text-gray-500">Facilitators in today</div>
                 <div class="text-2xl font-bold text-gray-900">{{ teachersIn }} / {{ teacherCount }}</div>
                 <div class="text-xs text-gray-400" v-if="teachersToday?.late">{{ teachersToday.late }} late</div>
             </div>
             <div class="card">
-                <div class="text-xs text-gray-500">Syllabus coverage (term {{ term }})</div>
+                <div class="text-xs text-gray-500">Course plan coverage (term {{ term }})</div>
                 <div class="text-2xl font-bold text-gray-900">{{ overallCoverage === null ? '—' : overallCoverage + '%' }}</div>
             </div>
         </div>
@@ -64,13 +64,13 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
             <div class="card p-0 overflow-hidden">
                 <div class="flex justify-between px-4 py-3 border-b border-gray-100">
                     <h3 class="font-semibold text-gray-900">Today's registers</h3>
-                    <Link href="/school/register" class="text-sm text-brand-600 hover:underline">Take register →</Link>
+                    <Link href="/courses/register" class="text-sm text-brand-600 hover:underline">Take register →</Link>
                 </div>
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th class="table-th">Class</th>
-                            <th class="table-th">Class teacher</th>
+                            <th class="table-th">Course</th>
+                            <th class="table-th">Lead facilitator</th>
                             <th class="table-th text-center">Present</th>
                             <th class="table-th text-center">Absent</th>
                         </tr>
@@ -78,7 +78,7 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
                     <tbody class="divide-y divide-gray-50">
                         <tr v-for="r in registers" :key="r.id">
                             <td class="table-td font-medium">
-                                <Link :href="`/school/register?class_id=${r.id}`" class="hover:underline">{{ r.name }}</Link>
+                                <Link :href="`/courses/register?class_id=${r.id}`" class="hover:underline">{{ r.name }}</Link>
                             </td>
                             <td class="table-td text-sm text-gray-500">{{ r.class_teacher ?? '—' }}</td>
                             <template v-if="r.marked">
@@ -90,21 +90,21 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
                             </td>
                         </tr>
                         <tr v-if="!registers.length">
-                            <td colspan="4" class="table-td text-center text-gray-400 py-8">No classes.</td>
+                            <td colspan="4" class="table-td text-center text-gray-400 py-8">No courses.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Teacher progress -->
+            <!-- Facilitator progress -->
             <div class="card p-0 overflow-hidden">
                 <div class="flex justify-between px-4 py-3 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">Teacher progress — scheme of work</h3>
-                    <Link href="/school/topics" class="text-sm text-brand-600 hover:underline">Topics →</Link>
+                    <h3 class="font-semibold text-gray-900">Facilitator progress — course plan</h3>
+                    <Link href="/courses/topics" class="text-sm text-brand-600 hover:underline">Topics →</Link>
                 </div>
                 <div class="divide-y divide-gray-50">
                     <Link v-for="c in coverage" :key="`${c.teacher}-${c.class_id}-${c.subject_id}`"
-                        :href="`/school/topics?class_id=${c.class_id}&subject_id=${c.subject_id}&year=${year}&term=${term}`"
+                        :href="`/courses/topics?class_id=${c.class_id}&subject_id=${c.subject_id}&year=${year}&term=${term}`"
                         class="block px-4 py-3 hover:bg-gray-50">
                         <div class="flex justify-between text-sm mb-1">
                             <span><span class="font-medium">{{ c.teacher }}</span> · {{ c.class }} · {{ c.subject }}</span>
@@ -123,16 +123,16 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
                 </div>
             </div>
 
-            <!-- Teacher attendance this term -->
+            <!-- Facilitator attendance this term -->
             <div class="card p-0 overflow-hidden">
                 <div class="flex justify-between px-4 py-3 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">Teacher attendance — term {{ term }}</h3>
-                    <Link href="/school/teacher-attendance" class="text-sm text-brand-600 hover:underline">Daily sheet →</Link>
+                    <h3 class="font-semibold text-gray-900">Facilitator attendance — term {{ term }}</h3>
+                    <Link href="/courses/facilitator-attendance" class="text-sm text-brand-600 hover:underline">Daily sheet →</Link>
                 </div>
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th class="table-th">Teacher</th>
+                            <th class="table-th">Facilitator</th>
                             <th class="table-th text-center">Days</th>
                             <th class="table-th text-center">Late</th>
                             <th class="table-th text-center">Absent</th>
@@ -150,22 +150,22 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
                             <td class="table-td text-center">{{ rate(t) }}%</td>
                         </tr>
                         <tr v-if="!teacherAttendance.length">
-                            <td colspan="6" class="table-td text-center text-gray-400 py-8">No teacher attendance recorded this term.</td>
+                            <td colspan="6" class="table-td text-center text-gray-400 py-8">No facilitator attendance recorded this term.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Students with low attendance -->
+            <!-- Participants with low attendance -->
             <div class="card p-0 overflow-hidden">
                 <div class="px-4 py-3 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">Pupils below 80% attendance</h3>
+                    <h3 class="font-semibold text-gray-900">Participants below 80% attendance</h3>
                 </div>
                 <table class="w-full">
                     <tbody class="divide-y divide-gray-50">
                         <tr v-for="s in atRisk" :key="s.id">
                             <td class="table-td">
-                                <Link :href="`/school/students/${s.id}`" class="font-medium hover:underline">{{ s.name }}</Link>
+                                <Link :href="`/courses/participants/${s.id}`" class="font-medium hover:underline">{{ s.name }}</Link>
                                 <span class="text-xs text-gray-400 block">{{ s.class }}</span>
                             </td>
                             <td class="table-td text-right">
@@ -174,24 +174,24 @@ const rate = r => r.days ? Math.round((r.present + r.late) / r.days * 100) : 0;
                             </td>
                         </tr>
                         <tr v-if="!atRisk.length">
-                            <td colspan="2" class="table-td text-center text-gray-400 py-8">No pupils below 80% this term.</td>
+                            <td colspan="2" class="table-td text-center text-gray-400 py-8">No participants below 80% this term.</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Class averages -->
+            <!-- Course averages -->
             <div class="card p-0 overflow-hidden lg:col-span-2">
                 <div class="flex justify-between px-4 py-3 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">Class averages — term {{ term }}</h3>
-                    <Link href="/school/results" class="text-sm text-brand-600 hover:underline">Enter marks →</Link>
+                    <h3 class="font-semibold text-gray-900">Course averages — term {{ term }}</h3>
+                    <Link href="/courses/results" class="text-sm text-brand-600 hover:underline">Enter marks →</Link>
                 </div>
                 <table class="w-full">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
-                            <th class="table-th">Class</th>
-                            <th class="table-th">Subject</th>
-                            <th class="table-th text-center">Pupils marked</th>
+                            <th class="table-th">Course</th>
+                            <th class="table-th">Module</th>
+                            <th class="table-th text-center">Participants marked</th>
                             <th class="table-th">Average</th>
                         </tr>
                     </thead>

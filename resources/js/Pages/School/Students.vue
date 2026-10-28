@@ -16,7 +16,7 @@ watch(filters, () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
         const q = Object.fromEntries(Object.entries(filters.value).filter(([, v]) => v));
-        router.get('/school/students', q, { preserveState: true, preserveScroll: true, replace: true });
+        router.get('/courses/participants', q, { preserveState: true, preserveScroll: true, replace: true });
     }, 300);
 }, { deep: true });
 
@@ -46,39 +46,39 @@ function openEdit(s) {
 function submit() {
     const opts = { preserveScroll: true, onSuccess: () => { showForm.value = false; } };
     form.transform(d => ({ ...d, gender: d.gender || null, school_class_id: d.school_class_id || null, date_of_birth: d.date_of_birth || null }));
-    editing.value ? form.put(`/school/students/${editing.value.id}`, opts) : form.post('/school/students', opts);
+    editing.value ? form.put(`/courses/participants/${editing.value.id}`, opts) : form.post('/courses/participants', opts);
 }
 
 function remove(s) {
     if (!confirm(`Delete ${s.full_name}? Their attendance and marks will be deleted too.`)) return;
-    form.delete(`/school/students/${s.id}`, { preserveScroll: true });
+    form.delete(`/courses/participants/${s.id}`, { preserveScroll: true });
 }
 </script>
 
 <template>
     <AppLayout>
-        <template #title>Students</template>
+        <template #title>Participants</template>
         <template #header-actions>
-            <button @click="openNew" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> New Student</button>
+            <button @click="openNew" class="btn-primary btn-sm"><PlusIcon class="h-4 w-4" /> New Participant</button>
         </template>
 
         <div class="flex flex-wrap gap-2 mb-4">
             <select v-model="filters.class_id" class="input w-auto">
-                <option value="">All my classes</option>
+                <option value="">All my courses</option>
                 <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
             </select>
-            <input v-model="filters.search" class="input w-64" placeholder="Search name or admission no." />
+            <input v-model="filters.search" class="input w-64" placeholder="Search name or participant no." />
         </div>
 
         <div class="card p-0 overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
-                        <th class="table-th">Adm. No.</th>
+                        <th class="table-th">Participant No.</th>
                         <th class="table-th">Name</th>
                         <th class="table-th">Sex</th>
-                        <th class="table-th">Class</th>
-                        <th class="table-th">Guardian</th>
+                        <th class="table-th">Course</th>
+                        <th class="table-th">Next of kin</th>
                         <th class="table-th w-20" />
                     </tr>
                 </thead>
@@ -86,7 +86,7 @@ function remove(s) {
                     <tr v-for="s in students.data" :key="s.id" class="hover:bg-gray-50" :class="{ 'opacity-50': !s.is_active }">
                         <td class="table-td">{{ s.admission_number }}</td>
                         <td class="table-td font-medium">
-                            <Link :href="`/school/students/${s.id}`" class="text-brand-600 hover:underline">{{ s.full_name }}</Link>
+                            <Link :href="`/courses/participants/${s.id}`" class="text-brand-600 hover:underline">{{ s.full_name }}</Link>
                         </td>
                         <td class="table-td">{{ s.gender ?? '—' }}</td>
                         <td class="table-td">{{ s.school_class?.name ?? '—' }}</td>
@@ -100,7 +100,7 @@ function remove(s) {
                         </td>
                     </tr>
                     <tr v-if="!students.data.length">
-                        <td colspan="6" class="table-td text-center text-gray-400 py-8">No students found.</td>
+                        <td colspan="6" class="table-td text-center text-gray-400 py-8">No participants found.</td>
                     </tr>
                 </tbody>
             </table>
@@ -117,10 +117,10 @@ function remove(s) {
 
         <div v-if="showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
             <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-                <h3 class="font-semibold text-gray-900 mb-4">{{ editing ? 'Edit' : 'New' }} Student</h3>
+                <h3 class="font-semibold text-gray-900 mb-4">{{ editing ? 'Edit' : 'New' }} Participant</h3>
                 <form @submit.prevent="submit" class="grid grid-cols-2 gap-3">
                     <div class="col-span-2">
-                        <label class="label">Admission number</label>
+                        <label class="label">Participant number</label>
                         <input v-model="form.admission_number" class="input" required />
                         <p v-if="form.errors.admission_number" class="text-xs text-red-600 mt-1">{{ form.errors.admission_number }}</p>
                     </div>
@@ -145,18 +145,18 @@ function remove(s) {
                         <input v-model="form.date_of_birth" type="date" class="input" />
                     </div>
                     <div class="col-span-2">
-                        <label class="label">Class</label>
+                        <label class="label">Course</label>
                         <select v-model="form.school_class_id" class="input" :required="!isSchoolAdmin">
                             <option value="">— Not placed —</option>
                             <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
                         </select>
                     </div>
                     <div>
-                        <label class="label">Guardian name</label>
+                        <label class="label">Next of kin name</label>
                         <input v-model="form.guardian_name" class="input" />
                     </div>
                     <div>
-                        <label class="label">Guardian phone</label>
+                        <label class="label">Next of kin phone</label>
                         <input v-model="form.guardian_phone" class="input" />
                     </div>
                     <label class="col-span-2 flex items-center gap-2 text-sm text-gray-700">
