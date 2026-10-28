@@ -19,7 +19,7 @@ class UrgentCaseController extends Controller
                 'agent', 'resolvedBy',
                 'sourceTicket.agent', 'createdTicket.agent',
             ])
-            ->orderByRaw("FIELD(status, 'open', 'resolved')")
+            ->orderByRaw("CASE WHEN status = 'open' THEN 0 ELSE 1 END")
             ->orderByDesc('created_at')
             ->paginate(30);
 

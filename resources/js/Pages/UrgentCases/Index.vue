@@ -75,10 +75,20 @@ const editForm = useForm({
     referred_to:               '',
     uptake_confirmed:          false,
     referral_uptake_date:      '',
+    log_note:                  '',
 });
 
 // "Other (Specify):" in a service dropdown opens a text box for the detail.
 const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
+// High / Urgent tickets need a follow-up date and a log note.
+const isHighPriority = (p) => p === 'high' || p === 'urgent';
+
+// High / Urgent tickets land on this board automatically; show which.
+const casePriority  = (uc) => (uc.source_ticket ?? uc.created_ticket)?.priority ?? null;
+const priorityBadge = {
+    low: 'bg-gray-100 text-gray-600', medium: 'bg-blue-100 text-blue-800',
+    high: 'bg-orange-100 text-orange-800', urgent: 'bg-red-100 text-red-800',
+};
 
 function openEdit(uc) {
     const t = uc.source_ticket ?? uc.created_ticket;
@@ -117,6 +127,7 @@ function openEdit(uc) {
     editForm.referred_to               = t.referred_to               ?? '';
     editForm.uptake_confirmed          = !!t.uptake_confirmed;
     editForm.referral_uptake_date      = t.referral_uptake_date      ?? '';
+    editForm.log_note                  = '';
 }
 
 function closeEdit() {
@@ -210,6 +221,7 @@ function fmt(d) {
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
                         <th class="table-th">Subject</th>
+                        <th class="table-th">Priority</th>
                         <th class="table-th">Contact</th>
                         <th class="table-th">Logged By</th>
                         <th class="table-th">Time</th>
@@ -220,7 +232,7 @@ function fmt(d) {
                 </thead>
                 <tbody class="divide-y divide-gray-50">
                     <tr v-if="!cases.data.length">
-                        <td colspan="7" class="py-12 text-center text-sm text-gray-400">
+                        <td colspan="8" class="py-12 text-center text-sm text-gray-400">
                             No urgent cases.
                         </td>
                     </tr>
@@ -231,6 +243,10 @@ function fmt(d) {
                             <span v-if="uc.status === 'open'" class="inline-block h-2 w-2 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>
                             {{ uc.subject }}
                             <p v-if="uc.description" class="text-xs text-gray-400 truncate mt-0.5">{{ uc.description }}</p>
+                        </td>
+                        <td class="table-td">
+                            <span v-if="casePriority(uc)" :class="['badge capitalize', priorityBadge[casePriority(uc)] ?? 'bg-gray-100 text-gray-600']">{{ casePriority(uc) }}</span>
+                            <span v-else class="text-gray-300">—</span>
                         </td>
                         <td class="table-td text-sm">
                             <span v-if="uc.contact_number" class="flex items-center gap-1 text-gray-600">
@@ -364,8 +380,14 @@ function fmt(d) {
                             </div>
                         </div>
                         <div>
-                            <label class="label">Follow-up Date</label>
+                            <label class="label">Follow-up Date <span v-if="isHighPriority(editForm.priority)" class="text-red-500">*</span></label>
                             <input v-model="editForm.follow_up_date" type="date" class="input w-48" />
+                            <p v-if="editForm.errors.follow_up_date" class="mt-1 text-xs text-red-600">{{ editForm.errors.follow_up_date }}</p>
+                        </div>
+                        <div v-if="isHighPriority(editForm.priority) && !isHighPriority(editTicket?.priority)">
+                            <label class="label">Log Note <span class="text-gray-400 font-normal">— required when raising to High / Urgent if the case has no log notes yet</span></label>
+                            <textarea v-model="editForm.log_note" rows="3" class="input resize-none" placeholder="Why this case is now High / Urgent and what happens next…" />
+                            <p v-if="editForm.errors.log_note" class="mt-1 text-xs text-red-600">{{ editForm.errors.log_note }}</p>
                         </div>
                     </div>
                 </div>

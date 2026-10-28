@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
@@ -75,10 +75,15 @@ const editForm = useForm({
     referral_uptake_date:      props.ticket.referral_uptake_date ?? '',
     classification:            props.ticket.classification ?? {},
     psychosocial_type:         props.ticket.psychosocial_type ?? '',
+    follow_up_date:            props.ticket.follow_up_date ? String(props.ticket.follow_up_date).slice(0, 10) : '',
+    log_note:                  '',
 });
 
 // "Other (Specify):" in a service dropdown opens a text box for the detail.
 const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
+// High / Urgent tickets need a follow-up date and a log note.
+const isHighPriority = (p) => p === 'high' || p === 'urgent';
+const raisingPriority = computed(() => isHighPriority(editForm.priority) && !isHighPriority(props.ticket.priority));
 
 // e.g. "Other (Specify): Legal aid" when a detail was given.
 function serviceWithDetail(field) {
@@ -88,7 +93,7 @@ function serviceWithDetail(field) {
 
 function save() {
     editForm.put(`/tickets/${props.ticket.id}`, {
-        onSuccess: () => { editing.value = false; },
+        onSuccess: () => { editing.value = false; editForm.log_note = ''; },
     });
 }
 
@@ -163,7 +168,7 @@ function label(val) {
 
                     <div class="card">
                         <div class="flex items-center justify-between mb-3">
-                            <h3 class="font-semibold text-gray-800 text-sm">Case Notes</h3>
+                            <h3 class="font-semibold text-gray-800 text-sm">Log Notes <span class="font-normal text-gray-400">— who has worked on this case</span></h3>
                             <span v-if="ticket.status === 'ongoing'" class="badge bg-purple-100 text-purple-800">
                                 Ongoing — multiple counsellors can log updates here
                             </span>
@@ -197,7 +202,7 @@ function label(val) {
                                 </div>
                             </div>
                         </div>
-                        <p v-else class="text-sm text-gray-400 italic">No case notes yet.</p>
+                        <p v-else class="text-sm text-gray-400 italic">No log notes yet.</p>
                     </div>
 
                     <div class="card">
@@ -309,8 +314,18 @@ function label(val) {
                         </div>
                     </div>
                     <div>
+                        <label class="label">Follow-up Date <span v-if="isHighPriority(editForm.priority)" class="text-red-500">*</span></label>
+                        <input v-model="editForm.follow_up_date" type="date" class="input w-48" />
+                        <p v-if="editForm.errors.follow_up_date" class="mt-1 text-xs text-red-600">{{ editForm.errors.follow_up_date }}</p>
+                    </div>
+                    <div>
                         <label class="label">Counsellor's Notes</label>
                         <textarea v-model="editForm.description" rows="4" class="input resize-none" />
+                    </div>
+                    <div v-if="raisingPriority">
+                        <label class="label">Log Note <span v-if="!ticket.notes?.length" class="text-red-500">*</span> <span class="text-gray-400 font-normal">— saved under your name in the Log Notes</span></label>
+                        <textarea v-model="editForm.log_note" rows="3" class="input resize-none" placeholder="Why this case is now High / Urgent and what happens next…" />
+                        <p v-if="editForm.errors.log_note" class="mt-1 text-xs text-red-600">{{ editForm.errors.log_note }}</p>
                     </div>
                 </div>
 

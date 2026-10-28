@@ -54,10 +54,13 @@ const form = useForm({
     uptake_confirmed:         false,
     classification:           {},
     psychosocial_type:        '',
+    log_note:                 '',
 });
 
 // "Other (Specify):" in a service dropdown opens a text box for the detail.
 const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
+// High / Urgent tickets need a follow-up date and a log note.
+const isHighPriority = (p) => p === 'high' || p === 'urgent';
 
 form.subject = props.call.client
     ? `Call with ${props.call.client.name} — follow-up required`
@@ -330,8 +333,9 @@ const provinces = PROVINCES;
                             </div>
                         </div>
                         <div>
-                            <label class="label">Follow-up Date</label>
+                            <label class="label">Follow-up Date <span v-if="isHighPriority(form.priority)" class="text-red-500">*</span></label>
                             <input v-model="form.follow_up_date" type="date" class="input w-48" />
+                            <p v-if="form.errors.follow_up_date" class="mt-1 text-xs text-red-600">{{ form.errors.follow_up_date }}</p>
                         </div>
                     </div>
                 </div>
@@ -590,6 +594,11 @@ const provinces = PROVINCES;
                             {{ aiMessage }}
                         </p>
                         <textarea v-model="form.description" class="input h-24 resize-none" placeholder="What was discussed on this call…" />
+                    </div>
+                    <div v-if="isHighPriority(form.priority)" class="mt-3">
+                        <label class="label">Log Note <span class="text-red-500">*</span> <span class="text-gray-400 font-normal">— required for High / Urgent; saved under your name in the ticket's Log Notes</span></label>
+                        <textarea v-model="form.log_note" class="input h-20 resize-none" placeholder="What has been done so far and what happens next…" />
+                        <p v-if="form.errors.log_note" class="mt-1 text-xs text-red-600">{{ form.errors.log_note }}</p>
                     </div>
                 </div>
             </form>

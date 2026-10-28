@@ -376,6 +376,31 @@ class TicketController extends Controller
         return $data;
     }
 
+    // High / Urgent tickets must carry a follow-up date and a log note (saved
+    // as the first entry in the ticket's Log Notes, with who wrote it). On edit
+    // the note is only demanded when the priority is being raised and the
+    // ticket has no log notes yet. Returns the trimmed log note ('' if none).
+    private function requireHighPriorityFollowUp(Request $request, array $data, ?Ticket $ticket): string
+    {
+        $request->validate(['log_note' => 'nullable|string|max:5000']);
+        $logNote  = trim((string) $request->input('log_note', ''));
+        $priority = $data['priority'] ?? $ticket?->priority ?? 'low';
+        if (! in_array($priority, ['high', 'urgent'], true)) return $logNote;
+
+        $errors   = [];
+        $followUp = array_key_exists('follow_up_date', $data) ? $data['follow_up_date'] : $ticket?->follow_up_date;
+        if (empty($followUp)) {
+            $errors['follow_up_date'] = 'A follow-up date is required for High and Urgent tickets.';
+        }
+        $raising = ! $ticket || ! in_array($ticket->priority, ['high', 'urgent'], true);
+        if ($logNote === '' && $raising && (! $ticket || ! $ticket->notes()->exists())) {
+            $errors['log_note'] = 'A log note is required for High and Urgent tickets.';
+        }
+        if ($errors) throw ValidationException::withMessages($errors);
+
+        return $logNote;
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -394,6 +419,7 @@ class TicketController extends Controller
             'priority.in' => 'Choose a priority: Low, High or Urgent.',
         ]);
         $data = $this->applyOtherSpecify($data);
+        $logNote = $this->requireHighPriorityFollowUp($request, $data, null);
 
         // Coerce boolean fields so null from an unselected dropdown becomes false
         $data['immediate_action_required'] = !empty($data['immediate_action_required']);
@@ -407,16 +433,13 @@ class TicketController extends Controller
             'status'   => $data['status'] ?? 'open',
         ]);
 
+        if ($logNote !== '') {
+            $ticket->notes()->create(['user_id' => $request->user()->id, 'body' => $logNote]);
+        }
+
         // Auto-create an urgent case so all agents can follow up
-        if (!empty($data['immediate_action_required'])) {
-            UrgentCase::create([
-                'agent_id'        => $request->user()->id,
-                'subject'         => $ticket->subject,
-                'contact_number'  => $ticket->contact_number ?? null,
-                'description'     => $ticket->description ?? null,
-                'status'          => 'open',
-                'source_ticket_id' => $ticket->id,
-            ]);
+        if (!empty($data['immediate_action_required']) || Ticket::isHighPriority($ticket->priority)) {
+            $ticket->openUrgentCase($request->user()->id);
         }
 
         return redirect()->route('tickets.index')->with('success', 'Ticket created.');
@@ -434,12 +457,21 @@ class TicketController extends Controller
             ...$this->crmRules,
         ]);
         $data = $this->applyOtherSpecify($data);
+        $logNote = $this->requireHighPriorityFollowUp($request, $data, $ticket);
+        if ($logNote !== '') {
+            $ticket->notes()->create(['user_id' => $request->user()->id, 'body' => $logNote]);
+        }
 
         if (isset($data['status']) && $data['status'] === 'resolved' && !$ticket->resolved_at) {
             $data['resolved_at'] = now();
         }
 
         $ticket->update($data);
+
+        // Raised to High / Urgent → it belongs on the Urgent Cases board too.
+        if (Ticket::isHighPriority($ticket->priority)) {
+            $ticket->openUrgentCase($request->user()->id);
+        }
 
         return back()->with('success', 'Ticket updated.');
     }

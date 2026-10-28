@@ -122,13 +122,75 @@ class TicketFollowUpTest extends TestCase
         $post([])->assertSessionHasNoErrors();
         $this->assertSame('low', Ticket::where('subject', 'New case')->latest('id')->value('priority')); // default is now Low
 
-        $post(['priority' => 'urgent'])->assertSessionHasNoErrors();
+        $post(['priority' => 'urgent', 'follow_up_date' => '2026-10-30', 'log_note' => 'Called back'])->assertSessionHasNoErrors();
         $this->assertSame('urgent', Ticket::where('subject', 'New case')->latest('id')->value('priority'));
 
         // Existing Medium tickets can still be edited.
         $this->actingAs($this->agentA)->from("/tickets/{$this->t['due']}")
             ->put("/tickets/{$this->t['due']}", ['priority' => 'medium', 'subject' => 'Case'])
             ->assertSessionHasNoErrors();
+    }
+
+    public function test_high_and_urgent_tickets_need_a_follow_up_date_and_log_note(): void
+    {
+        $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
+            ->post('/tickets', $data + ['subject' => 'Serious case', 'contact_number' => '0771000000']);
+
+        $post(['priority' => 'high'])->assertSessionHasErrors([
+            'follow_up_date' => 'A follow-up date is required for High and Urgent tickets.',
+            'log_note'       => 'A log note is required for High and Urgent tickets.',
+        ]);
+        $this->assertFalse(Ticket::where('subject', 'Serious case')->exists());
+
+        $post(['priority' => 'high', 'follow_up_date' => '2026-10-25', 'log_note' => '  Referred to clinic, will call Monday '])
+            ->assertSessionHasNoErrors();
+        $ticket = Ticket::with('notes')->where('subject', 'Serious case')->firstOrFail();
+        $this->assertCount(1, $ticket->notes);
+        $this->assertSame('Referred to clinic, will call Monday', $ticket->notes[0]->body);
+        $this->assertSame($this->agentA->id, $ticket->notes[0]->user_id);
+
+        // Low tickets need neither.
+        $post(['priority' => 'low', 'subject' => 'Minor case'])->assertSessionHasNoErrors();
+
+        // Raising an existing ticket with no notes and no follow-up date to Urgent needs both.
+        $id  = $this->ticket($this->agentA->id, ['priority' => 'low']);
+        $put = fn (array $data) => $this->actingAs($this->agentA)->from("/tickets/{$id}")->put("/tickets/{$id}", $data + ['subject' => 'Case']);
+        $put(['priority' => 'urgent'])->assertSessionHasErrors(['follow_up_date', 'log_note']);
+        $put(['priority' => 'urgent', 'follow_up_date' => '2026-10-26', 'log_note' => 'Escalated'])->assertSessionHasNoErrors();
+        $this->assertSame('urgent', Ticket::find($id)->priority);
+        $this->assertSame('Escalated', Ticket::find($id)->notes()->value('body'));
+
+        // Once it is Urgent with a date, later edits don't ask for another note.
+        $put(['priority' => 'urgent', 'description' => 'Updated'])->assertSessionHasNoErrors();
+    }
+
+    public function test_high_and_urgent_tickets_go_on_the_urgent_cases_board(): void
+    {
+        $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
+            ->post('/tickets', $data + ['contact_number' => '0771000000']);
+
+        $post(['subject' => 'High one', 'priority' => 'high', 'follow_up_date' => '2026-10-25', 'log_note' => 'x']);
+        $post(['subject' => 'Low one', 'priority' => 'low']);
+        $this->assertSame('open', \App\Models\UrgentCase::where('subject', 'High one')->value('status'));
+        $this->assertFalse(\App\Models\UrgentCase::where('subject', 'Low one')->exists());
+
+        // Raising a ticket adds it once; saving again doesn't duplicate it.
+        $id = Ticket::where('subject', 'Low one')->value('id');
+        foreach ([1, 2] as $_) {
+            $this->actingAs($this->agentA)->put("/tickets/{$id}", ['subject' => 'Low one', 'priority' => 'urgent', 'follow_up_date' => '2026-10-25', 'log_note' => 'Escalated']);
+        }
+        $this->assertSame(1, \App\Models\UrgentCase::where('source_ticket_id', $id)->count());
+
+        // Existing tickets are picked up by the sync command (resolved ones go on as resolved).
+        $old  = $this->ticket($this->agentA->id, ['subject' => 'Old high', 'priority' => 'high']);
+        $done = $this->ticket($this->agentA->id, ['subject' => 'Old done', 'priority' => 'urgent', 'status' => 'resolved']);
+        $this->artisan('tickets:sync-urgent-cases')->assertSuccessful();
+        $this->assertSame('open', \App\Models\UrgentCase::where('source_ticket_id', $old)->value('status'));
+        $this->assertSame('resolved', \App\Models\UrgentCase::where('source_ticket_id', $done)->value('status'));
+        $this->artisan('tickets:sync-urgent-cases')->expectsOutputToContain('Nothing to add')->assertSuccessful();
+
+        $this->withoutVite()->actingAs($this->manager)->get('/urgent-cases')->assertOk()
+            ->assertInertia(fn ($page) => $page->has('cases.data', 4));
     }
 
     public function test_other_service_needs_a_specified_detail(): void

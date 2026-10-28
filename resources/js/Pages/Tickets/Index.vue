@@ -470,10 +470,13 @@ const addForm = useForm({
     referral_uptake_date:     '',
     classification:           {},
     psychosocial_type:        '',
+    log_note:                 '',
 });
 
 // "Other (Specify):" in a service dropdown opens a text box for the detail.
 const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
+// High / Urgent tickets need a follow-up date and a log note.
+const isHighPriority = (p) => p === 'high' || p === 'urgent';
 
 function store() {
     addForm.post('/tickets', { onSuccess: () => { showAdd.value = false; addForm.reset(); } });
@@ -1010,8 +1013,9 @@ const statusColor = {
                                 </div>
                             </div>
                             <div>
-                                <label class="label">Follow-up Date</label>
+                                <label class="label">Follow-up Date <span v-if="isHighPriority(addForm.priority)" class="text-red-500">*</span></label>
                                 <input v-model="addForm.follow_up_date" type="date" class="input w-48" />
+                                <p v-if="addForm.errors.follow_up_date" class="mt-1 text-xs text-red-600">{{ addForm.errors.follow_up_date }}</p>
                             </div>
                         </div>
                     </div>
@@ -1253,6 +1257,11 @@ const statusColor = {
                                 </button>
                             </div>
                             <textarea v-model="addForm.description" class="input h-24 resize-none" placeholder="Notes from the session…" />
+                        </div>
+                        <div v-if="isHighPriority(addForm.priority)" class="mt-3">
+                            <label class="label">Log Note <span class="text-red-500">*</span> <span class="text-gray-400 font-normal">— required for High / Urgent; saved under your name in the ticket's Log Notes</span></label>
+                            <textarea v-model="addForm.log_note" class="input h-20 resize-none" placeholder="What has been done so far and what happens next…" />
+                            <p v-if="addForm.errors.log_note" class="mt-1 text-xs text-red-600">{{ addForm.errors.log_note }}</p>
                         </div>
                     </div>
                 </form>

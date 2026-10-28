@@ -29,6 +29,31 @@ class Ticket extends Model
         return $value !== null && str_starts_with(strtolower(trim($value)), 'other');
     }
 
+    public static function isHighPriority(?string $priority): bool
+    {
+        return in_array($priority, ['high', 'urgent'], true);
+    }
+
+    // Puts the ticket on the Urgent Cases board (once): used for "Immediate
+    // action required" and for High / Urgent priority tickets.
+    public function openUrgentCase(?int $agentId = null): UrgentCase
+    {
+        $existing = UrgentCase::where('source_ticket_id', $this->id)->orWhere('created_ticket_id', $this->id)->first();
+        if ($existing) return $existing;
+
+        $resolved = in_array($this->status, ['resolved', 'closed'], true);
+
+        return UrgentCase::create([
+            'agent_id'         => $agentId ?? $this->agent_id,
+            'subject'          => $this->subject,
+            'contact_number'   => $this->contact_number,
+            'description'      => $this->description,
+            'status'           => $resolved ? 'resolved' : 'open',
+            'resolved_at'      => $resolved ? ($this->resolved_at ?? $this->updated_at) : null,
+            'source_ticket_id' => $this->id,
+        ]);
+    }
+
     // The service as it should read in exports, e.g. "Other (Specify): Legal aid".
     public function serviceWithDetail(string $field): string
     {
