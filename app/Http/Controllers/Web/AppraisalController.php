@@ -189,6 +189,11 @@ class AppraisalController extends Controller
         $user = $request->user();
         $this->authorize('submit', $appraisal);
 
+        // Don't let an empty self-assessment reach the supervisor.
+        if (! array_filter($appraisal->employee_responses ?? [], fn ($v) => trim((string) $v) !== '')) {
+            return back()->with('error', 'Fill in and save your self-assessment before submitting it.');
+        }
+
         $this->workflow->submit($appraisal, $user);
 
         return back()->with('success', 'Appraisal submitted to your supervisor.');

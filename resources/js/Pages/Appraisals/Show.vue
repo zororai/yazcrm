@@ -41,7 +41,12 @@ function saveSelf() {
 
 function submitAppraisal() {
     if (!confirm('Submit your self-assessment to your supervisor? You will not be able to edit it afterwards.')) return;
-    router.post(`/appraisals/${props.appraisal.id}/submit`);
+    // Save what's on screen first — submitting on its own only changes the
+    // status, so unsaved answers used to be lost.
+    selfForm.put(`/appraisals/${props.appraisal.id}`, {
+        preserveScroll: true,
+        onSuccess: () => router.post(`/appraisals/${props.appraisal.id}/submit`),
+    });
 }
 
 function reopenAppraisal() {

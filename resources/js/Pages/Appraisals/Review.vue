@@ -6,6 +6,20 @@ import { PrinterIcon, ArrowUturnLeftIcon, TrashIcon, DocumentTextIcon } from '@h
 
 const props = defineProps({ appraisal: Object, can: Object, activityLogs: { type: Array, default: () => [] }, tasks: { type: Array, default: () => [] } });
 
+// What the employee submitted — shown read-only above the review form.
+const EMPLOYEE_FIELDS = [
+    { key: 'job_description',  label: '1. Job Descriptions/Responsibilities' },
+    { key: 'past_activities',  label: '2a. Primary work activities undertaken since the last review period' },
+    { key: 'past_strengths',   label: '2b. Strengths demonstrated in completing the above work activities' },
+    { key: 'past_improve',     label: '2c. How can you improve your work performance?' },
+    { key: 'future_help_org',  label: '3a. What can you do that would help the organization operate more effectively?' },
+    { key: 'future_team_help', label: '3b. What can the rest of the team do that would help everyone do a better job?' },
+    { key: 'future_goals',     label: '3c. What are your goals for next year, and how do you see yourself growing and developing professionally?' },
+    { key: 'future_plans',     label: '3d. Specific plans/actions until next review period' },
+];
+
+function fmt(v) { return v ? new Date(v).toLocaleDateString() : '—'; }
+
 const SUPERVISOR_RATED_FIELDS = [
     { key: 'key_strengths',          label: '1a. Key Strengths and Accomplishments' },
     { key: 'improvement_areas',      label: '1b. Areas of Improvement / Development Needs' },
@@ -61,7 +75,11 @@ function saveReview() {
 
 function completeAppraisal() {
     if (!confirm('Mark this appraisal as completed? The review section will be locked.')) return;
-    router.post(`/appraisals/${props.appraisal.id}/complete`);
+    // Save the review on screen first, then lock it.
+    reviewForm.put(`/appraisals/${props.appraisal.id}/review`, {
+        preserveScroll: true,
+        onSuccess: () => router.post(`/appraisals/${props.appraisal.id}/complete`),
+    });
 }
 
 function reopenAppraisal() {
@@ -101,6 +119,33 @@ function printDoc() {
         </template>
 
         <div class="printable space-y-6 max-w-4xl">
+            <details v-if="appraisal.status !== 'draft'" open class="card">
+                <summary class="cursor-pointer flex items-center justify-between gap-2">
+                    <h2 class="text-lg font-semibold text-gray-900 inline">What {{ appraisal.user?.name ?? 'the employee' }} submitted</h2>
+                    <span class="text-xs text-gray-400">
+                        {{ appraisal.submitted_at ? `Submitted ${new Date(appraisal.submitted_at).toLocaleString()}` : '' }}
+                    </span>
+                </summary>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pb-4 border-b border-gray-100 text-sm">
+                    <div><label class="label">Job Title</label><p class="text-gray-900">{{ appraisal.job_title || '—' }}</p></div>
+                    <div><label class="label">Department</label><p class="text-gray-900">{{ appraisal.department || '—' }}</p></div>
+                    <div><label class="label">Employee Number</label><p class="text-gray-900">{{ appraisal.employee_number || '—' }}</p></div>
+                    <div><label class="label">Start Date</label><p class="text-gray-900">{{ fmt(appraisal.start_date) }}</p></div>
+                </div>
+
+                <div class="space-y-4 mt-4">
+                    <div v-for="f in EMPLOYEE_FIELDS" :key="f.key">
+                        <label class="label">{{ f.label }}</label>
+                        <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 rounded-lg px-3 py-2">{{ appraisal.employee_responses?.[f.key] || '—' }}</p>
+                    </div>
+                    <div>
+                        <label class="label">Overall Comments</label>
+                        <p class="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 rounded-lg px-3 py-2">{{ appraisal.employee_responses?.overall_comments || '—' }}</p>
+                    </div>
+                </div>
+            </details>
+
             <div class="card">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-gray-900">Supervisor / Reviewer Evaluation</h2>
