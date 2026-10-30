@@ -38,3 +38,16 @@
         @apply px-4 py-3 text-sm text-gray-700;
     }
 }
+
+/* Printing: the app shell scrolls inside <main>, and browsers only print the
+   visible part of a scrolling box — so long pages (appraisal documents,
+   requisitions, reports) were cut off. Let everything flow onto paper. */
+@media print {
+    html, body, #app, #app > div, main {
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+    #app > div, #app > div > div.flex-1 { display: block !important; }
+    main { padding: 0 !important; }
+}

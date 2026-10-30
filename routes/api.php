@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\BeneficiaryAttendanceController;
 use App\Http\Controllers\Api\BeneficiaryProfileController;
+use App\Http\Controllers\Api\DataCollectionController;
 use App\Http\Controllers\Api\DataApiController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CallbackQueueController;
@@ -121,6 +122,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('beneficiary-profiles',         [BeneficiaryProfileController::class, 'index']);
     Route::get('beneficiary-profiles/search',  [BeneficiaryProfileController::class, 'search']);
     Route::post('beneficiary-profiles/sync',   [BeneficiaryProfileController::class, 'sync']);
+
+    // Kobo-style form filling from the beneficiary app
+    Route::get('data-collection/my-forms',           [DataCollectionController::class, 'myForms']);
+    Route::post('data-collection/submissions/sync',  [DataCollectionController::class, 'sync']);
 
     // Analytics
     Route::get('analytics/overview',          [AnalyticsController::class, 'overview']);

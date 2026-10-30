@@ -342,7 +342,9 @@ const otherUsers = computed(() =>
     aside, header, .no-print { display: none !important; }
     main { padding: 0 !important; background: #fff !important; }
     .printable { max-width: none !important; }
-    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; }
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    /* Long sections may run over pages; keep each question with its answer. */
+    .card > div > div, .card > div { break-inside: avoid; }
     textarea, input, select { border: none !important; background: transparent !important; color: #111 !important; }
 }
 </style>
