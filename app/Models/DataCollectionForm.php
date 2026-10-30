@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+// status: draft (never deployed) | deployed | archived (no longer collected).
+// current_version_id points at the deployed version the app downloads.
 class DataCollectionForm extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'project_id', 'code', 'name', 'description', 'status', 'current_version_id', 'created_by',
@@ -43,5 +47,15 @@ class DataCollectionForm extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(DataCollectionSubmission::class, 'form_id');
+    }
+
+    public function mapping(): HasOne
+    {
+        return $this->hasOne(DataCollectionFormMapping::class, 'form_id');
+    }
+
+    public function isDeployed(): bool
+    {
+        return $this->status === 'deployed' && $this->current_version_id !== null;
     }
 }

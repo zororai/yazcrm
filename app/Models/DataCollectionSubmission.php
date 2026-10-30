@@ -2,30 +2,38 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+// One filled-in form from the app. submitted_by is always the authenticated
+// user who sent it, never a value from the payload. Deleting is soft: this
+// is data about young people and the trail must stay complete.
 class DataCollectionSubmission extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    public const STATUSES = ['pending', 'approved', 'not_approved', 'on_hold'];
 
     protected $fillable = [
-        'submission_uid', 'project_id', 'form_id', 'form_version_id', 'assignment_id',
-        'submitted_by', 'status', 'answers', 'completion_percentage', 'started_at', 'submitted_at',
+        'client_uuid', 'form_id', 'form_version_id', 'submitted_by', 'data',
+        'started_at', 'collected_at', 'received_at', 'device_id', 'app_version', 'lat', 'lng',
+        'completion', 'status', 'status_note', 'status_by', 'status_at',
+        'crm_record_type', 'crm_record_id', 'processed_at',
     ];
 
     protected $casts = [
-        'answers'      => 'array',
+        'data'         => 'array',
         'started_at'   => 'datetime',
-        'submitted_at' => 'datetime',
+        'collected_at' => 'datetime',
+        'received_at'  => 'datetime',
+        'status_at'    => 'datetime',
+        'processed_at' => 'datetime',
+        'lat'          => 'float',
+        'lng'          => 'float',
     ];
-
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(DataCollectionProject::class, 'project_id');
-    }
 
     public function form(): BelongsTo
     {
@@ -37,18 +45,28 @@ class DataCollectionSubmission extends Model
         return $this->belongsTo(DataCollectionFormVersion::class, 'form_version_id');
     }
 
-    public function assignment(): BelongsTo
-    {
-        return $this->belongsTo(DataCollectionFormAssignment::class, 'assignment_id');
-    }
-
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
-    public function reviews(): HasMany
+    public function statusBy(): BelongsTo
     {
-        return $this->hasMany(DataCollectionSubmissionReview::class, 'submission_id')->latest('created_at');
+        return $this->belongsTo(User::class, 'status_by');
+    }
+
+    public function media(): HasMany
+    {
+        return $this->hasMany(DataCollectionSubmissionMedia::class, 'submission_id');
+    }
+
+    public function audits(): HasMany
+    {
+        return $this->hasMany(DataCollectionSubmissionAudit::class, 'submission_id')->latest('id');
+    }
+
+    public function values(): HasMany
+    {
+        return $this->hasMany(DataCollectionSubmissionValue::class, 'submission_id');
     }
 }

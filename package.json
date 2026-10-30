@@ -13,6 +13,8 @@
         "chart.js": "^4.4",
         "jssip": "^3.13.8",
         "laravel-echo": "^1.16",
+        "leaflet": "^1.9.4",
+        "leaflet.markercluster": "^1.5.3",
         "pusher-js": "^8.4",
         "qrcode": "^1.5.4",
         "vue": "^3.4",

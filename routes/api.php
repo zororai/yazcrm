@@ -3,8 +3,8 @@
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Api\BeneficiaryAttendanceController;
 use App\Http\Controllers\Api\BeneficiaryProfileController;
-use App\Http\Controllers\Api\DataCollectionController;
 use App\Http\Controllers\Api\DataApiController;
+use App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\CallbackQueueController;
 use App\Http\Controllers\CallController;
@@ -35,6 +35,19 @@ Route::middleware('data.api')->prefix('data')->group(function () {
     Route::get('beneficiary-profiles.csv',       [DataApiController::class, 'beneficiaryProfilesCsv']);
     Route::get('beneficiary-attendances.csv',    [DataApiController::class, 'beneficiaryAttendancesCsv']);
 });
+
+// Offline data collection from the beneficiary app. Same Sanctum token as
+// every other API route; the prefix lives in config/data_collection.php.
+// 401s answer {"code":"token_expired"|"unauthenticated"} (bootstrap/app.php).
+Route::prefix(config('data_collection.api_prefix'))
+    ->middleware(['auth:sanctum', 'throttle:data-collection'])
+    ->group(function () {
+        Route::get('forms',                                [V1\DataCollectionFormController::class, 'index']);
+        Route::get('forms/{id}/schema',                    [V1\DataCollectionFormController::class, 'schema'])->whereNumber('id');
+        Route::post('submissions/batch',                   [V1\DataCollectionSubmissionController::class, 'batch']);
+        Route::post('submissions/{clientUuid}/media',      [V1\DataCollectionSubmissionController::class, 'media']);
+        Route::get('sync/status',                          [V1\DataCollectionSyncController::class, 'status']);
+    });
 
 // ─── Protected (all authenticated users) ────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -122,10 +135,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('beneficiary-profiles',         [BeneficiaryProfileController::class, 'index']);
     Route::get('beneficiary-profiles/search',  [BeneficiaryProfileController::class, 'search']);
     Route::post('beneficiary-profiles/sync',   [BeneficiaryProfileController::class, 'sync']);
-
-    // Kobo-style form filling from the beneficiary app
-    Route::get('data-collection/my-forms',           [DataCollectionController::class, 'myForms']);
-    Route::post('data-collection/submissions/sync',  [DataCollectionController::class, 'sync']);
 
     // Analytics
     Route::get('analytics/overview',          [AnalyticsController::class, 'overview']);

@@ -8,23 +8,23 @@ use App\Models\BeneficiaryProfile;
 use App\Models\DataCollectionForm;
 use App\Models\DataCollectionProject;
 use App\Models\DataCollectionSubmission;
-use App\Support\DataCollection\QuestionType;
+use App\Services\DataCollection\FormFieldCatalog;
+use App\Services\DataCollection\SubmissionExporter;
+use App\Services\DataCollection\SubmissionFilters;
+use App\Support\DataCollection\FormAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-// Kobo-style read-only data API for analysts: discover projects/forms, read
-// a form's question definitions, and pull its submissions as flat rows —
-// JSON (paged) or CSV (whole dataset, for Power BI / Excel / R / Stata).
-// Every row has the same columns: _-prefixed metadata, then one column per
-// question across all versions of the form.
+// Kobo-style read-only data feed for analysts (Power BI, Excel, R): discover
+// projects/forms, read a form's data dictionary, and pull its submissions as
+// flat rows: OData-style JSON pages ($top/$skip, @odata.nextLink) or one CSV.
+// Personal data (PII questions) is masked unless the account may see it.
+// Filters: from, to (collected date), status, enumerator, as in the CRM.
 #[OA\Tag(name: 'Data API', description: 'Read-only analyst access (Power BI, Excel, R). Basic auth with CRM email/password, or Bearer token.')]
 class DataApiController extends Controller
 {
-    private const DEFAULT_STATUSES = ['submitted', 'under_review', 'approved', 'rejected', 'correction_required'];
-
     #[OA\Get(
         path: '/api/data/forms',
         tags: ['Data API'],
@@ -34,8 +34,8 @@ class DataApiController extends Controller
     )]
     public function forms(Request $request): JsonResponse
     {
-        $forms = DataCollectionForm::with('project:id,code,name')
-            ->withCount(['submissions' => fn ($q) => $q->whereIn('status', self::DEFAULT_STATUSES)])
+        $forms = DataCollectionForm::with(['project:id,code,name', 'currentVersion:id,version_number'])
+            ->withCount('submissions')
             ->orderBy('project_id')
             ->orderBy('name')
             ->get()
@@ -44,6 +44,7 @@ class DataApiController extends Controller
                 'code'        => $f->code,
                 'name'        => $f->name,
                 'status'      => $f->status,
+                'version'     => $f->currentVersion?->version_number,
                 'project'     => $f->project?->only('id', 'code', 'name'),
                 'submissions' => $f->submissions_count,
                 'urls'        => [
@@ -81,76 +82,104 @@ class DataApiController extends Controller
     #[OA\Get(
         path: '/api/data/forms/{form}',
         tags: ['Data API'],
-        summary: 'Form definition: every question (across all versions) with its column name, type and options',
+        summary: 'Data dictionary: every question across all versions, with its column name, type and choices',
         security: [['sanctum' => []], ['basic' => []]],
         parameters: [new OA\Parameter(name: 'form', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
         responses: [new OA\Response(response: 200, description: 'Questions / data dictionary')],
     )]
     public function form(DataCollectionForm $form): JsonResponse
     {
+        $catalog = FormFieldCatalog::for($form);
+
         return response()->json([
             'id'        => $form->id,
             'code'      => $form->code,
             'name'      => $form->name,
             'project'   => $form->project?->only('id', 'code', 'name'),
-            'versions'  => $form->versions()->get(['id', 'version_number', 'version_label', 'status', 'published_at']),
-            'meta'      => ['_id', '_uid', '_status', '_version', '_submitted_by', '_started_at', '_submitted_at', '_completion'],
-            'questions' => $this->questions($form)->values(),
+            'versions'  => $form->versions()->get(['id', 'version_number', 'version_label', 'status', 'deployed_at']),
+            'meta'      => ['_id', '_uuid', '_status', '_version', '_submitted_by', '_collected_at', '_received_at', '_lat', '_lng', '_completion'],
+            'questions' => array_values(array_map(fn ($f) => [
+                'column'  => $f['path'],
+                'label'   => $f['label'],
+                'type'    => $f['type'],
+                'repeat'  => $f['repeat'],
+                'pii'     => $f['pii'],
+                'choices' => $f['choices'],
+            ], $catalog->fields)),
+            'repeats'   => array_values($catalog->repeats),
         ]);
     }
 
     #[OA\Get(
         path: '/api/data/forms/{form}/submissions',
         tags: ['Data API'],
-        summary: 'Submissions as flat JSON rows (paged)',
+        summary: 'Submissions as OData-style JSON pages',
+        description: 'Returns {"@odata.context", "@odata.count", "value": [rows], "@odata.nextLink"}. Rows: _-prefixed metadata, then one key per top-level question; repeats are arrays of objects.',
         security: [['sanctum' => []], ['basic' => []]],
         parameters: [
             new OA\Parameter(name: 'form', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
-            new OA\Parameter(name: 'status', in: 'query', description: 'Comma list. Default: everything except draft and cancelled', schema: new OA\Schema(type: 'string', example: 'approved')),
-            new OA\Parameter(name: 'submitted_after', in: 'query', schema: new OA\Schema(type: 'string', format: 'date')),
-            new OA\Parameter(name: 'submitted_before', in: 'query', schema: new OA\Schema(type: 'string', format: 'date')),
-            new OA\Parameter(name: 'headers', in: 'query', description: 'Column names: "label" (default) or "id"', schema: new OA\Schema(type: 'string', enum: ['label', 'id'])),
+            new OA\Parameter(name: '$top', in: 'query', schema: new OA\Schema(type: 'integer', default: 500, maximum: 5000)),
+            new OA\Parameter(name: '$skip', in: 'query', schema: new OA\Schema(type: 'integer', default: 0)),
+            new OA\Parameter(name: 'from', in: 'query', description: 'Collected on or after (YYYY-MM-DD)', schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'to', in: 'query', description: 'Collected on or before (YYYY-MM-DD)', schema: new OA\Schema(type: 'string', format: 'date')),
+            new OA\Parameter(name: 'status', in: 'query', schema: new OA\Schema(type: 'string', enum: ['pending', 'approved', 'not_approved', 'on_hold'])),
             new OA\Parameter(name: 'values', in: 'query', description: 'Choice answers as "label" (default) or raw "value"', schema: new OA\Schema(type: 'string', enum: ['label', 'value'])),
-            new OA\Parameter(name: 'per_page', in: 'query', schema: new OA\Schema(type: 'integer', default: 500, maximum: 5000)),
         ],
-        responses: [new OA\Response(response: 200, description: 'Paged rows: { count, next, previous, results: [...] }')],
+        responses: [new OA\Response(response: 200, description: 'OData-style page', content: new OA\JsonContent(example: [
+            '@odata.context'  => 'https://crm.example/api/data/forms/12/submissions',
+            '@odata.count'    => 1250,
+            'value'           => [['_id' => 481, '_status' => 'approved', '_collected_at' => '2026-10-30T09:15:00+02:00', 'respondent_name' => '•••', 'ward' => 'Ward 2']],
+            '@odata.nextLink' => 'https://crm.example/api/data/forms/12/submissions?%24top=500&%24skip=500',
+        ]))],
     )]
     public function submissions(Request $request, DataCollectionForm $form): JsonResponse
     {
-        $questions = $this->questions($form);
-        $page      = $this->filtered($request, $form)
-            ->paginate(min(max($request->integer('per_page', 500), 1), 5000))
-            ->withQueryString();
+        $catalog = FormFieldCatalog::for($form);
+        $hidden = $catalog->hiddenFor(FormAccess::canSeePii($request->user()));
+        $labels = $request->query('values') !== 'value';
+
+        $top = min(max((int) ($request->query('$top') ?? $request->query('per_page', 500)), 1), 5000);
+        $skip = max((int) ($request->query('$skip') ?? 0), 0);
+
+        $query = SubmissionFilters::query($form, $this->filters($request), $hidden)
+            ->with(['submittedBy:id,name', 'formVersion:id,version_number']);
+        $count = (clone $query)->count();
+        $rows = $query->orderBy('id')->skip($skip)->take($top)->get();
+
+        $next = $skip + $top < $count
+            ? $request->fullUrlWithQuery(['$top' => $top, '$skip' => $skip + $top])
+            : null;
 
         return response()->json([
-            'count'    => $page->total(),
-            'next'     => $page->nextPageUrl(),
-            'previous' => $page->previousPageUrl(),
-            'results'  => collect($page->items())->map(fn ($s) => $this->row($s, $questions, $request, false)),
+            '@odata.context'  => $request->url(),
+            '@odata.count'    => $count,
+            'value'           => $rows->map(fn ($s) => $this->row($s, $catalog, $hidden, $labels))->values(),
+            '@odata.nextLink' => $next,
         ]);
     }
 
     #[OA\Get(
         path: '/api/data/forms/{form}/submissions.csv',
         tags: ['Data API'],
-        summary: 'All submissions as one CSV (same filters as the JSON endpoint)',
+        summary: 'All submissions as one CSV (same filters as the JSON endpoint; select_multiple split into 1/0 columns)',
         security: [['sanctum' => []], ['basic' => []]],
         parameters: [new OA\Parameter(name: 'form', in: 'path', required: true, schema: new OA\Schema(type: 'integer'))],
         responses: [new OA\Response(response: 200, description: 'text/csv')],
     )]
     public function submissionsCsv(Request $request, DataCollectionForm $form): StreamedResponse
     {
-        $questions = $this->questions($form);
-        $header    = array_keys($this->row(new DataCollectionSubmission(), $questions, $request, true));
-        $query     = $this->filtered($request, $form);
+        $exporter = new SubmissionExporter(
+            $form,
+            $this->filters($request),
+            $request->query('values') !== 'value',
+            FormAccess::canSeePii($request->user()),
+        );
 
-        return $this->csv("{$form->code}-submissions.csv", $header, function ($out) use ($query, $questions, $request) {
-            $query->chunk(1000, function ($chunk) use ($out, $questions, $request) {
-                foreach ($chunk as $s) {
-                    fputcsv($out, array_values($this->row($s, $questions, $request, true)));
-                }
-            });
-        });
+        return response()->streamDownload(
+            fn () => $exporter->write('csv', 'php://output'),
+            "{$form->code}-submissions.csv",
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
     }
 
     #[OA\Get(
@@ -209,88 +238,46 @@ class DataApiController extends Controller
 
     // ── Helpers ──
 
-    /**
-     * Every question across all versions, keyed by question id (the key
-     * answers are stored under). The newest version's wording wins.
-     */
-    private function questions(DataCollectionForm $form): Collection
+    // The CRM's filters, plus the older submitted_after/submitted_before names.
+    private function filters(Request $request): array
     {
-        $questions = collect();
+        $filters = SubmissionFilters::fromRequest($request);
+        $filters['from'] ??= $request->query('submitted_after');
+        $filters['to'] ??= $request->query('submitted_before');
 
-        foreach ($form->versions()->get()->reverse() as $version) { // oldest → newest
-            foreach ($version->schema['sections'] ?? [] as $section) {
-                foreach ($section['questions'] ?? [] as $q) {
-                    $questions[$q['id']] = [
-                        'id'       => $q['id'],
-                        'label'    => $q['label'] ?: $q['id'],
-                        'type'     => $q['type'] ?? QuestionType::TEXT,
-                        'section'  => $section['title'] ?? null,
-                        'required' => (bool) ($q['required'] ?? false),
-                        'options'  => array_values(array_map(
-                            fn ($o) => ['value' => $o['value'] ?? '', 'label' => $o['label'] ?? ($o['value'] ?? '')],
-                            $q['options'] ?? []
-                        )),
-                    ];
-                }
-            }
-        }
-
-        // Unique, analyst-friendly column names: the label, suffixed if repeated.
-        $seen = [];
-        return $questions->map(function ($q) use (&$seen) {
-            $name = trim(preg_replace('/\s+/', ' ', $q['label']));
-            $seen[$name] = ($seen[$name] ?? 0) + 1;
-            $q['column'] = $seen[$name] > 1 ? "{$name} ({$seen[$name]})" : $name;
-
-            return $q;
-        });
+        return array_filter($filters, fn ($v) => $v !== null && $v !== '');
     }
 
-    private function filtered(Request $request, DataCollectionForm $form)
+    private function row(DataCollectionSubmission $s, FormFieldCatalog $catalog, array $hidden, bool $labels): array
     {
-        $statuses = $request->filled('status')
-            ? array_map('trim', explode(',', $request->query('status')))
-            : self::DEFAULT_STATUSES;
-
-        return DataCollectionSubmission::with(['submittedBy:id,name', 'formVersion:id,version_number'])
-            ->where('form_id', $form->id)
-            ->whereIn('status', $statuses)
-            ->when($request->filled('submitted_after'), fn ($q) => $q->whereDate('submitted_at', '>=', $request->query('submitted_after')))
-            ->when($request->filled('submitted_before'), fn ($q) => $q->whereDate('submitted_at', '<=', $request->query('submitted_before')))
-            ->orderBy('id');
-    }
-
-    private function row(DataCollectionSubmission $s, Collection $questions, Request $request, bool $flat): array
-    {
-        $byId   = $request->query('headers') === 'id';
-        $raw    = $request->query('values') === 'value';
-        $answer = $s->answers ?? [];
+        $data = $catalog->mask($s->data ?? [], $hidden);
 
         $row = [
             '_id'           => $s->id,
-            '_uid'          => $s->submission_uid,
+            '_uuid'         => $s->client_uuid,
             '_status'       => $s->status,
             '_version'      => $s->formVersion?->version_number,
             '_submitted_by' => $s->submittedBy?->name,
-            '_started_at'   => $s->started_at?->toIso8601String(),
-            '_submitted_at' => $s->submitted_at?->toIso8601String(),
-            '_completion'   => $s->completion_percentage,
+            '_collected_at' => $s->collected_at?->toIso8601String(),
+            '_received_at'  => $s->received_at?->toIso8601String(),
+            '_lat'          => $s->lat,
+            '_lng'          => $s->lng,
+            '_completion'   => $s->completion,
         ];
 
-        foreach ($questions as $q) {
-            $value = $answer[$q['id']] ?? null;
-
-            if (! $raw && $value !== null && $q['options']) {
-                $labels = array_column($q['options'], 'label', 'value');
-                $value  = is_array($value)
-                    ? array_map(fn ($v) => $labels[$v] ?? $v, $value)
-                    : ($labels[$value] ?? $value);
+        foreach ($catalog->topLevel() as $path => $field) {
+            $value = $data[$field['name']] ?? null;
+            if ($labels && $field['choices'] && $value !== null && $value !== '•••') {
+                $value = is_array($value)
+                    ? array_map(fn ($v) => $field['choices'][$v] ?? $v, $value)
+                    : ($field['choices'][$value] ?? $value);
             }
-            if ($q['type'] === QuestionType::YES_NO && is_bool($value)) {
-                $value = $raw ? (int) $value : ($value ? 'Yes' : 'No');
+            $row[$path] = $value;
+        }
+        foreach ($catalog->repeats as $name => $repeat) {
+            if ($repeat['parent'] === null) {
+                $row[$name] = $data[$name] ?? [];
             }
-
-            $row[$byId ? $q['id'] : $q['column']] = $flat ? $this->cell($value) : $value;
         }
 
         return $row;

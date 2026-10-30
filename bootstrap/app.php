@@ -28,5 +28,18 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // The beneficiary app tells an expired login from a missing one so it
+        // can ask the user to sign in again without dropping queued data.
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, \Illuminate\Http\Request $request) {
+            if (! $request->is('api/'.config('data_collection.api_prefix').'/*')) {
+                return null;
+            }
+
+            $expired = \App\Support\DataCollection\TokenState::isExpired($request);
+
+            return response()->json([
+                'code'    => $expired ? 'token_expired' : 'unauthenticated',
+                'message' => $expired ? 'Your login has expired. Please sign in again.' : 'Unauthenticated.',
+            ], 401);
+        });
     })->create();

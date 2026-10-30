@@ -21,8 +21,7 @@ function open(f) {
 
 const statusColor = {
     draft: 'bg-gray-100 text-gray-700',
-    published: 'bg-green-100 text-green-800',
-    unpublished: 'bg-amber-100 text-amber-800',
+    deployed: 'bg-green-100 text-green-800',
     archived: 'bg-gray-200 text-gray-500',
 };
 </script>
@@ -50,6 +49,7 @@ const statusColor = {
                         <th class="table-th">Status</th>
                         <th class="table-th">Current Version</th>
                         <th class="table-th">Versions</th>
+                        <th class="table-th">Submissions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
@@ -59,9 +59,10 @@ const statusColor = {
                         <td class="table-td"><span :class="['badge', statusColor[f.status]]">{{ f.status }}</span></td>
                         <td class="table-td">{{ f.current_version ? `v${f.current_version.version_number}` : '—' }}</td>
                         <td class="table-td">{{ f.versions_count }}</td>
+                        <td class="table-td">{{ f.submissions_count }}</td>
                     </tr>
                     <tr v-if="!forms.length">
-                        <td colspan="5" class="table-td text-center text-gray-400 py-8">No forms in this project yet.</td>
+                        <td colspan="6" class="table-td text-center text-gray-400 py-8">No forms in this project yet.</td>
                     </tr>
                 </tbody>
             </table>

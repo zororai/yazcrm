@@ -10,7 +10,9 @@ return [
 
     'guard' => ['web'],
 
-    'expiration' => null,
+    // API tokens (beneficiary app, Data API) expire after 30 days; the app's
+    // data collection endpoints then answer 401 {"code":"token_expired"}.
+    'expiration' => (int) env('SANCTUM_EXPIRATION_MINUTES', 60 * 24 * 30) ?: null,
 
     'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
 

@@ -42,6 +42,8 @@ const PERM_LABELS = {
     school: 'Courses (Facilitator: own courses)',
     school_admin: 'Courses Admin (all courses, setup)',
     data_api: 'Data API (Power BI / Excel / R read access)',
+    data_collection_design: 'Data Collection: Form Designer (upload, deploy, assign all forms)',
+    data_collection_pii: 'Data Collection: see personal data (PII) in submissions and exports',
     domains:     'Distress Domains',
     bot_contacts:'Bot Contacts',
     users:       'Users Management',

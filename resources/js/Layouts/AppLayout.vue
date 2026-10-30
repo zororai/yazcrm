@@ -179,10 +179,7 @@ const navigation = computed(() => [
         ? [{ name: "My Team's Tasks", href: '/team/tasks', icon: UserGroupIcon }] : []),
     ...(can('programmes_dashboard') ? [{ name: 'Programmes Dashboard', href: '/programmes/dashboard', icon: ChartBarIcon }] : []),
     ...(can('lsjp') ? [{ name: 'LSJP Register', href: '/lsjp', icon: ClipboardDocumentListIcon }] : []),
-    ...(can('data_collection') ? [{ name: 'Data Collection', href: '/data-collection', icon: ClipboardDocumentCheckIcon }] : []),
-    ...(can('data_collection') ? [{ name: 'My Collection', href: '/my-collection', icon: QueueListIcon }] : []),
-    ...(can('data_collection') && (isAdmin.value || user.value?.role === 'director')
-        ? [{ name: 'Review Queue', href: '/data-collection/review-queue', icon: ClipboardDocumentCheckIcon }] : []),
+    ...(can('data_collection') || can('data_collection_design') ? [{ name: 'Data Collection', href: '/data-collection', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Asset Dashboard', href: '/fixed-assets/dashboard', icon: ChartBarIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Fixed Assets', href: '/fixed-assets', icon: ServerStackIcon }] : []),
     ...(can('fixed_assets') ? [{ name: 'Asset Revaluations', href: '/fixed-assets/revaluations', icon: ArrowTrendingUpIcon }] : []),

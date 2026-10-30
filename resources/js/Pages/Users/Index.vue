@@ -69,6 +69,8 @@ const NAV_ITEMS = [
     { key: 'school',       label: 'Courses (Facilitator)' },
     { key: 'school_admin', label: 'Courses Admin' },
     { key: 'data_api',     label: 'Data API (analysts)' },
+    { key: 'data_collection_design', label: 'Data Collection: Form Designer' },
+    { key: 'data_collection_pii',    label: 'Data Collection: see personal data (PII)' },
 ];
 
 const editIsAdmin = computed(() => editForm.role === 'admin');

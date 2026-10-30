@@ -22,3 +22,6 @@ Schedule::command('yeastar:sync-calls --hours=100')->daily();
 // to 17:00 so follow-ups set for "today" later in the day are still caught.
 // Each ticket is only reminded once per follow-up date.
 Schedule::command('tickets:follow-up-reminders')->hourlyAt(0)->between('7:00', '17:00')->withoutOverlapping();
+
+// API tokens expire after 30 days (config/sanctum.php); clear out the dead ones.
+Schedule::command('sanctum:prune-expired --hours=24')->daily();
