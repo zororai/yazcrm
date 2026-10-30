@@ -216,8 +216,19 @@ class SubmissionExporter
         $mainRow = 2;
 
         $sheets = [];
+        $titles = [mb_strtolower($main->getTitle())];
         foreach ($this->catalog->repeats as $name => $info) {
-            $sheet = $book->createSheet()->setTitle(self::sheetTitle($this->labels ? $info['label'] : $name));
+            // Sheet names must be unique (and ≤31 chars): fall back to the
+            // repeat's name, then number it.
+            $title = self::sheetTitle($this->labels ? $info['label'] : $name);
+            if (in_array(mb_strtolower($title), $titles, true)) {
+                $title = self::sheetTitle($name);
+            }
+            for ($n = 2; in_array(mb_strtolower($title), $titles, true); $n++) {
+                $title = self::sheetTitle(mb_substr($name, 0, 27).' '.$n);
+            }
+            $titles[] = mb_strtolower($title);
+            $sheet = $book->createSheet()->setTitle($title);
             $repeatColumns = $this->columns($name);
             $sheet->fromArray(array_values($repeatColumns), null, 'A1');
             $sheets[$name] = ['sheet' => $sheet, 'columns' => $repeatColumns, 'row' => 2];

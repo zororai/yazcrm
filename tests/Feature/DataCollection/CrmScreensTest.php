@@ -316,15 +316,18 @@ class CrmScreensTest extends TestCase
         $this->app['auth']->forgetGuards(); // drop the enumerator from the uploads above
 
         $page = $this->withToken($token)->getJson("/api/data/forms/{$form->id}/submissions?\$top=2")->assertOk();
-        $page->assertJsonPath('@odata.count', 3)
-            ->assertJsonCount(2, 'value')
+        // "@odata.*" keys contain a dot, so they're read from the decoded body.
+        $body = $page->json();
+        $this->assertSame(3, $body['@odata.count']);
+        $this->assertStringContainsString('%24skip=2', $body['@odata.nextLink']);
+        $page->assertJsonCount(2, 'value')
             ->assertJsonPath('value.0.respondent_name', '•••')
             ->assertJsonPath('value.0.ward', 'Ward 1');
-        $this->assertStringContainsString('%24skip=2', $page->json('@odata.nextLink'));
 
-        $this->withToken($token)->getJson("/api/data/forms/{$form->id}/submissions?values=value&\$skip=2")
+        $last = $this->withToken($token)->getJson("/api/data/forms/{$form->id}/submissions?values=value&\$skip=2")
             ->assertJsonPath('value.0.ward', 'ward_2')
-            ->assertJsonPath('@odata.nextLink', null);
+            ->json();
+        $this->assertNull($last['@odata.nextLink']);
 
         $csv = $this->withToken($token)->get("/api/data/forms/{$form->id}/submissions.csv")->streamedContent();
         $this->assertStringNotContainsString('Rudo Moyo', $csv);

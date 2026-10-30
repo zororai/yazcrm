@@ -196,7 +196,7 @@
                 "tags": [
                     "Data API"
                 ],
-                "summary": "Form definition: every question (across all versions) with its column name, type and options",
+                "summary": "Data dictionary: every question across all versions, with its column name, type and choices",
                 "operationId": "c08f0c9de2212d49fbec9e668e4d4ec0",
                 "parameters": [
                     {
@@ -228,7 +228,8 @@
                 "tags": [
                     "Data API"
                 ],
-                "summary": "Submissions as flat JSON rows (paged)",
+                "summary": "Submissions as OData-style JSON pages",
+                "description": "Returns {\"@odata.context\", \"@odata.count\", \"value\": [rows], \"@odata.nextLink\"}. Rows: _-prefixed metadata, then one key per top-level question; repeats are arrays of objects.",
                 "operationId": "ecef197325eb030de12bda0d1568a089",
                 "parameters": [
                     {
@@ -240,39 +241,50 @@
                         }
                     },
                     {
+                        "name": "$top",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 500,
+                            "maximum": 5000
+                        }
+                    },
+                    {
+                        "name": "$skip",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Collected on or after (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Collected on or before (YYYY-MM-DD)",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
                         "name": "status",
                         "in": "query",
-                        "description": "Comma list. Default: everything except draft and cancelled",
-                        "schema": {
-                            "type": "string",
-                            "example": "approved"
-                        }
-                    },
-                    {
-                        "name": "submitted_after",
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "format": "date"
-                        }
-                    },
-                    {
-                        "name": "submitted_before",
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "format": "date"
-                        }
-                    },
-                    {
-                        "name": "headers",
-                        "in": "query",
-                        "description": "Column names: \"label\" (default) or \"id\"",
                         "schema": {
                             "type": "string",
                             "enum": [
-                                "label",
-                                "id"
+                                "pending",
+                                "approved",
+                                "not_approved",
+                                "on_hold"
                             ]
                         }
                     },
@@ -287,20 +299,30 @@
                                 "value"
                             ]
                         }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "default": 500,
-                            "maximum": 5000
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paged rows: { count, next, previous, results: [...] }"
+                        "description": "OData-style page",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "@odata.context": "https://crm.example/api/data/forms/12/submissions",
+                                    "@odata.count": 1250,
+                                    "value": [
+                                        {
+                                            "_id": 481,
+                                            "_status": "approved",
+                                            "_collected_at": "2026-10-30T09:15:00+02:00",
+                                            "respondent_name": "•••",
+                                            "ward": "Ward 2"
+                                        }
+                                    ],
+                                    "@odata.nextLink": "https://crm.example/api/data/forms/12/submissions?%24top=500&%24skip=500"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -318,7 +340,7 @@
                 "tags": [
                     "Data API"
                 ],
-                "summary": "All submissions as one CSV (same filters as the JSON endpoint)",
+                "summary": "All submissions as one CSV (same filters as the JSON endpoint; select_multiple split into 1/0 columns)",
                 "operationId": "4d66cdd1af28aa82e3b8119dd21d6975",
                 "parameters": [
                     {
@@ -385,6 +407,389 @@
                     },
                     {
                         "basic": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/forms": {
+            "get": {
+                "tags": [
+                    "Data Collection v1"
+                ],
+                "summary": "Deployed forms the logged-in user collects for",
+                "operationId": "f851a1fcd10445bc80c4f64857f23a6f",
+                "responses": {
+                    "200": {
+                        "description": "Forms",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "forms": [
+                                        {
+                                            "id": 12,
+                                            "title": "Household Survey",
+                                            "version": 3,
+                                            "checksum": "9f2c…",
+                                            "updated_at": "2026-10-30T09:00:00+02:00"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "{\"code\":\"token_expired\"|\"unauthenticated\"}"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/forms/{id}/schema": {
+            "get": {
+                "tags": [
+                    "Data Collection v1"
+                ],
+                "summary": "The form schema JSON (questions, groups, repeats, choices)",
+                "description": "Defaults to the latest deployed version. An older version is served if it still exists.",
+                "operationId": "bd443be4df4fe5560a7d93ac9c3feab0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "version",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Schema",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "form_id": 12,
+                                    "title": "Household Survey",
+                                    "version": 3,
+                                    "checksum": "9f2c…",
+                                    "children": [
+                                        {
+                                            "type": "text",
+                                            "name": "respondent_name",
+                                            "label": "Respondent's full name",
+                                            "required": "yes"
+                                        },
+                                        {
+                                            "type": "select_one",
+                                            "name": "ward",
+                                            "label": "Ward",
+                                            "list_name": "ward",
+                                            "choices": [
+                                                {
+                                                    "name": "ward_1",
+                                                    "label": "Ward 1"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "repeat",
+                                            "name": "members",
+                                            "label": "Household member",
+                                            "children": [
+                                                {
+                                                    "type": "integer",
+                                                    "name": "member_age",
+                                                    "label": "Age",
+                                                    "constraint": ". >= 0 and . <= 120"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "choices": {
+                                        "ward": [
+                                            {
+                                                "name": "ward_1",
+                                                "label": "Ward 1"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not assigned to this form"
+                    },
+                    "404": {
+                        "description": "Form or version not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/submissions/batch": {
+            "post": {
+                "tags": [
+                    "Data Collection v1"
+                ],
+                "summary": "Upload up to 50 submissions collected offline",
+                "description": "Idempotent per client_uuid: a resend returns \"duplicate\" with the original server_id. One bad item never fails the batch. 422 only for a malformed envelope.",
+                "operationId": "a87a83e572bd8cb4591b1495042329b1",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {},
+                            "example": {
+                                "submissions": [
+                                    {
+                                        "client_uuid": "3b1f4c1e-8a7d-4f53-9a4e-0f6f2b1c9d10",
+                                        "form_id": 12,
+                                        "form_version": 3,
+                                        "collected_at": "2026-10-30T09:15:00+02:00",
+                                        "device_id": "a1b2c3",
+                                        "app_version": "1.4.0",
+                                        "lat": -17.82,
+                                        "lng": 31.05,
+                                        "data": {
+                                            "respondent_name": "Rudo Moyo",
+                                            "respondent_age": 19,
+                                            "ward": "ward_2",
+                                            "needs": [
+                                                "food",
+                                                "skills"
+                                            ],
+                                            "interview_date": "2026-10-30",
+                                            "household_location": {
+                                                "lat": -17.82,
+                                                "lng": 31.05,
+                                                "accuracy": 6.5
+                                            },
+                                            "house_photo": "abc.jpg",
+                                            "members": [
+                                                {
+                                                    "member_name": "Tariro",
+                                                    "member_age": 12,
+                                                    "member_gender": "female",
+                                                    "in_school": "yes"
+                                                }
+                                            ]
+                                        },
+                                        "media": [
+                                            {
+                                                "field_name": "house_photo",
+                                                "filename": "abc.jpg"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Per-item results",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "results": [
+                                        {
+                                            "client_uuid": "3b1f4c1e-8a7d-4f53-9a4e-0f6f2b1c9d10",
+                                            "status": "accepted",
+                                            "server_id": 481,
+                                            "reason": null,
+                                            "errors": []
+                                        },
+                                        {
+                                            "client_uuid": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+                                            "status": "rejected",
+                                            "server_id": null,
+                                            "reason": "Some answers do not match the form.",
+                                            "errors": [
+                                                {
+                                                    "field": "respondent_age",
+                                                    "message": "Age must be between 10 and 100."
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "{\"code\":\"token_expired\"|\"unauthenticated\"}"
+                    },
+                    "422": {
+                        "description": "Malformed envelope (not an array, or more than 50 items)"
+                    },
+                    "429": {
+                        "description": "Too many requests; see Retry-After"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/submissions/{client_uuid}/media": {
+            "post": {
+                "tags": [
+                    "Data Collection v1"
+                ],
+                "summary": "Upload a photo for an accepted submission",
+                "description": "multipart/form-data with field_name (or field), file, and optionally filename (defaults to the uploaded file name). Idempotent per (submission, field_name, filename): a repeat returns 200 with status \"duplicate\".",
+                "operationId": "08e463678533a39a26c462b30504d589",
+                "parameters": [
+                    {
+                        "name": "client_uuid",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "field_name",
+                                    "file"
+                                ],
+                                "properties": {
+                                    "field_name": {
+                                        "type": "string",
+                                        "example": "house_photo"
+                                    },
+                                    "filename": {
+                                        "type": "string",
+                                        "example": "abc.jpg"
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Stored",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "status": "stored",
+                                    "id": 77,
+                                    "field_name": "house_photo",
+                                    "filename": "abc.jpg",
+                                    "size": 182233,
+                                    "checksum": "e3b0…"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Already stored (duplicate)"
+                    },
+                    "404": {
+                        "description": "No accepted submission with this client_uuid (yet)"
+                    },
+                    "422": {
+                        "description": "Not a photo field, wrong file type, or too large"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/sync/status": {
+            "get": {
+                "tags": [
+                    "Data Collection v1"
+                ],
+                "summary": "Server time, current form versions, and (when asked) which submissions the server holds",
+                "description": "accepted_client_uuids is included only when since and/or client_uuids is given, and only lists the caller's own submissions.",
+                "operationId": "5c4e2afe609d25854d236dc704b48862",
+                "parameters": [
+                    {
+                        "name": "since",
+                        "in": "query",
+                        "description": "ISO 8601: submissions received at or after this time",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "client_uuids",
+                        "in": "query",
+                        "description": "Comma-separated (or client_uuids[]) — which of these were accepted. Max 500.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Status",
+                        "content": {
+                            "application/json": {
+                                "schema": {},
+                                "example": {
+                                    "server_time": "2026-10-30T09:20:00+02:00",
+                                    "forms": [
+                                        {
+                                            "id": 12,
+                                            "version": 3,
+                                            "checksum": "9f2c…"
+                                        }
+                                    ],
+                                    "accepted_client_uuids": [
+                                        "3b1f4c1e-8a7d-4f53-9a4e-0f6f2b1c9d10"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
                     }
                 ]
             }
@@ -456,6 +861,10 @@
         {
             "name": "Data API",
             "description": "Read-only analyst access (Power BI, Excel, R). Basic auth with CRM email/password, or Bearer token."
+        },
+        {
+            "name": "Data Collection v1",
+            "description": "Offline data collection from the beneficiary app (Bearer token from /api/auth/login)"
         },
         {
             "name": "Auth"
