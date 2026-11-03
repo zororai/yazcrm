@@ -31,6 +31,8 @@ const showCompleteProfile = ref(user.value && user.value.profile_complete === fa
 
 // nav_permissions: null on admins (full access), array of keys on agents/supervisors
 const can = (key) => isAdmin.value || (user.value?.nav_permissions ?? []).includes(key);
+// Directors count as leave admins too (LeaveAccess::isAdmin on the server).
+const isLeaveAdmin = computed(() => can('leave_admin') || user.value?.role === 'director');
 
 // ── Light / Dark mode ────────────────────────────────────────────────────────
 const theme = ref(localStorage.getItem('theme') ?? 'dark');
@@ -170,6 +172,13 @@ const navigation = computed(() => [
     ...(can('urgent')       ? [{ name: 'Urgent',     href: '/urgent-cases', icon: ExclamationTriangleIcon, badge: urgentCount }] : []),
     ...(can('directory')    ? [{ name: 'Directory',  href: '/service-directory', icon: BookOpenIcon }] : []),
     ...(can('appraisals')   ? [{ name: 'Appraisals', href: '/appraisals',  icon: ClipboardDocumentCheckIcon }] : []),
+    ...(isLeaveAdmin.value || can('leave_approve') ? [{ name: 'Leave Requests', href: '/leave/requests', icon: CalendarDaysIcon }] : []),
+    ...(isLeaveAdmin.value ? [
+        { name: 'Leave Entitlements', href: '/leave/entitlements', icon: TableCellsIcon },
+        { name: 'Leave Types',        href: '/leave/types',        icon: TagIcon },
+        { name: 'Public Holidays',    href: '/leave/holidays',     icon: SunIcon },
+        { name: 'Leave Reports',      href: '/leave/reports',      icon: ChartBarIcon },
+    ] : []),
     ...(can('appraisal_reviews') ? [{ name: 'Appraisal Reviews', href: '/appraisal-reviews', icon: ClipboardDocumentCheckIcon }] : []),
     ...(can('appraisal_archive') ? [{ name: 'Appraisal Archive', href: '/appraisal-archive', icon: DocumentTextIcon }] : []),
     ...(isAdmin.value || can('audit_trail') ? [{ name: 'Audit Trail', href: '/audit-log', icon: ShieldExclamationIcon }] : []),
@@ -253,6 +262,7 @@ const navSections = [
     { name: 'Counselling',         items: ['Counsellor Profiles', 'Timetable', 'Progress Report', 'View All Team Reports', 'Success Stories'] },
     { name: 'Reports & Analytics', items: ['Analytics', 'Targets', 'By Project', 'Domains', 'Activity Reports'] },
     { name: 'Work & Appraisals',   items: ['Work Management', "My Team's Tasks", 'Appraisals', 'Appraisal Reviews', 'Appraisal Archive'] },
+    { name: 'Leave',               items: ['Leave Requests', 'Leave Entitlements', 'Leave Types', 'Public Holidays', 'Leave Reports'] },
     { name: 'Programs',            items: ['Programmes Dashboard', 'LSJP Register', 'Data Collection', 'My Collection', 'Review Queue', 'SBC Signups', 'YALeP Students'] },
     { name: 'Procurement',         items: ['Requisitions', 'Payment Requisitions', 'Purchase Orders', 'Suppliers'] },
     { name: 'Assets',              items: ['Asset Dashboard', 'Asset Register', 'Fixed Assets', 'Asset Revaluations', 'Depreciation Report', 'Asset Categories', 'IT Asset Categories'] },

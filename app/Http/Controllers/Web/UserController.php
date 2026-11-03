@@ -28,6 +28,7 @@ class UserController extends Controller
         'timetable','progress_reports','success_stories',
         'my_work','audit_trail','it_asset_categories','transcription_test','counsellor_profiles','team_reports','programmes_dashboard','lsjp',
         'school','school_admin','data_api','data_collection_design','data_collection_pii',
+        'leave_approve','leave_admin',
     ];
 
     public function index(): Response
@@ -125,6 +126,12 @@ class UserController extends Controller
     public function toggleActive(User $user): RedirectResponse
     {
         $user->update(['is_active' => !$user->is_active]);
+
+        // Sign a deactivated user out of the apps straight away instead of
+        // leaving their API tokens valid until they expire.
+        if (!$user->is_active) {
+            $user->tokens()->delete();
+        }
 
         return back()->with('success', $user->is_active ? 'User activated.' : 'User deactivated.');
     }

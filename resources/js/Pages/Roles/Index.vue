@@ -44,6 +44,8 @@ const PERM_LABELS = {
     data_api: 'Data API (Power BI / Excel / R read access)',
     data_collection_design: 'Data Collection: Form Designer (upload, deploy, assign all forms)',
     data_collection_pii: 'Data Collection: see personal data (PII) in submissions and exports',
+    leave_approve: 'Leave: approve or reject leave for direct reports, team calendar',
+    leave_admin: 'Leave Admin (all requests, types, entitlements, holidays, reports, corrections)',
     domains:     'Distress Domains',
     bot_contacts:'Bot Contacts',
     users:       'Users Management',

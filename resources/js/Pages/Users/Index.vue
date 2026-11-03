@@ -71,6 +71,8 @@ const NAV_ITEMS = [
     { key: 'data_api',     label: 'Data API (analysts)' },
     { key: 'data_collection_design', label: 'Data Collection: Form Designer' },
     { key: 'data_collection_pii',    label: 'Data Collection: see personal data (PII)' },
+    { key: 'leave_approve', label: 'Leave: approve for direct reports' },
+    { key: 'leave_admin',   label: 'Leave Admin' },
 ];
 
 const editIsAdmin = computed(() => editForm.role === 'admin');
@@ -275,7 +277,8 @@ const roleColor = {
                         <p class="mt-1 text-xs text-gray-400">Changing the role automatically updates permissions below.</p>
                     </div>
                     <div>
-                        <label class="label">Supervisor</label>
+                        <label class="label">Supervisor (line manager)</label>
+                        <p class="text-xs text-gray-500 mb-1">Approves this person's leave if they have the Leave approve permission.</p>
                         <select v-model="addForm.supervisor_id" class="input">
                             <option value="">— None —</option>
                             <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
@@ -355,7 +358,8 @@ const roleColor = {
                         <p v-if="editForm.errors.role" class="mt-1 text-xs text-red-600">{{ editForm.errors.role }}</p>
                     </div>
                     <div>
-                        <label class="label">Supervisor</label>
+                        <label class="label">Supervisor (line manager)</label>
+                        <p class="text-xs text-gray-500 mb-1">Approves this person's leave if they have the Leave approve permission.</p>
                         <select v-model="editForm.supervisor_id" class="input">
                             <option value="">— None —</option>
                             <option v-for="u in users.filter(u => u.id !== editUser.id)" :key="u.id" :value="u.id">

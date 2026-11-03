@@ -162,3 +162,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('extensions/{extension}/assign-user',     [ExtensionController::class, 'assignUser']);
     });
 });
+
+require __DIR__.'/leave.php';

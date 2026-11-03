@@ -52,5 +52,7 @@ class DatabaseSeeder extends Seeder
                 ['Agent', 'david@callcenter.com', 'agent123'],
             ]
         );
+
+        $this->call(LeaveSeeder::class);
     }
 }

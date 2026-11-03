@@ -526,6 +526,34 @@ Route::middleware('auth')->group(function () {
     Route::post('success-stories/{successStory}/status', [Web\SuccessStoryController::class, 'updateStatus'])->name('success-stories.status');
     Route::get('tickets/{ticket}/recording', [Web\SuccessStoryController::class, 'ticketRecording'])->name('tickets.recording');
 
+    // Leave. Approvers (leave_approve) see their direct reports' requests;
+    // leave admins (admin, director, leave_admin) see everything and own the
+    // settings. Checked in LeaveController / LeaveAccess, not nav middleware,
+    // because directors count as leave admins.
+    Route::prefix('leave')->name('leave.')->group(function () {
+        Route::get('requests',                              [Web\LeaveController::class, 'requests'])->name('requests');
+        Route::patch('requests/{leaveRequest}/approve',     [Web\LeaveController::class, 'approve'])->name('requests.approve');
+        Route::patch('requests/{leaveRequest}/reject',      [Web\LeaveController::class, 'reject'])->name('requests.reject');
+        Route::patch('requests/{leaveRequest}/correct',     [Web\LeaveController::class, 'correct'])->name('requests.correct');
+        Route::get('requests/{leaveRequest}/attachment',    [Web\LeaveController::class, 'attachment'])->name('requests.attachment');
+
+        Route::get('types',                                 [Web\LeaveController::class, 'types'])->name('types');
+        Route::post('types',                                [Web\LeaveController::class, 'storeType'])->name('types.store');
+        Route::put('types/{leaveType}',                     [Web\LeaveController::class, 'updateType'])->name('types.update');
+        Route::delete('types/{leaveType}',                  [Web\LeaveController::class, 'destroyType'])->name('types.destroy');
+
+        Route::get('holidays',                              [Web\LeaveController::class, 'holidays'])->name('holidays');
+        Route::post('holidays',                             [Web\LeaveController::class, 'storeHoliday'])->name('holidays.store');
+        Route::put('holidays/{publicHoliday}',              [Web\LeaveController::class, 'updateHoliday'])->name('holidays.update');
+        Route::delete('holidays/{publicHoliday}',           [Web\LeaveController::class, 'destroyHoliday'])->name('holidays.destroy');
+
+        Route::get('entitlements',                          [Web\LeaveController::class, 'entitlements'])->name('entitlements');
+        Route::post('entitlements',                         [Web\LeaveController::class, 'storeEntitlement'])->name('entitlements.store');
+
+        Route::get('reports',                               [Web\LeaveController::class, 'reports'])->name('reports');
+        Route::get('reports/export',                        [Web\LeaveController::class, 'exportReport'])->name('reports.export');
+    });
+
     // Courses (built as the "School" module; the code, tables and permission
     // keys keep the school_ names). Facilitators have 'school', course
     // admins 'school_admin'. Finer per-course/module checks live in SchoolAccess.

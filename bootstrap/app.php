@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'nav'   => \App\Http\Middleware\EnsureNavPermission::class,
             'data.api' => \App\Http\Middleware\AuthenticateDataApi::class,
+            'active.user' => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -2,8 +2,11 @@
 
 namespace App\Providers;
 
+use App\Models\Leave\LeaveRequest;
+use App\Policies\LeaveRequestPolicy;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -14,6 +17,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // The model lives in App\Models\Leave, outside policy auto-discovery.
+        Gate::policy(LeaveRequest::class, LeaveRequestPolicy::class);
+
         // Beneficiary app data collection: per device (each device logs in
         // with its own token) and per user across all their devices.
         RateLimiter::for('data-collection', function (Request $request) {
