@@ -519,7 +519,66 @@ class TicketController extends Controller
             $ticket->openUrgentCase($request->user()->id);
         }
 
+        // The case status was recorded on a due follow-up: still open → the
+        // next follow-up is booked and the case will pop up again.
+        $rolled = array_key_exists('status', $data) ? $ticket->carryFollowUpForward() : [];
+        if ($rolled) {
+            $ticket->notes()->create(['user_id' => $request->user()->id, 'body' => $this->carriedForwardNote($ticket, $rolled)]);
+
+            return back()->with('success', 'Ticket updated. '.$this->carriedForwardNote($ticket, $rolled));
+        }
+
         return back()->with('success', 'Ticket updated.');
+    }
+
+    // From the follow-up pop-up: the agent records what happened and the case
+    // status. Resolved / closed ends the follow-ups; still open books the next
+    // one (48 h High / Urgent, 7 days Low) and the uptake check if pending.
+    public function recordFollowUp(Request $request, Ticket $ticket): JsonResponse
+    {
+        if (! $this->canManageAllTickets($request->user()) && $ticket->agent_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'status'           => 'required|in:ongoing,in_progress,open,resolved,closed',
+            'note'             => 'nullable|string|max:2000',
+            'uptake_confirmed' => 'nullable|boolean',
+        ], ['status.required' => 'Choose the case status.']);
+
+        $changes = ['status' => $data['status']];
+        if ($data['status'] === 'resolved' && ! $ticket->resolved_at) {
+            $changes['resolved_at'] = now();
+        }
+        if (! empty($data['uptake_confirmed'])) {
+            $changes['uptake_confirmed'] = true;
+        }
+        $ticket->update($changes);
+        $rolled = $ticket->carryFollowUpForward();
+
+        $lines = ['Follow-up done. Case status: '.ucfirst(str_replace('_', ' ', $ticket->status)).'.'];
+        if (filled($data['note'] ?? null)) $lines[] = trim($data['note']);
+        if (! empty($data['uptake_confirmed'])) $lines[] = 'Service uptake confirmed'.($ticket->referred_to ? " (referred to {$ticket->referred_to})" : '').'.';
+        if ($rolled) $lines[] = $this->carriedForwardNote($ticket, $rolled);
+        $ticket->notes()->create(['user_id' => $request->user()->id, 'body' => implode("\n", $lines)]);
+
+        $request->attributes->set('audit_description', "Recorded a follow-up on ticket #{$ticket->id} ({$ticket->subject}): {$ticket->status}");
+
+        return response()->json([
+            'status'               => $ticket->status,
+            'follow_up_date'       => $ticket->follow_up_date ? substr((string) $ticket->follow_up_date, 0, 10) : null,
+            'referral_uptake_date' => $ticket->referral_uptake_date ? substr((string) $ticket->referral_uptake_date, 0, 10) : null,
+            'message'              => $rolled ? $this->carriedForwardNote($ticket, $rolled) : 'Follow-up recorded. Case '.str_replace('_', ' ', $ticket->status).'.',
+        ]);
+    }
+
+    private function carriedForwardNote(Ticket $ticket, array $rolled): string
+    {
+        $parts = [];
+        if (isset($rolled['follow_up_date'])) $parts[] = 'next follow-up '.\Carbon\Carbon::parse($rolled['follow_up_date'])->format('j M Y');
+        if (isset($rolled['referral_uptake_date'])) $parts[] = 'referral uptake now expected by '.\Carbon\Carbon::parse($rolled['referral_uptake_date'])->format('j M Y');
+
+        return 'Case still '.str_replace('_', ' ', $ticket->status).': '.implode(', ', $parts).'.';
     }
 
     public function draftNotes(Request $request): JsonResponse

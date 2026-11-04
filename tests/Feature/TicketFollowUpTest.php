@@ -215,6 +215,58 @@ class TicketFollowUpTest extends TestCase
         $this->actingAs($this->manager)->getJson('/tickets/follow-ups-due')->assertJsonPath('count', 0);
     }
 
+    public function test_a_still_ongoing_case_carries_on_until_it_is_resolved(): void
+    {
+        // setUp's clock: 2026-10-23. An Urgent case due today, uptake due today.
+        $id = $this->ticket($this->agentA->id, ['subject' => 'Shelter', 'priority' => 'urgent', 'referred_to' => 'Shelter',
+            'follow_up_date' => '2026-10-23', 'referral_uptake_date' => '2026-10-23']);
+        $followUp = fn (array $data) => $this->actingAs($this->agentA)->postJson("/tickets/{$id}/follow-up", $data);
+
+        $followUp([])->assertStatus(422)->assertJsonValidationErrors(['status' => 'Choose the case status.']);
+
+        // Still ongoing → next follow-up in 48 h, uptake in 96 h; off today's list.
+        $followUp(['status' => 'ongoing', 'note' => 'Called; client still waiting for a bed'])->assertOk()
+            ->assertJsonPath('follow_up_date', '2026-10-25')
+            ->assertJsonPath('referral_uptake_date', '2026-10-27')
+            ->assertJsonPath('message', 'Case still ongoing: next follow-up 25 Oct 2026, referral uptake now expected by 27 Oct 2026.');
+        $this->assertSame("Follow-up done. Case status: Ongoing.\nCalled; client still waiting for a bed\nCase still ongoing: next follow-up 25 Oct 2026, referral uptake now expected by 27 Oct 2026.",
+            Ticket::find($id)->notes()->value('body'));
+        $this->assertNotContains($id, array_column($this->actingAs($this->agentA)->getJson('/tickets/follow-ups-due')->json('tickets'), 'id'));
+
+        // Two days later it pops up again; uptake confirmed this time, still ongoing.
+        $this->travelTo(CarbonImmutable::create(2026, 10, 25, 9));
+        $this->assertContains($id, array_column($this->actingAs($this->agentA)->getJson('/tickets/follow-ups-due')->json('tickets'), 'id'));
+        $followUp(['status' => 'ongoing', 'uptake_confirmed' => true])->assertOk()
+            ->assertJsonPath('follow_up_date', '2026-10-27')
+            ->assertJsonPath('referral_uptake_date', '2026-10-27'); // confirmed uptake isn't moved
+        $this->assertTrue(Ticket::find($id)->uptake_confirmed);
+
+        // Resolved → the cycle ends.
+        $this->travelTo(CarbonImmutable::create(2026, 10, 27, 9));
+        $followUp(['status' => 'resolved'])->assertOk()->assertJsonPath('follow_up_date', '2026-10-27')
+            ->assertJsonPath('message', 'Follow-up recorded. Case resolved.');
+        $this->assertNotNull(Ticket::find($id)->resolved_at);
+        $this->actingAs($this->agentA)->getJson('/tickets/follow-ups-due')->assertJsonMissing(['id' => $id]);
+
+        // Someone else's case can't be followed up by an agent.
+        $this->actingAs($this->agentB)->postJson("/tickets/{$id}/follow-up", ['status' => 'ongoing'])->assertForbidden();
+    }
+
+    public function test_saving_a_due_low_case_as_ongoing_from_the_edit_form_books_the_next_follow_up(): void
+    {
+        // 'due' (Medium, follow-up 2026-10-22) and a Low one due today.
+        $low = $this->ticket($this->agentA->id, ['subject' => 'Low due', 'priority' => 'low', 'follow_up_date' => '2026-10-23']);
+        $this->actingAs($this->agentA)->from("/tickets/{$low}")
+            ->put("/tickets/{$low}", ['subject' => 'Low due', 'status' => 'ongoing', 'follow_up_date' => '2026-10-23'])
+            ->assertSessionHas('success', 'Ticket updated. Case still ongoing: next follow-up 30 Oct 2026.');
+        $this->assertSame('2026-10-30', substr((string) Ticket::find($low)->follow_up_date, 0, 10));
+
+        // An agent who picks a later date themselves keeps it.
+        $id = $this->t['due'];
+        $this->actingAs($this->agentA)->put("/tickets/{$id}", ['subject' => 'Case', 'status' => 'ongoing', 'follow_up_date' => '2026-11-02']);
+        $this->assertSame('2026-11-02', substr((string) Ticket::find($id)->follow_up_date, 0, 10));
+    }
+
     public function test_high_and_urgent_tickets_go_on_the_urgent_cases_board(): void
     {
         $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')

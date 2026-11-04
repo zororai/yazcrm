@@ -1,13 +1,15 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import { BellAlertIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 
 // The agent's own cases whose follow-up (48 h for High / Urgent, 7 days for
 // Low) or expected referral uptake (96 h for High / Urgent) is due. Polled
 // every minute; "Remind me later" hides it for 30 minutes, but a newly due
-// case brings it straight back.
+// case brings it straight back. The agent records the case status here:
+// resolved / closed ends the follow-ups, still ongoing books the next one
+// and the case pops up again then.
 const props = defineProps({ userId: { type: Number, required: true } });
 
 const SNOOZE_MS = 30 * 60 * 1000;
@@ -43,6 +45,40 @@ async function poll() {
         count.value   = data.count ?? 0;
         today.value   = data.today ?? '';
     } catch { /* ignore network errors while polling */ }
+}
+
+// Inline "Update case status" form for one case at a time.
+const editing = ref(null);
+const form    = ref({ status: 'ongoing', note: '', uptake_confirmed: false });
+const saving  = ref(false);
+const error   = ref('');
+const done    = ref(''); // confirmation shown after saving
+
+function startEdit(t) {
+    editing.value = t.id;
+    form.value = { status: 'ongoing', note: '', uptake_confirmed: false };
+    error.value = '';
+}
+
+function nextFollowUpText(t) {
+    return ['high', 'urgent'].includes(t.priority) ? 'in 48 hours' : 'in 7 days';
+}
+
+async function save(t) {
+    saving.value = true;
+    error.value = '';
+    try {
+        const { data } = await axios.post(`/tickets/${t.id}/follow-up`, form.value);
+        done.value = `#${t.id}: ${data.message}`;
+        setTimeout(() => { done.value = ''; }, 8000);
+        editing.value = null;
+        await poll(); // resolved or rescheduled cases drop off the list
+        router.reload({ preserveScroll: true, preserveState: true }); // and the page behind shows the new dates
+    } catch (e) {
+        error.value = e.response?.data?.message ?? 'Could not save. Try again.';
+    } finally {
+        saving.value = false;
+    }
 }
 
 function when(date) {
@@ -91,20 +127,46 @@ onUnmounted(() => clearInterval(timer));
             </div>
 
             <ul class="max-h-72 overflow-y-auto divide-y divide-gray-100">
-                <li v-for="t in tickets" :key="t.id">
-                    <Link :href="`/tickets/${t.id}`" @click="remindLater" class="block px-4 py-3 hover:bg-gray-50">
-                        <div class="flex items-center gap-2">
-                            <span :class="['badge capitalize', priorityClass[t.priority] ?? priorityClass.low]">{{ t.priority }}</span>
-                            <span class="text-sm font-medium text-gray-900 truncate">#{{ t.id }} {{ t.subject }}</span>
+                <li v-for="t in tickets" :key="t.id" class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <span :class="['badge capitalize', priorityClass[t.priority] ?? priorityClass.low]">{{ t.priority }}</span>
+                        <Link :href="`/tickets/${t.id}`" @click="remindLater" class="text-sm font-medium text-gray-900 truncate hover:underline">
+                            #{{ t.id }} {{ t.subject }}
+                        </Link>
+                    </div>
+                    <p v-if="t.follow_up_due" class="mt-1 text-xs" :class="t.follow_up_due < today ? 'text-red-600 font-semibold' : 'text-amber-700'">
+                        Follow-up due {{ when(t.follow_up_due) }}
+                    </p>
+                    <p v-if="t.uptake_due" class="mt-0.5 text-xs" :class="t.uptake_due < today ? 'text-red-600 font-semibold' : 'text-amber-700'">
+                        Referral uptake {{ t.referred_to ? `(${t.referred_to}) ` : '' }}due {{ when(t.uptake_due) }}
+                    </p>
+                    <p v-if="t.contact_number" class="mt-0.5 text-xs text-gray-400">📞 {{ t.contact_number }}</p>
+
+                    <button v-if="editing !== t.id" @click="startEdit(t)"
+                        class="mt-2 text-xs font-semibold text-brand-600 hover:underline">
+                        Update case status →
+                    </button>
+                    <form v-else @submit.prevent="save(t)" class="mt-2 space-y-2 rounded-lg bg-gray-50 p-3">
+                        <label class="block text-xs font-medium text-gray-600">Case status after this follow-up</label>
+                        <select v-model="form.status" class="input text-sm" required>
+                            <option value="ongoing">Still ongoing — keep following up</option>
+                            <option value="resolved">Resolved</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                        <label v-if="t.uptake_due" class="flex items-center gap-2 text-xs text-gray-600">
+                            <input type="checkbox" v-model="form.uptake_confirmed" class="rounded border-gray-300 text-brand-600" />
+                            Client took up the referral
+                        </label>
+                        <textarea v-model="form.note" rows="2" class="input text-sm" placeholder="What happened on the follow-up? (saved to Log Notes)"></textarea>
+                        <p v-if="form.status === 'ongoing'" class="text-[11px] text-gray-500">
+                            The next follow-up is booked {{ nextFollowUpText(t) }} and the case pops up again then.
+                        </p>
+                        <p v-if="error" class="text-xs text-red-600">{{ error }}</p>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="editing = null" class="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                            <button type="submit" :disabled="saving" class="btn-primary text-xs px-3 py-1.5">{{ saving ? 'Saving…' : 'Save' }}</button>
                         </div>
-                        <p v-if="t.follow_up_due" class="mt-1 text-xs" :class="t.follow_up_due < today ? 'text-red-600 font-semibold' : 'text-amber-700'">
-                            Follow-up due {{ when(t.follow_up_due) }}
-                        </p>
-                        <p v-if="t.uptake_due" class="mt-0.5 text-xs" :class="t.uptake_due < today ? 'text-red-600 font-semibold' : 'text-amber-700'">
-                            Referral uptake {{ t.referred_to ? `(${t.referred_to}) ` : '' }}due {{ when(t.uptake_due) }}
-                        </p>
-                        <p v-if="t.contact_number" class="mt-0.5 text-xs text-gray-400">📞 {{ t.contact_number }}</p>
-                    </Link>
+                    </form>
                 </li>
             </ul>
 
@@ -116,4 +178,10 @@ onUnmounted(() => clearInterval(timer));
             </div>
         </div>
     </Transition>
+
+    <!-- Confirmation after recording a follow-up (stays even if the list is now empty) -->
+    <div v-if="done"
+        class="fixed top-5 left-1/2 -translate-x-1/2 z-[60] w-[calc(100%-2rem)] max-w-md rounded-lg bg-green-600 text-white text-sm px-4 py-3 shadow-xl">
+        ✓ {{ done }}
+    </div>
 </template>

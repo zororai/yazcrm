@@ -64,6 +64,36 @@ class Ticket extends Model
         return $data;
     }
 
+    // After a due follow-up, the agent records the case status. Resolved /
+    // closed ends the cycle. Still open: the next follow-up is booked from
+    // today by the priority (48 h High / Urgent, 7 days Low) and an
+    // unconfirmed uptake that is due moves on 96 h, so the case pops up
+    // again until it is resolved. Dates the agent moved into the future
+    // themselves are kept. Returns the dates that were rolled forward.
+    public function carryFollowUpForward(): array
+    {
+        $today  = now()->toDateString();
+        $plan   = self::followUpPlan($this->priority);
+        $day    = fn ($v) => $v ? substr((string) $v, 0, 10) : null;
+        $rolled = [];
+
+        if (! in_array($this->status, ['resolved', 'closed'], true)) {
+            if ($day($this->follow_up_date) !== null && $day($this->follow_up_date) <= $today) {
+                $rolled['follow_up_date'] = $plan['follow_up_date'] ?? now()->addDays(self::FOLLOW_UP_DAYS['low'])->toDateString();
+            }
+            if ($day($this->referral_uptake_date) !== null && $day($this->referral_uptake_date) <= $today
+                && ! $this->uptake_confirmed && $plan['referral_uptake_date']) {
+                $rolled['referral_uptake_date'] = $plan['referral_uptake_date'];
+            }
+        }
+
+        if ($rolled) {
+            $this->forceFill($rolled)->save();
+        }
+
+        return $rolled;
+    }
+
     // Open cases whose follow-up or expected referral uptake falls due today
     // or earlier — what the agent's "follow-ups due" pop-up lists.
     public function scopeFollowUpDue($query)
