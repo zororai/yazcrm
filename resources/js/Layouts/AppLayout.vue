@@ -328,7 +328,7 @@ function logout() {
 </script>
 
 <template>
-    <div :class="['min-h-screen flex', isLight ? 'bg-gray-50' : 'bg-[#0d1117]']">
+    <div :class="['min-h-screen flex', isLight ? 'bg-[#f7f5fb]' : 'bg-[#0f0a1e]']">
         <!-- Sidebar backdrop (mobile) -->
         <div
             v-if="sidebarOpen"
@@ -340,13 +340,13 @@ function logout() {
         <aside
             :class="[
                 'fixed inset-y-0 left-0 z-30 w-64 flex flex-col transition-transform duration-200',
-                isLight ? 'bg-white border-r border-gray-200' : 'bg-gray-900',
+                isLight ? 'bg-gradient-to-b from-white via-white to-brand-50 border-r border-brand-100' : 'bg-gradient-to-b from-[#1d1338] via-[#160e2b] to-[#0f0a1e] border-r border-white/5',
                 'lg:static lg:translate-x-0',
                 sidebarOpen ? 'translate-x-0' : '-translate-x-full',
             ]"
         >
             <!-- Logo -->
-            <div :class="['flex h-16 items-center gap-3 px-5 border-b', isLight ? 'border-gray-200' : 'border-gray-700']">
+            <div :class="['flex h-16 items-center gap-3 px-5 border-b', isLight ? 'border-brand-100' : 'border-white/10']">
                 <!-- Youth Advocates mark -->
                 <svg width="38" height="34" viewBox="0 0 130 108" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
                     <!-- Left arm: orange -->
@@ -379,7 +379,7 @@ function logout() {
                         @keydown.esc="navSearch = ''"
                         :class="[
                             'w-full rounded-lg pl-9 pr-3 py-2 text-sm border focus:outline-none focus:ring-2 focus:ring-brand-500',
-                            isLight ? 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400' : 'bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-500',
+                            isLight ? 'bg-white border-brand-100 text-gray-900 placeholder-gray-400' : 'bg-white/5 border-white/10 text-gray-100 placeholder-gray-500',
                         ]"
                     />
                 </div>
@@ -397,7 +397,7 @@ function logout() {
                         @click="toggleSection(section)"
                         :class="[
                             'w-full flex items-center gap-2 px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider transition-colors',
-                            isLight ? 'text-gray-400 hover:text-gray-700' : 'text-gray-500 hover:text-gray-300',
+                            isLight ? 'text-brand-900/40 hover:text-[#5320ab]' : 'text-[#e9c75c]/60 hover:text-[#f2dd94]',
                         ]"
                     >
                         <span class="flex-1 text-left">{{ section.name }}</span>
@@ -413,16 +413,18 @@ function logout() {
                             :key="item.name"
                             :href="item.href"
                             :class="[
-                                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                                'relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                                 isActive(item.href)
-                                    ? 'bg-brand-600 text-white'
+                                    ? 'gloss text-white'
                                     : item.badge?.value > 0
-                                        ? (isLight ? 'text-red-600 hover:bg-red-50' : 'text-red-300 hover:bg-gray-800 hover:text-red-200')
-                                        : (isLight ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' : 'text-gray-300 hover:bg-gray-800 hover:text-white'),
+                                        ? (isLight ? 'text-red-600 hover:bg-red-50' : 'text-red-300 hover:bg-white/5 hover:text-red-200')
+                                        : (isLight ? 'text-gray-600 hover:bg-brand-50 hover:text-[#5320ab]' : 'text-gray-300 hover:bg-white/5 hover:text-white'),
                             ]"
                             @click="sidebarOpen = false"
                         >
-                            <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+                            <!-- gold edge on the current page -->
+                            <span v-if="isActive(item.href)" class="absolute left-0 top-2 bottom-2 w-1 rounded-r-full gloss-gold" />
+                            <component :is="item.icon" :class="['h-5 w-5 flex-shrink-0', isActive(item.href) ? 'text-[#f2dd94]' : '']" />
                             <span class="flex-1">{{ item.name }}</span>
                             <span v-if="item.badge?.value > 0"
                                 class="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1 rounded-full text-xs font-bold bg-red-500 text-white">
@@ -434,10 +436,10 @@ function logout() {
             </nav>
 
             <!-- User -->
-            <div :class="['border-t p-4', isLight ? 'border-gray-200' : 'border-gray-700']">
+            <div :class="['border-t p-4', isLight ? 'border-brand-100' : 'border-white/10']">
                 <div class="flex items-center gap-3">
                     <Link href="/profile" class="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-full gloss-gold text-[#2a0f5c] text-sm font-bold flex-shrink-0">
                             {{ user?.name?.charAt(0)?.toUpperCase() }}
                         </div>
                         <div class="flex-1 min-w-0">
@@ -447,7 +449,7 @@ function logout() {
                     </Link>
                     <button
                         @click="logout"
-                        :class="['p-1.5 rounded-lg transition-colors', isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-gray-400 hover:text-white hover:bg-gray-700']"
+                        :class="['p-1.5 rounded-lg transition-colors', isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-gray-400 hover:text-white hover:bg-white/5']"
                         title="Logout"
                     >
                         <ArrowRightOnRectangleIcon class="h-5 w-5" />
@@ -470,9 +472,9 @@ function logout() {
             </div>
 
             <!-- Top bar -->
-            <header :class="['h-16 border-b flex items-center gap-4 px-4 lg:px-6 flex-shrink-0', isLight ? 'bg-white border-gray-200' : 'bg-[#0f1117] border-gray-800']">
+            <header :class="['h-16 border-b flex items-center gap-4 px-4 lg:px-6 flex-shrink-0', isLight ? 'bg-white/80 backdrop-blur-md border-brand-100' : 'bg-[#160e2b]/80 backdrop-blur-md border-white/10']">
                 <button
-                    :class="['p-2 rounded-lg lg:hidden', isLight ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-gray-800']"
+                    :class="['p-2 rounded-lg lg:hidden', isLight ? 'text-gray-500 hover:bg-brand-50 hover:text-brand-700' : 'text-gray-400 hover:bg-white/5 hover:text-white']"
                     @click="sidebarOpen = true"
                 >
                     <Bars3Icon class="h-5 w-5" />
@@ -489,7 +491,7 @@ function logout() {
                 <!-- Dialer toggle -->
                 <button
                     @click="dialerOpen = !dialerOpen"
-                    :class="['p-2 rounded-lg transition-colors flex-shrink-0', isLight ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-gray-800']"
+                    :class="['p-2 rounded-lg transition-colors flex-shrink-0', isLight ? 'text-gray-500 hover:bg-brand-50 hover:text-brand-700' : 'text-gray-400 hover:bg-white/5 hover:text-white']"
                     title="Dialer"
                 >
                     <PhoneIcon class="h-5 w-5" />
@@ -498,7 +500,7 @@ function logout() {
                 <!-- Light / dark toggle -->
                 <button
                     @click="toggleTheme"
-                    :class="['p-2 rounded-lg transition-colors flex-shrink-0', isLight ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-gray-800']"
+                    :class="['p-2 rounded-lg transition-colors flex-shrink-0', isLight ? 'text-gray-500 hover:bg-brand-50 hover:text-brand-700' : 'text-gray-400 hover:bg-white/5 hover:text-white']"
                     :title="isLight ? 'Switch to dark mode' : 'Switch to light mode'"
                 >
                     <SunIcon v-if="isLight" class="h-5 w-5" />
@@ -509,7 +511,7 @@ function logout() {
                     :class="['relative p-2 rounded-lg transition-colors flex-shrink-0',
                              urgentCount > 0
                                 ? (isLight ? 'text-red-600 hover:bg-red-50 animate-flicker' : 'text-red-400 hover:bg-red-900/30 animate-flicker')
-                                : (isLight ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-gray-800')]"
+                                : (isLight ? 'text-gray-500 hover:bg-brand-50 hover:text-brand-700' : 'text-gray-400 hover:bg-white/5 hover:text-white')]"
                     :title="urgentCount > 0 ? `${urgentCount} open urgent case${urgentCount > 1 ? 's' : ''}` : 'No urgent cases'">
                     <BellIcon class="h-6 w-6" />
                     <!-- Red count badge -->
@@ -517,17 +519,17 @@ function logout() {
                         :class="['absolute -top-1 -right-1 min-w-[1.35rem] h-[1.35rem] px-1 rounded-full',
                                  'bg-red-600 text-white text-[11px] font-extrabold',
                                  'flex items-center justify-center shadow-lg',
-                                 isLight ? 'ring-2 ring-white' : 'ring-2 ring-[#0f1117]']">
+                                 isLight ? 'ring-2 ring-white' : 'ring-2 ring-[#160e2b]']">
                         {{ urgentCount > 99 ? '99+' : urgentCount }}
                     </span>
                     <span v-else
-                        :class="['absolute top-2 right-2 h-2 w-2 rounded-full bg-gray-600', isLight ? 'ring-2 ring-white' : 'ring-2 ring-[#0f1117]']">
+                        :class="['absolute top-2 right-2 h-2 w-2 rounded-full bg-gray-600', isLight ? 'ring-2 ring-white' : 'ring-2 ring-[#160e2b]']">
                     </span>
                 </Link>
                 <!-- User profile -->
-                <div :class="['flex items-center gap-3 pl-3 border-l flex-shrink-0', isLight ? 'border-gray-200' : 'border-gray-700']">
+                <div :class="['flex items-center gap-3 pl-3 border-l flex-shrink-0', isLight ? 'border-brand-100' : 'border-white/10']">
                     <Link href="/profile" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-semibold flex-shrink-0">
+                        <div class="flex h-8 w-8 items-center justify-center rounded-full gloss-gold text-[#2a0f5c] text-sm font-bold flex-shrink-0">
                             {{ user?.name?.charAt(0)?.toUpperCase() }}
                         </div>
                         <div class="hidden md:block">
@@ -537,7 +539,7 @@ function logout() {
                     </Link>
                     <button
                         @click="logout"
-                        :class="['p-1.5 rounded-lg transition-colors', isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-gray-400 hover:text-white hover:bg-gray-700']"
+                        :class="['p-1.5 rounded-lg transition-colors', isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-gray-400 hover:text-white hover:bg-white/5']"
                         title="Logout"
                     >
                         <ArrowRightOnRectangleIcon class="h-4 w-4" />
@@ -582,7 +584,7 @@ function logout() {
             </div>
 
             <!-- Page content -->
-            <main :class="['flex-1 p-4 lg:p-6 overflow-auto', isLight ? 'bg-gray-50' : 'bg-[#0d1117]']">
+            <main :class="['flex-1 p-4 lg:p-6 overflow-auto', isLight ? 'bg-[#f7f5fb]' : 'bg-[#0f0a1e]']">
                 <slot />
             </main>
         </div>
