@@ -140,7 +140,8 @@ Route::middleware('auth')->group(function () {
     // Tickets
     Route::get('tickets', [Web\TicketController::class, 'index'])->name('tickets.index');
     Route::post('tickets', [Web\TicketController::class, 'store'])->name('tickets.store');
-    Route::post('tickets/draft-notes', [Web\TicketController::class, 'draftNotes'])->name('tickets.draft-notes');
+    Route::get('tickets/follow-ups-due', [Web\TicketController::class, 'followUpsDue'])->name('tickets.follow-ups-due');
+    Route::post('tickets/draft-notes',[Web\TicketController::class, 'draftNotes'])->name('tickets.draft-notes');
     Route::get('tickets/export', [Web\TicketController::class, 'export'])->name('tickets.export');
     Route::get('tickets/import', [Web\TicketImportController::class, 'create'])->name('tickets.import')->middleware('admin');
     Route::post('tickets/import', [Web\TicketImportController::class, 'store'])->name('tickets.import.store')->middleware('admin');

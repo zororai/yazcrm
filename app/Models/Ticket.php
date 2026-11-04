@@ -34,6 +34,50 @@ class Ticket extends Model
         return in_array($priority, ['high', 'urgent'], true);
     }
 
+    // Follow-up plan by priority, in days from when the ticket is logged:
+    // High / Urgent are followed up within 48 hours and the referral taken up
+    // within 96; Low is followed up within 7 days (no uptake deadline).
+    public const FOLLOW_UP_DAYS = ['high' => 2, 'urgent' => 2, 'low' => 7];
+    public const UPTAKE_DAYS    = ['high' => 4, 'urgent' => 4];
+
+    /** @return array{follow_up_date: ?string, referral_uptake_date: ?string} */
+    public static function followUpPlan(?string $priority, ?\DateTimeInterface $from = null): array
+    {
+        $from = \Carbon\CarbonImmutable::instance($from ?? now());
+        $in   = fn (?int $days) => $days === null ? null : $from->addDays($days)->toDateString();
+
+        return [
+            'follow_up_date'       => $in(self::FOLLOW_UP_DAYS[$priority] ?? null),
+            'referral_uptake_date' => $in(self::UPTAKE_DAYS[$priority] ?? null),
+        ];
+    }
+
+    // Fills the plan's dates into $data where the agent left them empty.
+    public static function withFollowUpPlan(array $data, ?string $priority): array
+    {
+        foreach (self::followUpPlan($priority) as $field => $date) {
+            if ($date !== null && empty($data[$field])) {
+                $data[$field] = $date;
+            }
+        }
+
+        return $data;
+    }
+
+    // Open cases whose follow-up or expected referral uptake falls due today
+    // or earlier — what the agent's "follow-ups due" pop-up lists.
+    public function scopeFollowUpDue($query)
+    {
+        $today = now()->toDateString();
+
+        return $query->where(fn ($q) => $q
+            ->where(fn ($q) => $q->whereNotNull('follow_up_date')->whereDate('follow_up_date', '<=', $today)
+                ->whereNotIn('status', ['resolved', 'closed']))
+            ->orWhere(fn ($q) => $q->whereNotNull('referral_uptake_date')->whereDate('referral_uptake_date', '<=', $today)
+                ->where(fn ($q) => $q->where('uptake_confirmed', false)->orWhereNull('uptake_confirmed'))
+                ->where('status', '!=', 'closed')));
+    }
+
     // Puts the ticket on the Urgent Cases board (once): used for "Immediate
     // action required" and for High / Urgent priority tickets.
     public function openUrgentCase(?int $agentId = null): UrgentCase

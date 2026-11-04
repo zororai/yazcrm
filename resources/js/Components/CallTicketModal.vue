@@ -4,6 +4,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { PhoneIcon, ClockIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
+import { watchFollowUpPlan, FOLLOW_UP_HINT, UPTAKE_HINT } from '@/ticketFollowUp.js';
 
 const page = usePage();
 const distressDomains          = computed(() => page.props.distressDomains ?? []);
@@ -56,6 +57,7 @@ const form = useForm({
     psychosocial_type:        '',
     log_note:                 '',
 });
+watchFollowUpPlan(form);
 
 // "Other (Specify):" in a service dropdown opens a text box for the detail.
 const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
@@ -336,6 +338,12 @@ const provinces = PROVINCES;
                             <label class="label">Follow-up Date <span v-if="isHighPriority(form.priority)" class="text-red-500">*</span></label>
                             <input v-model="form.follow_up_date" type="date" class="input w-48" />
                             <p v-if="form.errors.follow_up_date" class="mt-1 text-xs text-red-600">{{ form.errors.follow_up_date }}</p>
+                            <p v-else class="mt-1 text-xs text-gray-400">{{ FOLLOW_UP_HINT }}</p>
+                        </div>
+                        <div v-if="isHighPriority(form.priority)">
+                            <label class="label">Referral Uptake Date</label>
+                            <input v-model="form.referral_uptake_date" type="date" class="input w-48" />
+                            <p class="mt-1 text-xs text-gray-400">{{ UPTAKE_HINT }}</p>
                         </div>
                     </div>
                 </div>
@@ -394,7 +402,7 @@ const provinces = PROVINCES;
                                 This will create an urgent case visible to all agents.
                             </p>
                         </div>
-                        <div v-if="form.immediate_action_required == 1">
+                        <div v-if="form.immediate_action_required == 1 && !isHighPriority(form.priority)">
                             <label class="label">Referral Uptake Date</label>
                             <input v-model="form.referral_uptake_date" type="date" class="input" />
                             <p class="mt-1 text-xs text-gray-400">Expected date for referral to be acted on.</p>

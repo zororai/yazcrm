@@ -12,6 +12,7 @@ import {
     SunIcon, MoonIcon, CalendarDaysIcon, MagnifyingGlassIcon, ArrowTrendingUpIcon, ArrowTrendingDownIcon, AcademicCapIcon,
 } from '@heroicons/vue/24/outline';
 import IncomingCallPopup from '@/Components/IncomingCallPopup.vue';
+import FollowUpDuePopup from '@/Components/FollowUpDuePopup.vue';
 import Dialer from '@/Components/Dialer.vue';
 import ChatAssistant from '@/Components/ChatAssistant.vue';
 import NotificationBell from '@/Components/NotificationBell.vue';
@@ -628,6 +629,9 @@ function logout() {
         :calls="visibleCalls"
         @dismiss="dismissCall"
     />
+
+    <!-- The agent's own cases with a follow-up / referral uptake due (polled every minute) -->
+    <FollowUpDuePopup v-if="user && can('tickets')" :user-id="user.id" />
 
     <!-- WebRTC Dialer — opened via the header phone icon, not a floating button -->
     <Dialer v-model:open="dialerOpen" />

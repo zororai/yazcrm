@@ -49,14 +49,15 @@ class TicketController extends Controller
             'priority'    => 'in:low,medium,high,urgent',
         ]);
 
-        $ticket = Ticket::create([
+        $priority = $request->priority ?? 'medium';
+        $ticket = Ticket::create(Ticket::withFollowUpPlan([
             'call_id'     => $request->call_id,
             'client_id'   => $request->client_id,
             'agent_id'    => $request->user()->id,
             'subject'     => $request->subject,
             'description' => $request->description,
-            'priority'    => $request->priority ?? 'medium',
-        ]);
+            'priority'    => $priority,
+        ], $priority));
 
         return response()->json($ticket->load(['client', 'agent']), 201);
     }

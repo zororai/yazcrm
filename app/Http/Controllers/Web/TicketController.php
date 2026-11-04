@@ -53,6 +53,36 @@ class TicketController extends Controller
         };
     }
 
+    // The signed-in agent's own cases with a follow-up or referral uptake due
+    // today or earlier, most urgent first. Polled by the layout's pop-up.
+    public function followUpsDue(Request $request): JsonResponse
+    {
+        $today = now()->toDateString();
+        $query = Ticket::where('agent_id', $request->user()->id)->followUpDue();
+
+        $tickets = (clone $query)
+            ->orderByRaw("CASE priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END")
+            ->orderBy('follow_up_date')
+            ->limit(20)
+            ->get(['id', 'subject', 'contact_number', 'priority', 'status', 'follow_up_date', 'referral_uptake_date', 'uptake_confirmed', 'referred_to'])
+            ->map(function (Ticket $t) use ($today) {
+                $followUp = $t->follow_up_date ? substr((string) $t->follow_up_date, 0, 10) : null;
+                $uptake   = $t->referral_uptake_date ? substr((string) $t->referral_uptake_date, 0, 10) : null;
+
+                return [
+                    'id'             => $t->id,
+                    'subject'        => $t->subject,
+                    'contact_number' => $t->contact_number,
+                    'priority'       => $t->priority,
+                    'follow_up_due'  => $followUp && $followUp <= $today && ! in_array($t->status, ['resolved', 'closed'], true) ? $followUp : null,
+                    'uptake_due'     => $uptake && $uptake <= $today && ! $t->uptake_confirmed && $t->status !== 'closed' ? $uptake : null,
+                    'referred_to'    => $t->referred_to,
+                ];
+            });
+
+        return response()->json(['count' => $query->count(), 'today' => $today, 'tickets' => $tickets]);
+    }
+
     public function index(Request $request): Response
     {
         $query = Ticket::with(['client', 'agent', 'call.recording:id,call_id', 'successStory:id,ticket_id,status'])->latest();
@@ -423,6 +453,9 @@ class TicketController extends Controller
             'priority.in' => 'Choose a priority: Low, High or Urgent.',
         ]);
         $data = $this->applyOtherSpecify($data);
+        // Follow-up (and for High / Urgent, referral uptake) dates are set
+        // automatically from the priority unless the agent chose them.
+        $data = Ticket::withFollowUpPlan($data, $data['priority'] ?? 'low');
         $logNote = $this->requireHighPriorityFollowUp($request, $data, null);
 
         // Coerce boolean fields so null from an unselected dropdown becomes false
@@ -461,6 +494,15 @@ class TicketController extends Controller
             ...$this->crmRules,
         ]);
         $data = $this->applyOtherSpecify($data);
+        // Raised to High / Urgent: the 48-hour follow-up and 96-hour uptake
+        // dates apply from now, unless the agent entered their own.
+        if (Ticket::isHighPriority($data['priority'] ?? null) && ! Ticket::isHighPriority($ticket->priority)) {
+            foreach (Ticket::followUpPlan($data['priority']) as $field => $date) {
+                $mine = array_key_exists($field, $data) && ! empty($data[$field])
+                    && substr((string) $data[$field], 0, 10) !== substr((string) $ticket->{$field}, 0, 10);
+                if (! $mine) $data[$field] = $date;
+            }
+        }
         $logNote = $this->requireHighPriorityFollowUp($request, $data, $ticket);
         if ($logNote !== '') {
             $ticket->notes()->create(['user_id' => $request->user()->id, 'body' => $logNote]);

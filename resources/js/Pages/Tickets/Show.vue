@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { ArrowLeftIcon, PencilSquareIcon, XMarkIcon, MicrophoneIcon } from '@heroicons/vue/24/outline';
 import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
+import { followUpPlan } from '@/ticketFollowUp.js';
 
 const props = defineProps({
     ticket:                Object,
@@ -101,6 +102,22 @@ const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
 // High / Urgent tickets need a follow-up date and a log note.
 const isHighPriority = (p) => p === 'high' || p === 'urgent';
 const raisingPriority = computed(() => isHighPriority(editForm.priority) && !isHighPriority(props.ticket.priority));
+
+// Raising to High / Urgent restarts the clock: follow up within 48 hours,
+// referral uptake within 96 (the server applies the same rule on save).
+// Dates the agent changed by hand are left alone.
+const savedDates = {
+    follow_up_date:       editForm.follow_up_date,
+    referral_uptake_date: editForm.referral_uptake_date ? String(editForm.referral_uptake_date).slice(0, 10) : '',
+};
+const datesFor = (priority) => isHighPriority(priority) && !isHighPriority(props.ticket.priority) ? followUpPlan(priority) : savedDates;
+watch(() => editForm.priority, (now, before) => {
+    const next = datesFor(now);
+    const prev = datesFor(before);
+    for (const field of Object.keys(savedDates)) {
+        if (!editForm[field] || editForm[field] === prev[field]) editForm[field] = next[field];
+    }
+});
 
 // e.g. "Other (Specify): Legal aid" when a detail was given.
 function serviceWithDetail(field) {

@@ -8,6 +8,7 @@ import ClassificationPanel from '@/Components/ClassificationPanel.vue';
 import { PlusIcon, MagnifyingGlassIcon, XMarkIcon, ArrowUpTrayIcon, NoSymbolIcon, PencilIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { debounce } from 'lodash-es';
 import { PROVINCES, PROVINCE_DISTRICTS } from '@/provinceDistricts.js';
+import { watchFollowUpPlan, FOLLOW_UP_HINT, UPTAKE_HINT } from '@/ticketFollowUp.js';
 
 const props    = defineProps({ tickets: Object, clients: Array, agents: Array, filters: Object, followUpCounts: Object, keyPops: Array, modesOfCommunication: Array, projects: Array, servicesRequested: Array, secondServicesRequested: Array, servicesRequestedBefore: Array, referredTo: Array, serviceCategories: Object });
 const isAdmin  = computed(() => usePage().props.auth.user?.role === 'admin');
@@ -433,6 +434,7 @@ function closeReferredToDrop() {
 
 function openAdd() {
     addForm.reset();
+    refreshFollowUpPlan();
     recordingLookup.value = null;
     recordingLookupMessage.value = '';
     foundRecordingId.value = null;
@@ -472,6 +474,7 @@ const addForm = useForm({
     psychosocial_type:        '',
     log_note:                 '',
 });
+const refreshFollowUpPlan = watchFollowUpPlan(addForm);
 
 // "Other (Specify):" in a service dropdown opens a text box for the detail.
 const isOtherService = (v) => !!v && v.trim().toLowerCase().startsWith('other');
@@ -1016,6 +1019,12 @@ const statusColor = {
                                 <label class="label">Follow-up Date <span v-if="isHighPriority(addForm.priority)" class="text-red-500">*</span></label>
                                 <input v-model="addForm.follow_up_date" type="date" class="input w-48" />
                                 <p v-if="addForm.errors.follow_up_date" class="mt-1 text-xs text-red-600">{{ addForm.errors.follow_up_date }}</p>
+                                <p v-else class="mt-1 text-xs text-gray-400">{{ FOLLOW_UP_HINT }}</p>
+                            </div>
+                            <div v-if="isHighPriority(addForm.priority)">
+                                <label class="label">Referral Uptake Date</label>
+                                <input v-model="addForm.referral_uptake_date" type="date" class="input w-48" />
+                                <p class="mt-1 text-xs text-gray-400">{{ UPTAKE_HINT }}</p>
                             </div>
                         </div>
                     </div>
@@ -1065,7 +1074,7 @@ const statusColor = {
                                     This will create an urgent case visible to all agents.
                                 </p>
                             </div>
-                            <div v-if="addForm.immediate_action_required == 1">
+                            <div v-if="addForm.immediate_action_required == 1 && !isHighPriority(addForm.priority)">
                                 <label class="label">Referral Uptake Date</label>
                                 <input v-model="addForm.referral_uptake_date" type="date" class="input" />
                                 <p class="mt-1 text-xs text-gray-400">Expected date for referral to be acted on.</p>

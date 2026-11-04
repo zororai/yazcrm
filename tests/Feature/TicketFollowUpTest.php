@@ -136,10 +136,10 @@ class TicketFollowUpTest extends TestCase
         $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
             ->post('/tickets', $data + ['subject' => 'Serious case', 'contact_number' => '0771000000']);
 
-        $post(['priority' => 'high'])->assertSessionHasErrors([
-            'follow_up_date' => 'A follow-up date is required for High and Urgent tickets.',
-            'log_note'       => 'A log note is required for High and Urgent tickets.',
-        ]);
+        // The follow-up date is filled in automatically; the log note is not.
+        $post(['priority' => 'high'])
+            ->assertSessionHasErrors(['log_note' => 'A log note is required for High and Urgent tickets.'])
+            ->assertSessionDoesntHaveErrors('follow_up_date');
         $this->assertFalse(Ticket::where('subject', 'Serious case')->exists());
 
         $post(['priority' => 'high', 'follow_up_date' => '2026-10-25', 'log_note' => '  Referred to clinic, will call Monday '])
@@ -152,16 +152,67 @@ class TicketFollowUpTest extends TestCase
         // Low tickets need neither.
         $post(['priority' => 'low', 'subject' => 'Minor case'])->assertSessionHasNoErrors();
 
-        // Raising an existing ticket with no notes and no follow-up date to Urgent needs both.
+        // Raising an existing ticket with no notes to Urgent needs a log note.
         $id  = $this->ticket($this->agentA->id, ['priority' => 'low']);
         $put = fn (array $data) => $this->actingAs($this->agentA)->from("/tickets/{$id}")->put("/tickets/{$id}", $data + ['subject' => 'Case']);
-        $put(['priority' => 'urgent'])->assertSessionHasErrors(['follow_up_date', 'log_note']);
+        $put(['priority' => 'urgent'])->assertSessionHasErrors(['log_note'])->assertSessionDoesntHaveErrors('follow_up_date');
         $put(['priority' => 'urgent', 'follow_up_date' => '2026-10-26', 'log_note' => 'Escalated'])->assertSessionHasNoErrors();
         $this->assertSame('urgent', Ticket::find($id)->priority);
         $this->assertSame('Escalated', Ticket::find($id)->notes()->value('body'));
 
         // Once it is Urgent with a date, later edits don't ask for another note.
         $put(['priority' => 'urgent', 'description' => 'Updated'])->assertSessionHasNoErrors();
+    }
+
+    public function test_follow_up_and_uptake_dates_are_set_from_the_priority(): void
+    {
+        // setUp's clock: 2026-10-23.
+        $post = fn (array $data) => $this->actingAs($this->agentA)->from('/tickets')
+            ->post('/tickets', $data + ['contact_number' => '0771000000'])->assertSessionHasNoErrors();
+        $dates = fn (string $subject) => Ticket::where('subject', $subject)->get(['follow_up_date', 'referral_uptake_date'])
+            ->map(fn ($t) => [substr((string) $t->follow_up_date, 0, 10), $t->referral_uptake_date ? substr((string) $t->referral_uptake_date, 0, 10) : null])
+            ->first();
+
+        $post(['subject' => 'Urgent one', 'priority' => 'urgent', 'log_note' => 'x']);
+        $post(['subject' => 'High one', 'priority' => 'high', 'log_note' => 'x']);
+        $post(['subject' => 'Low one', 'priority' => 'low']);
+        $post(['subject' => 'Default one']);
+        $post(['subject' => 'Chosen', 'priority' => 'high', 'log_note' => 'x', 'follow_up_date' => '2026-10-24', 'referral_uptake_date' => '2026-10-30']);
+
+        $this->assertSame(['2026-10-25', '2026-10-27'], $dates('Urgent one')); // 48 h / 96 h
+        $this->assertSame(['2026-10-25', '2026-10-27'], $dates('High one'));
+        $this->assertSame(['2026-10-30', null], $dates('Low one'));            // 7 days, no uptake deadline
+        $this->assertSame(['2026-10-30', null], $dates('Default one'));
+        $this->assertSame(['2026-10-24', '2026-10-30'], $dates('Chosen'));    // the agent's own dates are kept
+
+        // Raising a Low ticket to Urgent restarts the clock from the day it is raised.
+        $this->travelTo(CarbonImmutable::create(2026, 10, 26, 9));
+        $low = Ticket::where('subject', 'Low one')->first();
+        $this->actingAs($this->agentA)->from("/tickets/{$low->id}")->put("/tickets/{$low->id}", [
+            'subject' => 'Low one', 'priority' => 'urgent', 'log_note' => 'Escalated',
+            'follow_up_date' => '2026-10-30', // unchanged from the form
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(['2026-10-28', '2026-10-30'], $dates('Low one'));
+    }
+
+    public function test_the_follow_up_pop_up_lists_the_agents_own_due_cases(): void
+    {
+        // setUp's clock: 2026-10-23. Agent A has 'due' (follow-up yesterday) and
+        // 'uptake_overdue' (uptake 2026-10-20) due; the rest are not.
+        $uptakeToday = $this->ticket($this->agentA->id, ['subject' => 'Uptake today', 'priority' => 'urgent', 'referral_uptake_date' => '2026-10-23']);
+        $this->ticket($this->agentA->id, ['referral_uptake_date' => '2026-10-23', 'uptake_confirmed' => 1]);
+
+        $res = $this->actingAs($this->agentA)->getJson('/tickets/follow-ups-due')->assertOk()
+            ->assertJsonPath('count', 3)
+            ->assertJsonPath('today', '2026-10-23')
+            ->assertJsonPath('tickets.0.id', $uptakeToday) // urgent first
+            ->assertJsonPath('tickets.0.uptake_due', '2026-10-23')
+            ->assertJsonPath('tickets.0.follow_up_due', null);
+        $this->assertEqualsCanonicalizing([$uptakeToday, $this->t['due'], $this->t['uptake_overdue']], array_column($res->json('tickets'), 'id'));
+
+        // Only ever the agent's own cases, even for a manager.
+        $this->actingAs($this->agentB)->getJson('/tickets/follow-ups-due')->assertJsonPath('count', 0);
+        $this->actingAs($this->manager)->getJson('/tickets/follow-ups-due')->assertJsonPath('count', 0);
     }
 
     public function test_high_and_urgent_tickets_go_on_the_urgent_cases_board(): void
