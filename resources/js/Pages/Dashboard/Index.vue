@@ -92,7 +92,7 @@ function fmtDur(s) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-const avatarColors = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6'];
+const avatarColors = ['#7c3aed','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6'];
 function avatarColor(i) { return avatarColors[i % avatarColors.length]; }
 function callerInitials(num) {
     if (!num) return '?';
@@ -118,7 +118,7 @@ const periodLabel = computed(() => ({ today: 'vs yesterday', week: 'vs last week
 
 // ── Stat cards ────────────────────────────────────────────────────────────────
 const cardDefs = [
-    { label: 'Total Calls',       key: 'total_calls',      color: '#6366f1', bg: 'rgba(99,102,241,0.15)',  icon: PhoneIcon,               sparkKey: 'total' },
+    { label: 'Total Calls',       key: 'total_calls',      color: '#7c3aed', bg: 'rgba(124,58,237,0.1)',  icon: PhoneIcon,               sparkKey: 'total' },
     { label: 'Inbound',           key: 'inbound_calls',    color: '#10b981', bg: 'rgba(16,185,129,0.15)',  icon: PhoneArrowDownLeftIcon,  sparkKey: 'inbound' },
     { label: 'Outbound',          key: 'outbound_calls',   color: '#3b82f6', bg: 'rgba(59,130,246,0.15)',  icon: PhoneArrowUpRightIcon,   sparkKey: 'outbound' },
     { label: 'Urgent Cases',      key: 'urgent_cases',     color: '#ef4444', bg: 'rgba(239,68,68,0.15)',   icon: ExclamationTriangleIcon, sparkKey: null },
@@ -142,10 +142,10 @@ const trendChartData = computed(() => ({
         {
             label: 'Total',
             data: props.callTrend.map(d => d.total),
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99,102,241,0.08)',
+            borderColor: '#7c3aed',
+            backgroundColor: 'rgba(124,58,237,0.08)',
             fill: true, tension: 0.4,
-            pointRadius: 4, pointBackgroundColor: '#6366f1',
+            pointRadius: 4, pointBackgroundColor: '#7c3aed',
         },
         {
             label: 'Missed',
@@ -165,8 +165,8 @@ const trendOptions = {
         tooltip: { backgroundColor: '#1f2937', titleColor: '#f9fafb', bodyColor: '#d1d5db' },
     },
     scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', font: { size: 11 } } },
-        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', precision: 0, font: { size: 11 } } },
+        x: { grid: { color: 'rgba(17,24,39,0.06)' }, ticks: { color: '#6b7280', font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(17,24,39,0.06)' }, ticks: { color: '#6b7280', precision: 0, font: { size: 11 } } },
     },
 };
 
@@ -176,7 +176,7 @@ const extChartData = computed(() => ({
     datasets: [{
         label: 'Calls',
         data: props.topExtensions.map(e => e.total),
-        backgroundColor: '#6366f1',
+        backgroundColor: '#7c3aed',
         borderRadius: 5,
     }],
 }));
@@ -189,7 +189,7 @@ const extOptions = {
     },
     scales: {
         x: { grid: { display: false }, ticks: { color: '#6b7280', font: { size: 11 } } },
-        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', precision: 0, font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(17,24,39,0.06)' }, ticks: { color: '#6b7280', precision: 0, font: { size: 11 } } },
     },
 };
 
@@ -198,7 +198,7 @@ const distChartData = computed(() => ({
     labels: ['Inbound', 'Outbound', 'Missed'],
     datasets: [{
         data: [props.stats.inbound_calls, props.stats.outbound_calls, props.stats.missed_calls],
-        backgroundColor: ['#6366f1', '#f59e0b', '#ef4444'],
+        backgroundColor: ['#7c3aed', '#d4a72c', '#ef4444'],
         borderWidth: 0,
         hoverOffset: 6,
     }],
@@ -240,18 +240,18 @@ const qualityColor = computed(() => ({
                 <DocumentTextIcon class="h-3.5 w-3.5" /> Post Notification
             </button>
             <!-- Date range display -->
-            <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-xs text-gray-300">
+            <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-brand-100 text-xs text-gray-600 shadow-sm">
                 <CalendarDaysIcon class="h-3.5 w-3.5 text-gray-400" />
                 {{ dateRangeLabel }}
             </div>
             <!-- Period toggle -->
-            <div class="flex gap-0.5 bg-gray-800 rounded-lg p-1 border border-gray-700">
+            <div class="flex gap-0.5 bg-white rounded-lg p-1 border border-brand-100 shadow-sm">
                 <button
                     v-for="p in ['today','week','month']"
                     :key="p"
                     @click="changePeriod(p)"
                     :class="['px-3 py-1 rounded-md text-xs font-medium capitalize transition-colors',
-                             period === p ? 'bg-brand-600 text-white shadow' : 'text-gray-400 hover:text-white']"
+                             period === p ? 'bg-brand-600 text-white shadow' : 'text-gray-500 hover:text-brand-700']"
                 >{{ p }}</button>
             </div>
         </template>
@@ -260,34 +260,34 @@ const qualityColor = computed(() => ({
         <div v-if="extension" class="mb-5 rounded-xl bg-brand-600/10 border border-brand-500/20 p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
-                    <PhoneIcon class="h-4 w-4 text-brand-400 flex-shrink-0" />
-                    <span class="text-xs font-semibold text-brand-300">Extension {{ extension }} — your calls this {{ period }}</span>
+                    <PhoneIcon class="h-4 w-4 text-brand-600 flex-shrink-0" />
+                    <span class="text-xs font-semibold text-brand-700">Extension {{ extension }} — your calls this {{ period }}</span>
                 </div>
                 <div class="flex flex-wrap gap-4">
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-white leading-none">{{ stats.total_calls }}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Total</p>
+                        <p class="text-2xl font-bold text-gray-900 leading-none">{{ stats.total_calls }}</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">Total</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-blue-400 leading-none">{{ stats.outbound_calls }}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Outbound</p>
+                        <p class="text-2xl font-bold text-blue-600 leading-none">{{ stats.outbound_calls }}</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">Outbound</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-emerald-400 leading-none">{{ stats.inbound_calls }}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Inbound</p>
+                        <p class="text-2xl font-bold text-emerald-600 leading-none">{{ stats.inbound_calls }}</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">Inbound</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-green-400 leading-none">{{ stats.answered_calls }}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Answered</p>
+                        <p class="text-2xl font-bold text-emerald-600 leading-none">{{ stats.answered_calls }}</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">Answered</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-2xl font-bold text-red-400 leading-none">{{ stats.missed_calls }}</p>
-                        <p class="text-[10px] text-gray-400 mt-0.5">Missed</p>
+                        <p class="text-2xl font-bold text-red-600 leading-none">{{ stats.missed_calls }}</p>
+                        <p class="text-[10px] text-gray-500 mt-0.5">Missed</p>
                     </div>
                 </div>
             </div>
         </div>
-        <div v-else-if="extension === null && page.props.auth.user?.role !== 'admin'" class="mb-5 p-3 rounded-xl text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400">
+        <div v-else-if="extension === null && page.props.auth.user?.role !== 'admin'" class="mb-5 p-3 rounded-xl text-xs bg-amber-50 border border-amber-200 text-amber-800">
             No extension assigned to your account — contact your admin.
         </div>
 
@@ -303,26 +303,26 @@ const qualityColor = computed(() => ({
                     <div class="p-2 rounded-lg flex-shrink-0" :style="{ background: card.bg }">
                         <component :is="card.icon" class="h-4 w-4" :style="{ color: card.color }" />
                     </div>
-                    <span class="text-xs text-gray-400 truncate">{{ card.label }}</span>
+                    <span class="text-xs text-gray-500 truncate">{{ card.label }}</span>
                 </div>
 
                 <!-- Value -->
-                <p class="text-2xl font-bold text-white">
+                <p class="text-2xl font-bold text-gray-900">
                     {{ (stats[card.key] ?? 0).toLocaleString() }}{{ card.suffix ?? '' }}
                 </p>
 
                 <!-- % vs prev period -->
                 <div class="mt-1 text-xs flex items-center gap-1">
                     <template v-if="prevStats && pct(stats[card.key], prevStats[card.key]) !== null">
-                        <span :class="Number(pct(stats[card.key], prevStats[card.key])) >= 0 ? 'text-green-400' : 'text-red-400'">
+                        <span :class="Number(pct(stats[card.key], prevStats[card.key])) >= 0 ? 'text-emerald-600' : 'text-red-600'">
                             {{ Number(pct(stats[card.key], prevStats[card.key])) >= 0 ? '↑' : '↓' }}
                             {{ Math.abs(Number(pct(stats[card.key], prevStats[card.key]))) }}%
                         </span>
                     </template>
                     <template v-else>
-                        <span class="text-gray-600">—  0%</span>
+                        <span class="text-gray-400">—  0%</span>
                     </template>
-                    <span class="text-gray-600">{{ periodLabel }}</span>
+                    <span class="text-gray-400">{{ periodLabel }}</span>
                 </div>
 
                 <!-- Sparkline -->
@@ -346,42 +346,42 @@ const qualityColor = computed(() => ({
         <div class="db-card mb-5">
             <div class="flex items-center justify-between mb-4">
                 <div class="flex items-center gap-2">
-                    <DocumentTextIcon class="h-4 w-4 text-amber-400" />
-                    <h3 class="text-sm font-semibold text-white">
+                    <DocumentTextIcon class="h-4 w-4 text-amber-600" />
+                    <h3 class="text-sm font-semibold text-gray-900">
                         {{ extension ? 'My Tickets' : 'Tickets' }}
                         <span class="ml-1 text-xs text-gray-500 capitalize">({{ period }})</span>
                     </h3>
                 </div>
-                <a href="/tickets" class="text-xs text-brand-400 hover:text-brand-300">View all →</a>
+                <a href="/tickets" class="text-xs text-brand-600 hover:text-brand-800">View all →</a>
             </div>
 
             <!-- 3 KPI pills -->
             <div class="grid grid-cols-3 gap-3 mb-4">
                 <div class="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-center">
-                    <p class="text-2xl font-bold text-amber-400 leading-none">{{ stats.tickets_created ?? 0 }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">Created</p>
+                    <p class="text-2xl font-bold text-amber-600 leading-none">{{ stats.tickets_created ?? 0 }}</p>
+                    <p class="text-[10px] text-gray-500 mt-1">Created</p>
                 </div>
                 <div class="rounded-xl bg-blue-500/10 border border-blue-500/20 p-3 text-center">
-                    <p class="text-2xl font-bold text-blue-400 leading-none">{{ stats.tickets_open ?? 0 }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">Open</p>
+                    <p class="text-2xl font-bold text-blue-600 leading-none">{{ stats.tickets_open ?? 0 }}</p>
+                    <p class="text-[10px] text-gray-500 mt-1">Open</p>
                 </div>
                 <div class="rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-center">
-                    <p class="text-2xl font-bold text-green-400 leading-none">{{ stats.tickets_resolved ?? 0 }}</p>
-                    <p class="text-[10px] text-gray-400 mt-1">Resolved</p>
+                    <p class="text-2xl font-bold text-emerald-600 leading-none">{{ stats.tickets_resolved ?? 0 }}</p>
+                    <p class="text-[10px] text-gray-500 mt-1">Resolved</p>
                 </div>
             </div>
 
             <!-- Recent tickets list -->
             <div v-if="recentTickets?.length" class="space-y-2">
                 <div v-for="t in recentTickets" :key="t.id"
-                    class="flex items-center gap-3 py-2 border-t border-gray-700/40 first:border-0">
+                    class="flex items-center gap-3 py-2 border-t border-gray-100 first:border-0">
                     <div class="flex-shrink-0 p-1.5 rounded-lg"
                         :style="{ background: { open:'rgba(245,158,11,0.12)', in_progress:'rgba(59,130,246,0.12)', resolved:'rgba(16,185,129,0.12)', closed:'rgba(107,114,128,0.12)', ongoing:'rgba(139,92,246,0.12)' }[t.status] ?? 'rgba(107,114,128,0.12)' }">
                         <TicketIcon class="h-3.5 w-3.5"
                             :style="{ color: { open:'#f59e0b', in_progress:'#3b82f6', resolved:'#10b981', closed:'#6b7280', ongoing:'#8b5cf6' }[t.status] ?? '#6b7280' }" />
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium text-gray-200 truncate">{{ t.subject }}</p>
+                        <p class="text-xs font-medium text-gray-800 truncate">{{ t.subject }}</p>
                         <p class="text-[10px] text-gray-500">
                             {{ t.client?.name ?? 'No client' }} · {{ new Date(t.created_at).toLocaleDateString([], { day:'2-digit', month:'short' }) }}
                         </p>
@@ -390,28 +390,28 @@ const qualityColor = computed(() => ({
                         <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded capitalize"
                             :style="{
                                 background: { open:'rgba(245,158,11,0.15)', in_progress:'rgba(59,130,246,0.15)', resolved:'rgba(16,185,129,0.15)', closed:'rgba(107,114,128,0.15)', ongoing:'rgba(139,92,246,0.15)' }[t.status] ?? 'rgba(107,114,128,0.15)',
-                                color: { open:'#f59e0b', in_progress:'#60a5fa', resolved:'#34d399', closed:'#9ca3af', ongoing:'#a78bfa' }[t.status] ?? '#9ca3af',
+                                color: { open:'#d97706', in_progress:'#2563eb', resolved:'#059669', closed:'#6b7280', ongoing:'#7c3aed' }[t.status] ?? '#6b7280',
                             }">
                             {{ t.status.replace('_', ' ') }}
                         </span>
-                        <a :href="`/tickets/${t.id}`" class="text-gray-600 hover:text-brand-400 transition-colors">
+                        <a :href="`/tickets/${t.id}`" class="text-gray-400 hover:text-brand-600 transition-colors">
                             <ArrowTopRightOnSquareIcon class="h-3.5 w-3.5" />
                         </a>
                     </div>
                 </div>
             </div>
-            <div v-else class="text-xs text-gray-600 text-center py-4">No tickets created this {{ period }}</div>
+            <div v-else class="text-xs text-gray-500 text-center py-4">No tickets created this {{ period }}</div>
         </div>
 
         <!-- ── Agent target card ───────────────────────────────────────────── -->
         <div v-if="targetSummary?.daily_target" class="db-card mb-5">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold text-white">Today's Call Target</h3>
-                <span class="text-xs text-gray-400">
+                <h3 class="text-sm font-semibold text-gray-900">Today's Call Target</h3>
+                <span class="text-xs text-gray-500">
                     {{ targetSummary.today_calls }} / {{ targetSummary.today_required }} calls
                 </span>
             </div>
-            <div class="h-2 bg-gray-700 rounded-full overflow-hidden mb-3">
+            <div class="h-2 bg-gray-100 rounded-full overflow-hidden mb-3">
                 <div
                     class="h-full rounded-full transition-all"
                     :class="targetSummary.today_calls >= targetSummary.today_required ? 'bg-green-500' : 'bg-brand-500'"
@@ -420,20 +420,20 @@ const qualityColor = computed(() => ({
             </div>
             <div class="grid grid-cols-3 gap-4 text-center text-sm">
                 <div>
-                    <p class="text-xl font-bold text-white">{{ targetSummary.daily_target }}</p>
-                    <p class="text-xs text-gray-400">Daily target</p>
+                    <p class="text-xl font-bold text-gray-900">{{ targetSummary.daily_target }}</p>
+                    <p class="text-xs text-gray-500">Daily target</p>
                 </div>
                 <div>
-                    <p class="text-xl font-bold" :class="targetSummary.carry_forward > 0 ? 'text-orange-400' : 'text-white'">
+                    <p class="text-xl font-bold" :class="targetSummary.carry_forward > 0 ? 'text-orange-600' : 'text-gray-900'">
                         +{{ targetSummary.carry_forward }}
                     </p>
-                    <p class="text-xs text-gray-400">Carried forward</p>
+                    <p class="text-xs text-gray-500">Carried forward</p>
                 </div>
                 <div>
-                    <p class="text-xl font-bold" :class="targetSummary.remaining === 0 ? 'text-green-400' : 'text-white'">
+                    <p class="text-xl font-bold" :class="targetSummary.remaining === 0 ? 'text-emerald-600' : 'text-gray-900'">
                         {{ targetSummary.remaining === 0 ? '✓ Done' : targetSummary.remaining }}
                     </p>
-                    <p class="text-xs text-gray-400">{{ targetSummary.remaining === 0 ? 'Target met!' : 'Still needed' }}</p>
+                    <p class="text-xs text-gray-500">{{ targetSummary.remaining === 0 ? 'Target met!' : 'Still needed' }}</p>
                 </div>
             </div>
         </div>
@@ -443,10 +443,10 @@ const qualityColor = computed(() => ({
             <!-- Call Trend -->
             <div class="db-card lg:col-span-2">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold text-white">Call Trend (7 days)</h3>
+                    <h3 class="text-sm font-semibold text-gray-900">Call Trend (7 days)</h3>
                     <div class="flex items-center gap-4 text-xs text-gray-500">
                         <span class="flex items-center gap-1.5">
-                            <span class="w-3 h-0.5 rounded bg-indigo-500 inline-block"></span> Total
+                            <span class="w-3 h-0.5 rounded bg-brand-600 inline-block"></span> Total
                         </span>
                         <span class="flex items-center gap-1.5">
                             <span class="w-3 h-0.5 rounded bg-red-500 inline-block"></span> Missed
@@ -460,8 +460,8 @@ const qualityColor = computed(() => ({
             <!-- Top Extensions -->
             <div class="db-card">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold text-white">Top Extensions (30 days)</h3>
-                    <a href="/extensions" class="text-xs text-brand-400 hover:text-brand-300">View all</a>
+                    <h3 class="text-sm font-semibold text-gray-900">Top Extensions (30 days)</h3>
+                    <a href="/extensions" class="text-xs text-brand-600 hover:text-brand-800">View all</a>
                 </div>
                 <div class="h-56">
                     <Bar :data="extChartData" :options="extOptions" />
@@ -475,8 +475,8 @@ const qualityColor = computed(() => ({
             <!-- Recent Calls -->
             <div class="db-card">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold text-white">Recent Calls</h3>
-                    <a href="/calls" class="text-xs text-brand-400 hover:text-brand-300">View all</a>
+                    <h3 class="text-sm font-semibold text-gray-900">Recent Calls</h3>
+                    <a href="/calls" class="text-xs text-brand-600 hover:text-brand-800">View all</a>
                 </div>
                 <div class="space-y-3">
                     <div
@@ -489,41 +489,41 @@ const qualityColor = computed(() => ({
                             :style="{ background: avatarColor(i) }"
                         >{{ callerInitials(call.caller) }}</div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs font-medium text-gray-200 truncate">{{ call.caller || 'Unknown' }}</p>
-                            <p class="text-xs text-gray-600">{{ fmtTime(call.started_at) }}</p>
+                            <p class="text-xs font-medium text-gray-800 truncate">{{ call.caller || 'Unknown' }}</p>
+                            <p class="text-xs text-gray-500">{{ fmtTime(call.started_at) }}</p>
                         </div>
                         <span
                             :class="['text-xs px-1.5 py-0.5 rounded font-medium',
                                      call.direction === 'inbound'
-                                         ? 'bg-green-500/10 text-green-400'
-                                         : 'bg-red-500/10 text-red-400']"
+                                         ? 'bg-emerald-50 text-emerald-700'
+                                         : 'bg-red-50 text-red-700']"
                         >{{ call.direction === 'inbound' ? '↓ In' : '↑ Out' }}</span>
                     </div>
-                    <div v-if="!recentCalls?.length" class="text-xs text-gray-600 text-center py-6">No calls yet</div>
+                    <div v-if="!recentCalls?.length" class="text-xs text-gray-500 text-center py-6">No calls yet</div>
                 </div>
             </div>
 
             <!-- Call Distribution -->
             <div class="db-card">
-                <h3 class="text-sm font-semibold text-white mb-4">Call Distribution</h3>
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">Call Distribution</h3>
                 <div class="h-32 mb-4">
                     <Doughnut :data="distChartData" :options="distOptions" />
                 </div>
                 <div class="space-y-2">
                     <div
                         v-for="item in [
-                            { label: 'Inbound',  val: stats.inbound_calls,  color: '#6366f1' },
-                            { label: 'Outbound', val: stats.outbound_calls, color: '#f59e0b' },
+                            { label: 'Inbound',  val: stats.inbound_calls,  color: '#7c3aed' },
+                            { label: 'Outbound', val: stats.outbound_calls, color: '#d4a72c' },
                             { label: 'Missed',   val: stats.missed_calls,   color: '#ef4444' },
                         ]"
                         :key="item.label"
                         class="flex items-center justify-between"
                     >
-                        <span class="flex items-center gap-2 text-xs text-gray-400">
+                        <span class="flex items-center gap-2 text-xs text-gray-500">
                             <span class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: item.color }"></span>
                             {{ item.label }}
                         </span>
-                        <span class="text-xs font-medium text-gray-200">
+                        <span class="text-xs font-medium text-gray-800">
                             {{ stats.total_calls ? Math.round(item.val / stats.total_calls * 100) : 0 }}%
                         </span>
                     </div>
@@ -532,44 +532,44 @@ const qualityColor = computed(() => ({
 
             <!-- System Overview -->
             <div class="db-card">
-                <h3 class="text-sm font-semibold text-white mb-4">System Overview</h3>
+                <h3 class="text-sm font-semibold text-gray-900 mb-4">System Overview</h3>
                 <div class="space-y-3.5">
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-gray-400">
+                        <span class="flex items-center gap-2 text-xs text-gray-500">
                             <PhoneIcon class="h-3.5 w-3.5" /> PBX Status
                         </span>
-                        <span class="text-xs font-medium text-green-400">Operational</span>
+                        <span class="text-xs font-medium text-emerald-600">Operational</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-gray-400">
+                        <span class="flex items-center gap-2 text-xs text-gray-500">
                             <PhoneArrowDownLeftIcon class="h-3.5 w-3.5" /> Active Calls
                         </span>
-                        <span class="text-xs font-medium text-blue-400">{{ stats.active_calls?.length ?? 0 }}</span>
+                        <span class="text-xs font-medium text-blue-600">{{ stats.active_calls?.length ?? 0 }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-gray-400">
+                        <span class="flex items-center gap-2 text-xs text-gray-500">
                             <ClockIcon class="h-3.5 w-3.5" /> Avg Duration
                         </span>
-                        <span class="text-xs font-medium text-gray-200">{{ stats.avg_duration }}s</span>
+                        <span class="text-xs font-medium text-gray-800">{{ stats.avg_duration }}s</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-gray-400">
+                        <span class="flex items-center gap-2 text-xs text-gray-500">
                             <TicketIcon class="h-3.5 w-3.5" /> Open Tickets
                         </span>
-                        <span class="text-xs font-medium text-gray-200">{{ stats.open_tickets }}</span>
+                        <span class="text-xs font-medium text-gray-800">{{ stats.open_tickets }}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="flex items-center gap-2 text-xs text-gray-400">
+                        <span class="flex items-center gap-2 text-xs text-gray-500">
                             <QueueListIcon class="h-3.5 w-3.5" /> Call Quality
                         </span>
                         <span class="text-xs font-medium" :style="{ color: qualityColor }">{{ callQuality }}</span>
                     </div>
-                    <div class="pt-2 border-t border-gray-700/50">
+                    <div class="pt-2 border-t border-gray-100">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs text-gray-500">Answer Rate</span>
-                            <span class="text-xs font-medium text-gray-300">{{ answerRate }}%</span>
+                            <span class="text-xs font-medium text-gray-700">{{ answerRate }}%</span>
                         </div>
-                        <div class="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                        <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div
                                 class="h-full rounded-full transition-all"
                                 :style="{ width: answerRate + '%', background: qualityColor }"
@@ -582,8 +582,8 @@ const qualityColor = computed(() => ({
             <!-- Live Activity -->
             <div class="db-card">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-semibold text-white">Live Activity</h3>
-                    <span class="flex items-center gap-1.5 text-xs text-green-400">
+                    <h3 class="text-sm font-semibold text-gray-900">Live Activity</h3>
+                    <span class="flex items-center gap-1.5 text-xs text-emerald-600">
                         <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
                         Live
                     </span>
@@ -605,15 +605,15 @@ const qualityColor = computed(() => ({
                             />
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs text-gray-300 leading-tight">
+                            <p class="text-xs text-gray-700 leading-tight">
                                 {{ call.direction === 'inbound' ? 'Inbound' : 'Outbound' }} call
-                                <span :class="call.status === 'missed' ? 'text-red-400' : 'text-green-400'">{{ call.status }}</span>
+                                <span :class="call.status === 'missed' ? 'text-red-600' : 'text-emerald-600'">{{ call.status }}</span>
                             </p>
-                            <p class="text-xs text-gray-600 truncate">{{ call.caller }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ call.caller }}</p>
                         </div>
-                        <span class="text-xs text-gray-700 flex-shrink-0 mt-0.5">{{ fmtTime(call.started_at) }}</span>
+                        <span class="text-xs text-gray-500 flex-shrink-0 mt-0.5">{{ fmtTime(call.started_at) }}</span>
                     </div>
-                    <div v-if="!recentCalls?.length" class="text-xs text-gray-600 text-center py-6">No recent activity</div>
+                    <div v-if="!recentCalls?.length" class="text-xs text-gray-500 text-center py-6">No recent activity</div>
                 </div>
             </div>
 
@@ -646,10 +646,12 @@ const qualityColor = computed(() => ({
 </template>
 
 <style scoped>
+/* White card with a faint violet edge and soft shadow (same look as .card). */
 .db-card {
-    background: #161b2e;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: #ffffff;
+    border: 1px solid rgba(220, 208, 253, 0.7);
     border-radius: 0.875rem;
     padding: 1.25rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 8px 24px -12px rgba(67, 27, 135, 0.18);
 }
 </style>
